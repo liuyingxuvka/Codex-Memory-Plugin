@@ -83,9 +83,9 @@ class KbProposalInspectionTests(unittest.TestCase):
                     "kind": "local-kb-proposal-stub",
                     "run_id": run_id,
                     "generated_at": "2026-04-19T20:00:02+00:00",
-                    "action_key": "update-example-entry-001",
+                    "action_key": "update-model-004",
                     "action_type": "review-entry-update",
-                    "target": {"kind": "entry", "entry_id": "example-entry-001"},
+                    "target": {"kind": "entry", "entry_id": "model-004"},
                     "priority_score": 2.0,
                     "event_count": 1,
                     "event_ids": ["obs-6"],
@@ -95,6 +95,11 @@ class KbProposalInspectionTests(unittest.TestCase):
                     "apply_eligibility": {"eligible": False, "reason": "AI should inspect"},
                     "recommended_next_step": "Inspect the current model card and tighten its scope.",
                     "ai_decision_required": True,
+                    "split_review_suggestion": {
+                        "recommendation": "consider-split-review",
+                        "distinct_route_count": 2,
+                        "reason": "The same card is now carrying route-specific subcases.",
+                    },
                 },
             )
 
@@ -117,9 +122,13 @@ class KbProposalInspectionTests(unittest.TestCase):
             self.assertEqual(candidate_action_summary["stub_count"], 1)
             self.assertEqual(candidate_artifact_summary["stub_count"], 1)
 
-            invalid_stub = next(item for item in stubs if item["action_key"] == "update-example-entry-001")
+            invalid_stub = next(item for item in stubs if item["action_key"] == "update-model-004")
             self.assertEqual(invalid_stub["missing_fields"], ["signals"])
             self.assertFalse(invalid_stub["valid"])
+            self.assertEqual(
+                invalid_stub["split_review_suggestion"]["recommendation"],
+                "consider-split-review",
+            )
 
     def test_cli_json_supports_run_id_lookup(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -216,6 +225,54 @@ class KbProposalInspectionTests(unittest.TestCase):
             self.assertIn("By action type:", result.stdout)
             self.assertIn("review-taxonomy", result.stdout)
             self.assertIn("taxonomy-gap-design", result.stdout)
+
+    def test_human_output_shows_split_review_hint_when_present(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            repo_root = Path(tmp_dir)
+            run_id = "split-check"
+            actions_dir = repo_root / "kb" / "history" / "consolidation" / run_id / "actions"
+            write_json(
+                actions_dir / "entry-update.json",
+                {
+                    "schema_version": 1,
+                    "kind": "local-kb-proposal-stub",
+                    "run_id": run_id,
+                    "generated_at": "2026-04-19T22:00:00+00:00",
+                    "action_key": "update-model-004",
+                    "action_type": "review-entry-update",
+                    "target": {"kind": "entry", "entry_id": "model-004"},
+                    "priority_score": 4.2,
+                    "event_count": 2,
+                    "event_ids": ["obs-1", "obs-2"],
+                    "routes": ["system/knowledge-library/retrieval", "repository/usage/local-kb-retrieve"],
+                    "task_summaries": ["Repeated KB workflow card hit"],
+                    "signals": {"suggested_actions": {"update-card": 2}},
+                    "suggested_artifact_kind": "entry-update-proposal",
+                    "apply_eligibility": {"eligible": False, "reason": "AI should inspect"},
+                    "recommended_next_step": "Inspect whether the card should split.",
+                    "ai_decision_required": True,
+                    "split_review_suggestion": {
+                        "recommendation": "consider-split-review",
+                        "reason": "The entry now appears across multiple route-specific scenarios.",
+                    },
+                },
+            )
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT_PATH),
+                    "--repo-root",
+                    str(repo_root),
+                    "--run-id",
+                    run_id,
+                ],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+
+            self.assertIn("split_review=consider-split-review", result.stdout)
 
 
 if __name__ == "__main__":

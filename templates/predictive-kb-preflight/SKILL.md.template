@@ -1,0 +1,101 @@
+---
+name: predictive-kb-preflight
+description: Consult the shared predictive knowledge repository before almost any coding, planning, writing, or repository task so Codex can quickly recall prior user preferences, recurring workflows, and learned heuristics. Use the installed launcher at `{{LAUNCHER_PATH}}` and let `{{ENV_VAR_NAME}}` override the active KB root when needed.
+---
+
+# Predictive KB Preflight
+
+Use this skill as the default preflight and postflight layer for other chats and repositories.
+
+This installed skill is expected to be implicitly invokable. It should activate as the default reminder layer for coding, planning, writing, and repository work rather than waiting for the user to mention the KB explicitly.
+
+Current installation:
+
+- Installed KB root: `{{KB_ROOT}}`
+- Installed launcher: `{{LAUNCHER_PATH}}`
+- Optional override env var: `{{ENV_VAR_NAME}}`
+
+If the repository is moved or re-cloned to a different path, rerun:
+
+```powershell
+python scripts/install_codex_kb.py --json
+```
+
+If the user asks to install, enable, deploy, bootstrap, or set up this predictive KB system on a machine from within this repository, the default first actions are:
+
+```powershell
+python scripts/install_codex_kb.py --json
+python scripts/install_codex_kb.py --check --json
+```
+
+Preferred operating pattern:
+
+- For nearly every task, start with a lightweight shared-KB scan, even if the task looks small. Treat this as quick recall before acting.
+- Release, publish, public-repo audit, README presentation, and template hygiene tasks still count as repository work. Do not skip the KB preflight just because another release or publishing skill is also in use.
+- For non-trivial work, use the launcher to run the KB scan first so the active task starts with retrieved local context instead of re-deriving it.
+- After the main task, treat KB postflight as part of done. Record one structured observation whenever the task exposed a miss, reusable lesson, route gap, card weakness, or KB-process failure.
+
+## Workflow
+
+1. Summarize the current task in one short sentence.
+2. Infer one primary conceptual route and up to three alternative routes.
+3. Run a lightweight shared-KB scan before starting the main work:
+
+   ```powershell
+   python "{{LAUNCHER_PATH}}" search `
+     --path-hint "<primary route>" `
+     --query "<task summary plus useful keywords>" `
+     --top-k 5 `
+     --json
+   ```
+
+4. If route choice is unclear, inspect the shared taxonomy or route tree:
+
+   ```powershell
+   python "{{LAUNCHER_PATH}}" taxonomy --json
+   ```
+
+   ```powershell
+   python "{{LAUNCHER_PATH}}" nav --json
+   ```
+
+5. Treat retrieved cards as bounded context. Follow current user instructions over stored cards if they conflict.
+6. Finish the main task.
+7. Before finalizing any non-trivial task, run one explicit KB postflight check: did the task expose a reusable lesson, a miss, a route gap, a card weakness, or a KB-process failure?
+8. If the postflight check found a meaningful signal, append one structured observation:
+
+   ```powershell
+   python "{{LAUNCHER_PATH}}" feedback `
+     --task-summary "<what this task was>" `
+     --route-hint "<best route>" `
+     --entry-ids "<comma-separated matched ids or empty>" `
+     --hit-quality "<hit|weak|miss|misleading|none>" `
+     --outcome "<short result>" `
+     --comment "<what was learned or what was missing>" `
+     --scenario "<when does this pattern apply>" `
+     --action-taken "<what action or condition led to the result>" `
+     --observed-result "<what actually happened>" `
+     --operational-use "<how future Codex behavior should use this>" `
+     --reuse-judgment "<why this looks reusable or why it might stay one-off>" `
+     --agent-name "<which agent recorded this>" `
+     --thread-ref "<which thread or conversation this came from>" `
+     --project-ref "<which project or repo this came from>" `
+     --workspace-root "<workspace root when relevant>" `
+     --suggested-action "<none|update-card|new-candidate|taxonomy-change|code-change>" `
+     --json
+   ```
+
+9. If the explicit postflight check found no meaningful signal, make that explicit and end the KB flow there rather than silently forgetting to check.
+
+## Default Decisions
+
+- Use this skill before almost every task. The default is a lightweight recall scan, not a heavy workflow.
+- The launcher resolves the active KB root in this order: `{{ENV_VAR_NAME}}`, the current workspace when it is itself a predictive KB clone, then the installed manifest.
+- If no useful card is found, continue the main task anyway and record the miss afterward when that miss is meaningful.
+- For non-trivial tasks, meaningful KB postflight write-back is part of done.
+
+## Output Discipline
+
+- Briefly state which KB entry ids influenced the work, if any.
+- If the KB was weak, empty, or misaligned, say so and record that in the observation.
+- Do not expose private KB content unless the user is authorized to see it.

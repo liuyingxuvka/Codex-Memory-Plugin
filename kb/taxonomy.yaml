@@ -2,8 +2,46 @@ version: 1
 kind: official-taxonomy
 updated_at: 2026-04-20
 nodes:
+  - segment: codex
+    children:
+      - segment: runtime-behavior
+        children:
+          - segment: prompt-following
+  - segment: communication
+    children:
+      - segment: slides
+        children:
+          - segment: executive-summary
+  - segment: engineering
+    children:
+      - segment: debugging
+        children:
+          - segment: version-change
+  - segment: repository
+    children:
+      - segment: usage
+        children:
+          - segment: local-kb-retrieve
   - segment: system
     children:
       - segment: knowledge-library
         children:
           - segment: retrieval
+  - segment: troubleshooting
+    children:
+      - segment: dependency
+        children:
+          - segment: regression
+  - segment: work
+    children:
+      - segment: communication
+        children:
+          - segment: email
+      - segment: reporting
+        children:
+          - segment: ppt
+  - segment: writing
+    children:
+      - segment: business
+        children:
+          - segment: email

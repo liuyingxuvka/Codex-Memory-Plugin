@@ -19,7 +19,7 @@ from local_kb.store import resolve_repo_root
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--repo-root", required=True)
+    parser.add_argument("--repo-root", default="auto")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--run-id", default="")
     group.add_argument("--run-dir", default="")

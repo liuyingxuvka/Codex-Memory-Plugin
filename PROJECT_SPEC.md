@@ -38,10 +38,10 @@ This means even a preference can be expressed predictively.
 
 Example:
 
-- Scenario: professional message drafting with an established default language or tone
-- Action/input: no explicit override is requested
-- Predicted result: the established local default is still preferred
-- Operational use: draft with that default unless the user overrides it
+- Scenario: work email drafting
+- Action/input: no language explicitly requested
+- Predicted result: English is the preferred output
+- Operational use: draft in English unless the user overrides it
 
 Likewise, a debugging heuristic can also be predictive.
 
@@ -102,6 +102,8 @@ Each entry should have a `domain_path`, for example:
 - `engineering / debugging / version-change`
 - `work / communication / email`
 - `research / literature / summarization`
+- `codex / runtime-behavior / tool-use`
+- `codex / runtime-behavior / prompt-following`
 
 This is the primary route through which the entry should be found.
 
@@ -112,6 +114,9 @@ Each entry may also define `cross_index`, for example:
 - `design/presentation/aesthetics`
 - `communication/slides/visual-quality`
 - `troubleshooting/dependency/regression`
+- `ai/runtime/gpt-family`
+- `prompting/constraint-following`
+- `codex/workflow/planning`
 
 These routes let one entry be discoverable from several conceptual directions without duplicating the file.
 
@@ -266,6 +271,7 @@ Each entry should support the following structure:
 - `scope`: `public` or `private`
 - `domain_path`: ordered list representing the main conceptual route
 - `cross_index`: additional conceptual routes
+- `related_cards`: direct related-card ids that are repeatedly used together with this card
 - `tags`: lightweight retrieval hints
 - `trigger_keywords`: lexical triggers
 - `if`: applicability notes / conditions
@@ -285,6 +291,7 @@ A card is operational, not merely descriptive.
 - `action` defines what is being attempted or observed
 - `predict` defines the expected result
 - `use` defines what Codex should do because of that prediction
+- `related_cards` defines a small direct-navigation surface between cards that are repeatedly used together; it is not a concept graph and should stay short
 
 This keeps the knowledge unit useful for action selection.
 
@@ -294,6 +301,12 @@ Modeling discipline for v0.1:
 - Generic advice such as “should”, “avoid”, or “best practice” is not sufficient on its own.
 - `use` must remain downstream of `predict`; operational guidance cannot replace the predictive claim itself.
 - Titles should preferably name the predicted relation or outcome, not only the recommended behavior.
+- Cards about **model or runtime behavior** are allowed when they are still written as bounded predictive models rather than folklore.
+- Such cards should be scoped to the most precise runtime identity that is actually known.
+- If the exact model version is surfaced reliably, the card may name it directly.
+- If the exact model version is not surfaced reliably, scope the card more conservatively to the active Codex runtime, current environment, or known model family instead of guessing a precise version.
+- These cards should still preserve explicit `if / action -> predicted result -> use` structure and should avoid vague claims about “LLMs in general.”
+- These cards often need more than one retrieval entry point. A runtime-focused route may be primary, while workflow, prompting, tool-use, or planning routes remain in `cross_index`.
 
 ## 8. Retrieval Algorithm for v0.1
 
@@ -362,6 +375,19 @@ The skill should do the following:
 7. Use retrieved entries as bounded context.
 8. At the end of the task, start a recorder-style sidecar agent, or an equivalent inline fallback, to append feedback, misses, and candidate lessons into history.
 9. State which entry ids influenced the answer.
+   These should be the cards that materially influenced the work, not every card that appeared in retrieval results.
+10. When a reusable lesson is specifically about how the current model or runtime behaves, it may still be captured as a valid card if the runtime identity and triggering conditions are explicit enough to audit later.
+11. When recording such a lesson, preserve both the runtime-facing route and any workflow or prompting routes that materially shaped the behavior, so later retrieval can find the card from more than one valid direction.
+
+For non-trivial work, KB postflight should be treated as part of done rather than optional housekeeping. Before a task is considered complete, Codex should explicitly check whether the task exposed:
+
+- a reusable lesson
+- a retrieval miss
+- a route gap
+- a card weakness
+- a KB-process failure
+
+If the answer is yes, Codex should append one structured observation before ending the task. If the answer is no, the lack of meaningful signal should still be an explicit conclusion rather than a forgotten check.
 
 Skills are the reusable workflow layer in Codex, while plugins are the installable distribution unit. This is the right reason to keep the workflow local first and package later only when stable.
 
@@ -380,7 +406,13 @@ This keeps memory interaction from derailing the main task while still letting t
 
 All new knowledge should enter `kb/candidates/` or structured history first.
 
-Promotion to `kb/public/` or `kb/private/` may happen automatically during scheduled AI maintenance if the repository's safety rails are satisfied. The deciding step should come from AI judgment over the stored history, while the resulting update should still be logged, snapshotted, and reversible.
+Architecturally, promotion to `kb/public/` or `kb/private/` may eventually happen automatically during scheduled AI maintenance if the repository's safety rails are satisfied. The deciding step should come from AI judgment over the stored history, while the resulting update should still be logged, snapshotted, and reversible.
+
+For the current implementation, keep the operational boundary simpler:
+
+- active task threads should prefer `kb/candidates/` or structured history writes
+- trusted-scope rewrites and promotions should be treated as dedicated maintenance work
+- if the current tooling does not yet implement a trusted-scope auto-promotion path cleanly, leave those changes proposal-only instead of implying that the path already exists
 
 ### 10.2 Conflict handling
 
@@ -401,7 +433,118 @@ Priority order:
 
 Entries should never be silently deleted when they become weak or obsolete. Prefer `status: deprecated` with an updated note if needed.
 
-### 10.5 Current state, history, and consolidation
+### 10.5 Weak evidence, rejection, and forgetting
+
+The repository should distinguish between:
+
+- evidence that is not yet strong enough to become a card
+- candidate cards that were reviewed and rejected
+- trusted cards that later become weak or obsolete
+
+The correct handling is different for each case:
+
+- **weak or one-off observations** should usually be forgotten by the retrieval surface but retained in history
+- **rejected candidates** should leave a rejection trace in history and should not remain in the active candidate queue
+- **obsolete trusted cards** should usually become `deprecated`, not silently deleted
+
+In practice, this means:
+
+- if an observation is clearly one-off, generic, noisy, or not reusable, scheduled maintenance may mark it as ignored or non-reusable and leave it in history only
+- if a candidate is reviewed and not promoted, maintenance should record that rejection, including why it was rejected and which evidence supported the decision
+- if a trusted card is no longer reliable, maintenance should prefer `status: deprecated` plus updated notes over deletion
+
+The guiding principle is:
+
+- the **retrieval layer may forget**
+- the **history layer should remember**
+
+This keeps the active memory surface clean without erasing the evidence trail behind prior decisions.
+
+For v0.1, the simplest acceptable implementation is:
+
+- weak observations stay in `kb/history/events.jsonl`
+- rejected candidates leave a history event such as candidate rejection or ignored evidence
+- active retrieval should prefer trusted cards, then viable candidates, and should ignore rejected or one-off evidence
+
+An archive directory for rejected candidates is optional. It is acceptable to remove a rejected candidate from the active candidate area as long as the rejection reason remains in history.
+
+### 10.6 Confidence rise, weakening, and review
+
+The repository should not introduce a separate “execution score” in v0.1. The existing `confidence` field is the simple operational proxy for how strongly Codex should rely on a card during normal work.
+
+This means:
+
+- `confidence` may rise when repeated use supports the model
+- `confidence` may fall when observations show weak hits, contradictions, misleading outcomes, or narrower scope than the current card claims
+- lowering confidence is a normal maintenance action, not a failure state
+
+The intended behavior is:
+
+- one contradictory or weak observation should usually lower confidence or trigger watchful review, not force an immediate rewrite
+- repeated contradictory evidence should trigger an `update-card` or `deprecated` review
+- if the model still looks directionally right but less universal than before, prefer narrowing scope and lowering confidence over deleting the card
+
+For v0.1, a simple review interpretation is enough:
+
+- `confidence >= 0.75`: normal trusted use
+- `0.50 <= confidence < 0.75`: still usable, but maintenance should review the card if weakening evidence continues
+- `confidence < 0.50`: the card should be revised, narrowed, split, or deprecated before continued normal reliance
+
+The exact numeric thresholds may be adjusted later, but the behavior should stay simple:
+
+- confidence can go up
+- confidence can go down
+- lower confidence means weaker reliance
+- sufficiently low confidence triggers review
+
+Every confidence change should leave a history trace that records:
+
+- the previous confidence
+- the new confidence
+- why it changed
+- which observations or maintenance pass motivated the change
+
+### 10.7 Card splitting during sleep maintenance
+
+Repeated hits on the same card should not automatically trigger a split.
+
+Instead, repeated hits are a **split review signal**:
+
+- sometimes they mean the card is the correct high-level entry point
+- sometimes they mean the card has become overloaded and is no longer one bounded predictive model
+
+Maintenance should therefore distinguish between:
+
+- a **hub card**
+  - still expresses one bounded predictive relation
+  - is frequently retrieved because many tasks naturally pass through that route
+  - should usually stay intact, even if it remains a common first hit
+- an **overloaded card**
+  - has started to carry multiple scenarios, actions, predicted results, or route-specific case branches
+  - is no longer acting as one bounded predictive model
+  - should usually move toward a split proposal
+
+The intended maintenance rule is:
+
+- high hit count alone is not enough to split a card
+- split review should look for predictive overload, not raw popularity
+- if the card still expresses one stable predictive relation, keep it as a hub card
+- if the card now mixes several predictive relations, split it into smaller sibling cards
+
+When a split is needed:
+
+- the split cards may remain under the same main `domain_path`
+- a lighter hub card may stay in place as the route entry point
+- the related cards may cross-reference each other if that improves navigation and reviewability
+
+Every split or split-rejection should leave a history trace describing:
+
+- which card was reviewed
+- why it was kept as a hub or marked as overloaded
+- what child or sibling cards were proposed or created
+- which observations triggered the review
+
+### 10.8 Current state, history, and consolidation
 
 The library should distinguish between:
 
@@ -465,7 +608,21 @@ This principle is compatible with the file-based design of the repository. The e
 
 The scheduled maintenance flow should preferably run in an independent thread, chat, or automation so that deep memory upkeep does not interrupt the main task thread. A daily or periodic maintenance conversation is a valid operating model for this repository.
 
-### 10.6 Observation-first card creation
+#### Related-card links
+
+The library may maintain a small direct `related_cards` field on cards when repeated observation history shows that the same cards are materially used together.
+
+This field should stay intentionally simple:
+
+- it stores direct card ids, not weighted graph state
+- it should be derived from repeated co-use of actually used `entry_ids` in observations
+- it should not be populated from mere retrieval visibility
+- it should avoid recursive expansion
+- it should usually keep no more than 3 related cards per entry
+
+The maintenance layer may keep richer support counts, ratios, decay, or ranking logic in history and proposal artifacts, but the card surface should remain only the current consolidated result.
+
+### 10.9 Observation-first card creation
 
 New cards should not be generated mechanically from every conversation or every project summary.
 
@@ -485,12 +642,43 @@ An observation may include fields such as:
 - scenario / condition
 - action taken
 - observed result
+- operational use implied by the result
 - whether an existing card was hit
 - whether the hit was useful, weak, or misleading
 - whether a missing card was exposed
 - whether the user corrected or reinforced the outcome
 - why the observation may or may not be reusable
 - timestamp and source context
+
+The source context should preserve provenance when available, such as:
+
+- which agent or maintenance sidecar recorded the observation
+- which thread or conversation it came from
+- which project or repository produced the evidence
+- which workspace root or local path context it came from
+
+When an observation is intended to support a future card, it should preserve predictive-model clues rather than stopping at a generic retrospective. In practice, the evidence should make it possible to reconstruct:
+
+- the scenario or condition
+- the action or input under consideration
+- the observed or expected result
+- the operational use implied by that result
+
+Observations that only say “should”, “avoid”, or “best practice” without a clear scenario-action-result relation should be treated as weak evidence until AI rewrites or splits them into a proper predictive model hypothesis.
+
+Observations about **model/runtime behavior** should follow the same rule. They are valid when they answer:
+
+- which runtime or model identity was actually in use
+- under what concrete conditions or prompts the behavior appeared
+- what behavior became more likely
+- how Codex should operationally adapt because of that result
+
+If the runtime identity is uncertain, the observation should explicitly scope itself to the known environment level rather than claiming an exact model version.
+
+When later card creation is likely, Codex should preserve enough route context that the resulting card can be found from more than one valid direction. Runtime-behavior cards are usually strongest when they are reachable from both:
+
+- a runtime-focused route such as `codex/runtime-behavior/...` or `ai/runtime/...`
+- a task-facing route such as `prompting/...`, `codex/workflow/...`, or another route that captures the condition that exposed the behavior
 
 Card creation should then happen mainly during scheduled AI consolidation:
 
@@ -500,6 +688,15 @@ Card creation should then happen mainly during scheduled AI consolidation:
 - add a new candidate card
 - merge several related observations into one stronger card
 - split an existing card if repeated observations reveal case splits
+
+This means observation capture should not rely on memory alone. During normal work, Codex should perform an explicit postflight question before finishing the task:
+
+- did this task produce meaningful evidence for the KB?
+
+If yes, write one structured observation.
+If no, end the KB flow explicitly.
+
+The goal is to prevent the common failure mode where preflight recall happens but useful new evidence is never written back.
 
 This means the repository should optimize for collecting good evidence during active work, not for producing a large number of new cards during every dialogue.
 

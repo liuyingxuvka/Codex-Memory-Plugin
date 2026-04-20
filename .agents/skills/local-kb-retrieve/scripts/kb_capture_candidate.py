@@ -49,7 +49,7 @@ def build_entry(args: argparse.Namespace) -> dict[str, Any]:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--repo-root", required=True)
+    parser.add_argument("--repo-root", default="auto")
     parser.add_argument("--title", required=True)
     parser.add_argument("--entry-type", required=True, choices=["fact", "preference", "heuristic", "model"])
     parser.add_argument("--scope", required=True, choices=["public", "private"])

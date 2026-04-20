@@ -97,6 +97,13 @@ def normalize_proposal_stub(repo_root: Path, path: Path, payload: dict[str, Any]
         "apply_eligibility": _normalize_dict(payload.get("apply_eligibility")),
         "recommended_next_step": str(payload.get("recommended_next_step", "") or "").strip(),
         "ai_decision_required": bool(payload.get("ai_decision_required", False)),
+        "provenance": _normalize_dict(payload.get("provenance")),
+        "predictive_evidence_summary": _normalize_dict(payload.get("predictive_evidence_summary")),
+        "suggested_confidence_change": _normalize_dict(payload.get("suggested_confidence_change")),
+        "disposition_suggestion": _normalize_dict(payload.get("disposition_suggestion")),
+        "cross_index_suggestion": _normalize_dict(payload.get("cross_index_suggestion")),
+        "related_card_suggestion": _normalize_dict(payload.get("related_card_suggestion")),
+        "split_review_suggestion": _normalize_dict(payload.get("split_review_suggestion")),
         "stub_path": relative_repo_path(repo_root, path),
         "missing_fields": missing_fields,
         "valid": not missing_fields,
@@ -250,13 +257,26 @@ def format_proposal_report(report: dict[str, Any]) -> str:
         invalid_note = ""
         if stub.get("missing_fields"):
             invalid_note = f", missing={','.join(stub['missing_fields'])}"
+        split_note = ""
+        split_review = stub.get("split_review_suggestion", {})
+        split_recommendation = str(split_review.get("recommendation", "") or "").strip()
+        if split_recommendation:
+            split_note = f", split_review={split_recommendation}"
+        related_note = ""
+        related_cards = normalize_string_list(stub.get("related_card_suggestion", {}).get("suggested_related_cards", []))
+        if related_cards:
+            related_note = f", related_cards={','.join(related_cards)}"
+        cross_index_note = ""
+        cross_index_routes = normalize_string_list(stub.get("cross_index_suggestion", {}).get("suggested_cross_index", []))
+        if cross_index_routes:
+            cross_index_note = f", cross_index={','.join(cross_index_routes)}"
         lines.append(
             (
                 f"- {stub['action_key']} [{stub['action_type']}] "
                 f"target={_target_label(stub.get('target', {}))} "
                 f"priority={float(stub.get('priority_score', 0.0) or 0.0):.2f} "
                 f"events={int(stub.get('event_count', 0) or 0)}"
-                f"{invalid_note}"
+                f"{split_note}{related_note}{cross_index_note}{invalid_note}"
             )
         )
     return "\n".join(lines)

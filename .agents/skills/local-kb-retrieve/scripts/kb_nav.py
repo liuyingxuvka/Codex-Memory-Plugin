@@ -19,7 +19,7 @@ from local_kb.store import load_entries, resolve_repo_root
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--repo-root", required=True)
+    parser.add_argument("--repo-root", default="auto")
     parser.add_argument("--route", default="")
     parser.add_argument("--select", default="")
     parser.add_argument("--include-cross-index", action="store_true")
@@ -52,4 +52,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

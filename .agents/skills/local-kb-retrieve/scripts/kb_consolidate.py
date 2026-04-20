@@ -19,11 +19,11 @@ from local_kb.store import resolve_repo_root
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--repo-root", required=True)
+    parser.add_argument("--repo-root", default="auto")
     parser.add_argument("--run-id", default="")
     parser.add_argument("--max-events", type=int, default=0)
     parser.add_argument("--emit-files", action="store_true")
-    parser.add_argument("--apply-mode", choices=["none", "new-candidates"], default="none")
+    parser.add_argument("--apply-mode", choices=["none", "new-candidates", "related-cards", "cross-index"], default="none")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
 
@@ -47,7 +47,8 @@ def main() -> None:
     )
     if result["apply_mode"] != "none":
         print(f"Apply mode: {result['apply_mode']}")
-        print(f"Created candidates: {result['apply_summary']['created_candidate_count']}")
+        print(f"Created candidates: {result['apply_summary'].get('created_candidate_count', 0)}")
+        print(f"Updated entries: {result['apply_summary'].get('updated_entry_count', 0)}")
         print(f"Skipped actions: {result['apply_summary']['skipped_action_count']}")
     if result["artifact_paths"]:
         print(f"Snapshot: {result['artifact_paths']['snapshot_path']}")

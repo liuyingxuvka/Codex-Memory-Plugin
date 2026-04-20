@@ -1,0 +1,7 @@
+policy:
+  allow_implicit_invocation: true
+
+interface:
+  display_name: "Predictive KB Preflight"
+  short_description: "Consult the shared predictive KB before coding, planning, writing, or repository work"
+  default_prompt: "Use $predictive-kb-preflight implicitly as the default preflight for coding, planning, writing, and repository work. Run the KB scan before substantive work, and after meaningful work record a KB follow-up observation whenever the task exposed a reusable signal, miss, route gap, or card weakness."

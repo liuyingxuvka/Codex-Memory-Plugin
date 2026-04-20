@@ -23,12 +23,36 @@ class ConsolidateActionStubTests(unittest.TestCase):
                     "source": {"kind": "task", "agent": "worker-1"},
                     "target": {
                         "kind": "task-observation",
-                        "entry_ids": ["example-entry-002"],
+                        "entry_ids": ["model-release-notes-first"],
                         "route_hint": ["engineering", "debugging", "version-change"],
                         "task_summary": "Release notes card missed a known remediation step",
                     },
                     "rationale": "retrieval=miss, next=update-card",
                     "context": {"suggested_action": "update-card", "hit_quality": "miss"},
+                },
+                {
+                    "event_id": "obs-update-2",
+                    "event_type": "observation",
+                    "created_at": "2026-04-19T08:06:00+00:00",
+                    "source": {"kind": "task", "agent": "worker-2"},
+                    "target": {
+                        "kind": "task-observation",
+                        "entry_ids": ["model-release-notes-first"],
+                        "route_hint": ["troubleshooting", "dependency", "regression"],
+                        "task_summary": "Release notes card now overlaps with dependency regression routing",
+                    },
+                    "rationale": "retrieval=weak, next=update-card",
+                    "context": {
+                        "suggested_action": "update-card",
+                        "hit_quality": "weak",
+                        "predictive_observation": {
+                            "scenario": "When regression triage reaches the same release-notes card from a different route.",
+                            "action_taken": "Use the existing card as the first step.",
+                            "observed_result": "The card appears broad enough to warrant split review.",
+                            "operational_use": "Review whether the card should split by route-specific case.",
+                            "reuse_judgment": "Potentially reusable because the same entry is now serving multiple routes.",
+                        },
+                    },
                 },
                 {
                     "event_id": "obs-new-cand-1",
@@ -54,8 +78,8 @@ class ConsolidateActionStubTests(unittest.TestCase):
                 emit_files=True,
             )
 
-            self.assertEqual(result["candidate_action_count"], 2)
-            self.assertEqual(result["action_stub_count"], 2)
+            self.assertEqual(result["candidate_action_count"], 6)
+            self.assertEqual(result["action_stub_count"], 6)
             self.assertEqual(
                 result["action_stub_dir"],
                 "kb/history/consolidation/stub-run/actions",
@@ -64,17 +88,26 @@ class ConsolidateActionStubTests(unittest.TestCase):
                 result["artifact_paths"]["action_stub_dir"],
                 "kb/history/consolidation/stub-run/actions",
             )
-            self.assertEqual(result["artifact_paths"]["action_stub_count"], 2)
+            self.assertEqual(result["artifact_paths"]["action_stub_count"], 6)
 
             stub_dir = repo_root / result["action_stub_dir"]
             stub_paths = sorted(stub_dir.glob("*.json"))
-            self.assertEqual(len(stub_paths), 2)
+            self.assertEqual(len(stub_paths), 6)
 
             stub_payload = json.loads(stub_paths[0].read_text(encoding="utf-8"))
             self.assertEqual(stub_payload["schema_version"], 1)
             self.assertEqual(stub_payload["kind"], "local-kb-consolidation-action-stub")
             self.assertEqual(stub_payload["run_id"], "stub-run")
-            self.assertIn(stub_payload["action_type"], {"review-entry-update", "consider-new-candidate"})
+            self.assertIn(
+                stub_payload["action_type"],
+                {
+                    "review-entry-update",
+                    "review-confidence",
+                    "review-cross-index",
+                    "consider-new-candidate",
+                    "review-observation-evidence",
+                },
+            )
             self.assertIn("priority_score", stub_payload)
             self.assertIn("event_ids", stub_payload)
             self.assertIn("routes", stub_payload)
@@ -84,6 +117,18 @@ class ConsolidateActionStubTests(unittest.TestCase):
             self.assertIn("apply_eligibility", stub_payload)
             self.assertIn("recommended_next_step", stub_payload)
             self.assertTrue(stub_payload["ai_decision_required"])
+            self.assertIn("provenance", stub_payload)
+            self.assertIn("predictive_evidence_summary", stub_payload)
+
+            entry_update_stub = next(
+                json.loads(path.read_text(encoding="utf-8"))
+                for path in stub_paths
+                if json.loads(path.read_text(encoding="utf-8"))["action_type"] == "review-entry-update"
+            )
+            self.assertEqual(
+                entry_update_stub["split_review_suggestion"]["recommendation"],
+                "consider-split-review",
+            )
 
     def test_apply_mode_also_emits_action_stub_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -130,19 +175,18 @@ class ConsolidateActionStubTests(unittest.TestCase):
             )
 
             self.assertEqual(result["apply_mode"], "new-candidates")
-            self.assertEqual(result["action_stub_count"], 1)
+            self.assertEqual(result["action_stub_count"], 2)
             self.assertIn("apply_path", result["artifact_paths"])
 
             stub_paths = result["artifact_paths"]["action_stub_paths"]
-            self.assertEqual(len(stub_paths), 1)
-            stub_payload = json.loads((repo_root / stub_paths[0]).read_text(encoding="utf-8"))
-            self.assertEqual(stub_payload["action_type"], "consider-new-candidate")
-            self.assertEqual(stub_payload["target"]["ref"], "work/reporting/ppt")
-            self.assertTrue(stub_payload["apply_eligibility"]["eligible"])
-            self.assertEqual(
-                stub_payload["suggested_artifact_kind"],
-                "candidate-entry-proposal",
-            )
+            self.assertEqual(len(stub_paths), 2)
+            stub_payloads = [json.loads((repo_root / stub_path).read_text(encoding="utf-8")) for stub_path in stub_paths]
+            candidate_stub = next(item for item in stub_payloads if item["action_type"] == "consider-new-candidate")
+            evidence_stub = next(item for item in stub_payloads if item["action_type"] == "review-observation-evidence")
+            self.assertEqual(candidate_stub["target"]["ref"], "work/reporting/ppt")
+            self.assertTrue(candidate_stub["apply_eligibility"]["eligible"])
+            self.assertEqual(candidate_stub["suggested_artifact_kind"], "candidate-entry-proposal")
+            self.assertEqual(evidence_stub["disposition_suggestion"]["recommendation"], "rewrite-or-split-observations")
 
 
 if __name__ == "__main__":

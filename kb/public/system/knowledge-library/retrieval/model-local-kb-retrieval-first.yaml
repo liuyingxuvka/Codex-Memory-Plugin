@@ -24,7 +24,7 @@ trigger_keywords:
   - workflow
   - lesson
 if:
-  notes: Applies as the default starting point for repository tasks. The scan is intentionally lightweight, so even when no prior model applies it quickly confirms that no stored local context currently constrains the work.
+  notes: Applies as the default starting point for repository tasks, including GitHub publish work, release audits, README presentation passes, public template cleanup, and repo-boundary/privacy review. The scan is intentionally lightweight, so even when no prior model applies it quickly confirms that no stored local context currently constrains the work.
 action:
   description: Do a quick route-first scan of the local KB before substantive work, using the best available route hint for the task direction.
 predict:
@@ -35,10 +35,10 @@ predict:
     - when: The quick scan returns no relevant entries
       result: The scan still provides a useful signal that the task can proceed without known stored constraints from the library.
 use:
-  guidance: Start repository work with a lightweight `local-kb-retrieve` scan and treat "no relevant entry" as useful information rather than a reason to skip retrieval in advance.
+  guidance: Start repository work with a lightweight `local-kb-retrieve` scan and treat "no relevant entry" as useful information rather than a reason to skip retrieval in advance. Release and publish tasks do not override this default.
 confidence: 0.96
 source:
-  - origin: public template example
-    date: 2026-04-20
+  - origin: repository design brief
+    date: 2026-04-19
 status: trusted
 updated_at: 2026-04-20

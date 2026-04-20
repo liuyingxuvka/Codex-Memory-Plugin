@@ -19,7 +19,7 @@ from local_kb.store import history_events_path, resolve_repo_root
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--repo-root", required=True)
+    parser.add_argument("--repo-root", default="auto")
     parser.add_argument("--task-summary", required=True)
     parser.add_argument("--route-hint", default="")
     parser.add_argument("--entry-ids", default="")
@@ -30,6 +30,11 @@ def main() -> None:
     )
     parser.add_argument("--outcome", default="")
     parser.add_argument("--comment", default="")
+    parser.add_argument("--scenario", default="")
+    parser.add_argument("--action-taken", default="")
+    parser.add_argument("--observed-result", default="")
+    parser.add_argument("--operational-use", default="")
+    parser.add_argument("--reuse-judgment", default="")
     parser.add_argument(
         "--suggested-action",
         default="none",
@@ -39,6 +44,8 @@ def main() -> None:
     parser.add_argument("--source-kind", default="task")
     parser.add_argument("--agent-name", default="kb-recorder")
     parser.add_argument("--thread-ref", default="")
+    parser.add_argument("--project-ref", default="")
+    parser.add_argument("--workspace-root", default="")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
 
@@ -52,9 +59,16 @@ def main() -> None:
         comment=args.comment,
         suggested_action=args.suggested_action,
         exposed_gap=args.exposed_gap,
+        scenario=args.scenario,
+        action_taken=args.action_taken,
+        observed_result=args.observed_result,
+        operational_use=args.operational_use,
+        reuse_judgment=args.reuse_judgment,
         source_kind=args.source_kind,
         agent_name=args.agent_name,
         thread_ref=args.thread_ref,
+        project_ref=args.project_ref,
+        workspace_root=args.workspace_root,
     )
     record_observation(repo_root, event)
 

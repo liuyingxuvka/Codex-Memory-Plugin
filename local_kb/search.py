@@ -105,6 +105,7 @@ def render_entry(entry: Entry, repo_root: Path) -> dict[str, Any]:
         "confidence": data.get("confidence"),
         "domain_path": parse_route_segments(data.get("domain_path", [])),
         "cross_index": normalize_string_list(data.get("cross_index", [])),
+        "related_cards": normalize_string_list(data.get("related_cards", [])),
         "tags": data.get("tags", []),
         "trigger_keywords": data.get("trigger_keywords", []),
         "predicted_result": get_predicted_result(data),
@@ -144,6 +145,10 @@ def format_search_output(payload: list[dict[str, Any]], path_hint: str = "") -> 
             "   "
             f"cross_index={'; '.join(item['cross_index']) if item['cross_index'] else '-'}"
         )
+        lines.append(
+            "   "
+            f"related_cards={'; '.join(item['related_cards']) if item['related_cards'] else '-'}"
+        )
         lines.append(f"   predicted_result={item['predicted_result']}")
         lines.append(f"   guidance={item['guidance']}")
         lines.append(f"   tags={', '.join(item['tags'])}")
@@ -151,4 +156,3 @@ def format_search_output(payload: list[dict[str, Any]], path_hint: str = "") -> 
         lines.append(f"   path={item['path']}")
         lines.append("")
     return "\n".join(lines).rstrip()
-

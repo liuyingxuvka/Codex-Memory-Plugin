@@ -30,9 +30,16 @@ def build_observation(
     comment: str = "",
     suggested_action: str = "none",
     exposed_gap: bool = False,
+    scenario: str = "",
+    action_taken: str = "",
+    observed_result: str = "",
+    operational_use: str = "",
+    reuse_judgment: str = "",
     source_kind: str = "task",
     agent_name: str = "kb-recorder",
     thread_ref: str = "",
+    project_ref: str = "",
+    workspace_root: str = "",
 ) -> dict[str, Any]:
     rationale = comment.strip() or _default_observation_rationale(
         hit_quality=hit_quality,
@@ -45,6 +52,8 @@ def build_observation(
             "kind": source_kind,
             "agent": agent_name,
             "thread_ref": thread_ref,
+            "project_ref": project_ref,
+            "workspace_root": workspace_root,
         },
         target={
             "kind": "task-observation",
@@ -58,6 +67,13 @@ def build_observation(
             "outcome": outcome,
             "suggested_action": suggested_action,
             "exposed_gap": exposed_gap,
+            "predictive_observation": {
+                "scenario": scenario,
+                "action_taken": action_taken,
+                "observed_result": observed_result,
+                "operational_use": operational_use,
+                "reuse_judgment": reuse_judgment,
+            },
         },
     )
 

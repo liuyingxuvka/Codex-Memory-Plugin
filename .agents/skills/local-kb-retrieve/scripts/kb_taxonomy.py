@@ -24,7 +24,7 @@ from local_kb.taxonomy import (
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--repo-root", required=True)
+    parser.add_argument("--repo-root", default="auto")
     parser.add_argument("--route", default="")
     parser.add_argument("--gaps-only", action="store_true")
     parser.add_argument("--json", action="store_true")

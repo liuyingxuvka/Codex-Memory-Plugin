@@ -1,236 +1,195 @@
-# Codex Memory Plug-in
+# Codex-Memory-Plugin
 
 Current template version: `v0.1.2`
 
-中文 / Chinese
+A minimal, file-based starter for a local predictive knowledge / experience library that Codex can consult through a repo-local skill.
 
-一个轻量、文件型、可审查的 Codex 记忆库起步模板。
+## Design goals
 
-它不是在公开发布你的真实经验卡片，而是在发布这套系统本身：
-- 路径优先的检索结构
-- 预测型卡片 schema
-- observation / consolidation / rollback 工具
-- 供 Codex 使用的 skill 与维护流程
+- Keep version 1 simple.
+- Use plain files that are easy to review in Git.
+- Represent each entry as a small predictive model card.
+- Use hierarchical routing before flat keyword matching.
+- Separate trusted entries from candidate entries.
+- Keep private data out of Git by default.
 
-## 从哪里开始
+## Core idea
 
-如果你是普通使用者：
-- 先看 “如何使用这个模板”
-- 先运行检索与记录命令
-- 再慢慢建立自己的 `kb/public/`、`kb/private/`、`kb/candidates/`
+Each entry is a local predictive model card, not just a static note.
 
-如果你是开发者：
-- 先看 `PROJECT_SPEC.md`
-- 再看 `.agents/skills/local-kb-retrieve/`
-- 最后看 `local_kb/` 和 `tests/`
+Each card should answer:
 
-## 这个公开仓库里有什么
+- what scenario it applies to
+- what action or input is being considered
+- what result is expected
+- how Codex should use that prediction
+- how confident the project is in that card
 
-- 本地 KB 存储骨架
-- route-first 检索与导航
-- task observation 记录
-- sleep maintenance 脚手架
-- proposal / rollback 工具
-- taxonomy 层与测试
-- 一张永久公开、可安全版本化的示例卡：
-  `kb/public/system/knowledge-library/retrieval/model-local-kb-retrieval-first.yaml`
-
-## 这个公开仓库里没有什么
-
-- 没有你的真实卡片
-- 没有你的 private 偏好
-- 没有你的真实 history
-- 没有除示例卡之外的 live trusted cards
-
-当前唯一保留的公开示例卡，是关于“先查本地 KB 再工作”的库自身卡片。它可以公开、可以测试、也可以作为模板里的固定演示锚点；除此之外，这个公开仓库不应承载你的真实 live cards。
-
-## 如何使用这个模板
-
-1. 安装依赖
-
-```bash
-pip install -r requirements.txt
-```
-
-2. 保持 `kb/` 为轻量骨架。这个模板默认只保留一张安全公开的示例卡，其他 live cards 请放在你自己的私有仓库或私有 clone 中
-
-3. 从自己的卡片开始，而不是从公开模板里的示例卡片开始：
-
-- `kb/public/`：共享启发式
-- `kb/private/`：私人偏好或敏感经验
-- `kb/candidates/`：新出现、待 consolidation 的 lesson
-
-4. 在工作前先做一次轻量检索：
-
-```text
-$local-kb-retrieve
-```
-
-## 常用命令
-
-搜索 KB：
-
-```bash
-python .agents/skills/local-kb-retrieve/scripts/kb_search.py \
-  --repo-root . \
-  --path-hint "your/route/hint" \
-  --query "task summary plus useful keywords" \
-  --top-k 5 \
-  --json
-```
-
-查看 taxonomy：
-
-```bash
-python .agents/skills/local-kb-retrieve/scripts/kb_taxonomy.py \
-  --repo-root . \
-  --json
-```
-
-记录一次 observation：
-
-```bash
-python .agents/skills/local-kb-retrieve/scripts/kb_feedback.py \
-  --repo-root . \
-  --task-summary "what the task was" \
-  --route-hint "best/route/hint" \
-  --hit-quality "hit" \
-  --outcome "short result" \
-  --comment "what was learned or what was missing" \
-  --suggested-action "new-candidate" \
-  --json
-```
-
-运行 proposal-only maintenance：
-
-```bash
-python .agents/skills/local-kb-retrieve/scripts/kb_consolidate.py \
-  --repo-root . \
-  --run-id "daily-maintenance" \
-  --emit-files \
-  --apply-mode none \
-  --json
-```
-
-查看 maintenance stubs：
-
-```bash
-python .agents/skills/local-kb-retrieve/scripts/kb_proposals.py \
-  --repo-root . \
-  --run-id "daily-maintenance" \
-  --json
-```
-
-## 仓库结构
+## Repository layout
 
 ```text
 .
 ├─ AGENTS.md
 ├─ PROJECT_SPEC.md
 ├─ README.md
-├─ VERSION
-├─ requirements.txt
+├─ docs/
+│  └─ maintenance_runbook.md
 ├─ .agents/
 │  └─ skills/
 │     └─ local-kb-retrieve/
-├─ docs/
-│  └─ maintenance_runbook.md
+│        ├─ SKILL.md
+│        ├─ MAINTENANCE_PROMPT.md
+│        ├─ agents/openai.yaml
+│        └─ scripts/
+│           ├─ kb_nav.py
+│           ├─ kb_search.py
+│           ├─ kb_feedback.py
+│           ├─ kb_capture_candidate.py
+│           ├─ kb_consolidate.py
+│           ├─ kb_proposals.py
+│           ├─ kb_rollback.py
+│           └─ kb_taxonomy.py
 ├─ kb/
+│  ├─ history/
+│  ├─ taxonomy.yaml
 │  ├─ public/
 │  ├─ private/
-│  ├─ candidates/
-│  ├─ history/
-│  └─ taxonomy.yaml
+│  └─ candidates/
 ├─ local_kb/
+│  ├─ search.py
+│  ├─ routes.py
+│  ├─ feedback.py
+│  ├─ history.py
+│  ├─ consolidate.py
+│  ├─ proposals.py
+│  ├─ snapshots.py
+│  └─ taxonomy.py
 ├─ schemas/
+│  └─ kb_entry.example.yaml
 └─ tests/
+   ├─ eval_cases.yaml
+   ├─ test_kb_consolidate_scaffold.py
+   ├─ test_kb_rollback_worker2.py
+   └─ test_kb_taxonomy_worker1.py
 ```
 
-## 校验
+## Minimal workflow
 
-运行当前真实可用的模板测试：
+1. Put stable, reusable general entries in `kb/public/`.
+2. Put user-specific or sensitive entries in `kb/private/`.
+3. Let Codex use `$local-kb-retrieve` when a task depends on prior experience, preferences, or known heuristics.
+4. Store new observations in `kb/candidates/` first.
+5. Promote candidate entries only after review.
+
+## Cross-machine Codex setup
+
+Run this once on each machine after cloning the repo:
 
 ```bash
-python -m unittest discover -s tests -p "test_*.py"
+python scripts/install_codex_kb.py --json
 ```
 
-## 模板说明
+What it does:
 
-- 公开模板应主要发布架构，不应顺手把你的真实 KB 一起发布出去
-- `kb/private/`、`kb/history/` 默认不应进入公开发布面
-- 模板当前只保留一张安全公开的示例卡，用于演示和内部测试；其他 `kb/public/` live cards 不应默认跟这个公开模板一起演化
-- 更推荐把真实记忆库放在 private repo 或 private clone 中持续使用
+- installs a global `$predictive-kb-preflight` skill into `$CODEX_HOME/skills`
+- enables implicit invocation for that global preflight skill so Codex can remember the KB without waiting for an explicit mention
+- installs a launcher that can find this repo through the install manifest or `CODEX_PREDICTIVE_KB_ROOT`
+- records the active KB root in `$CODEX_HOME/predictive-kb/install.json`
+- keeps the repo-local `local-kb-retrieve` skill available for workspace-local fallback
 
----
-
-English
-
-A lightweight, file-based starter kit for building a local memory layer that Codex can consult before it works.
-
-This repository publishes the system itself, not your real experience cards:
-- route-first retrieval structure
-- predictive card schema
-- observation / consolidation / rollback tooling
-- Codex skills and maintenance workflow
-
-## Start Here
-
-If you are a normal user:
-- read the usage section first
-- run search and observation commands first
-- then build your own `kb/public/`, `kb/private/`, and `kb/candidates/`
-
-If you are a developer:
-- read `PROJECT_SPEC.md` first
-- then inspect `.agents/skills/local-kb-retrieve/`
-- then inspect `local_kb/` and `tests/`
-
-## What This Public Repo Includes
-
-- file-based KB skeleton
-- route-first retrieval and navigation
-- task observation logging
-- sleep-maintenance scaffolding
-- proposal and rollback tooling
-- taxonomy layer and tests
-- one durable public example card:
-  `kb/public/system/knowledge-library/retrieval/model-local-kb-retrieval-first.yaml`
-
-## What This Public Repo Does Not Include
-
-- your real cards
-- your private preferences
-- your real history
-- any live trusted cards beyond the single safe public example card
-
-The one public example card is intentionally kept as a safe anchor for demos and internal tests. Other than that, this public repository should not carry your real live cards.
-
-## Quick Use
-
-1. Install dependencies:
+Check the installation any time:
 
 ```bash
-pip install -r requirements.txt
+python scripts/install_codex_kb.py --check --json
 ```
 
-2. Keep `kb/` lightweight. This template intentionally ships one safe public example card; keep the rest of your real live cards in a private repo or private clone.
+If this repository is moved to a different path later, rerun the installer from the new clone.
 
-3. Start with your own cards:
+### For Codex agents
 
-- `kb/public/` for reusable shared heuristics
-- `kb/private/` for private or sensitive preferences
-- `kb/candidates/` for new lessons waiting for consolidation
-
-4. Use the repo-local skill before work:
-
-```text
-$local-kb-retrieve
-```
-
-## Validation
-
-Run the current template-safe test set:
+If a user asks you to install, enable, deploy, bootstrap, or set up this predictive KB system on a machine, do this by default from the repository root:
 
 ```bash
-python -m unittest discover -s tests -p "test_*.py"
+python scripts/install_codex_kb.py --json
+python scripts/install_codex_kb.py --check --json
 ```
+
+Do not wait for extra clarification if the user's intent is clearly to make this system available on that machine. Treat the installer as safe to rerun when the machine may already have an older installation or the repository path has changed.
+The installer is also expected to install the global implicit preflight reminder and the postflight observation reminder, not only the launcher path.
+
+## Retrieval philosophy
+
+The intended search behavior is path-first:
+
+1. infer the main direction of the task
+2. map it to a `domain_path`
+3. expand with `cross_index` routes
+4. apply lexical matching and re-ranking
+5. record observations after work and use scheduled maintenance to consolidate them
+
+Example main routes:
+
+- `work/reporting/ppt`
+- `work/communication/email`
+- `engineering/debugging/version-change`
+
+## Manual test
+
+From the repo root:
+
+```bash
+python .agents/skills/local-kb-retrieve/scripts/kb_search.py \
+  --path-hint "work/communication/email" \
+  --query "draft a work email reply and respect known language preferences" \
+  --top-k 5
+```
+
+Inspect the explicit taxonomy layer:
+
+```bash
+python .agents/skills/local-kb-retrieve/scripts/kb_taxonomy.py \
+  --json
+```
+
+Run proposal-only maintenance:
+
+```bash
+python .agents/skills/local-kb-retrieve/scripts/kb_consolidate.py \
+  --run-id daily-maintenance \
+  --emit-files \
+  --apply-mode none \
+  --json
+```
+
+Inspect per-action maintenance proposal stubs:
+
+```bash
+python .agents/skills/local-kb-retrieve/scripts/kb_proposals.py \
+  --run-id daily-maintenance \
+  --json
+```
+
+## Candidate capture example
+
+```bash
+python .agents/skills/local-kb-retrieve/scripts/kb_capture_candidate.py \
+  --title "Default language for work email drafting" \
+  --entry-type preference \
+  --scope private \
+  --domain-path "work/communication/email" \
+  --cross-index "language/professional/english" \
+  --tags email,work,language \
+  --trigger-keywords email,reply,work,draft \
+  --action "Draft a work email without explicit language instruction." \
+  --expected-result "English is the preferred output language." \
+  --guidance "Draft work emails in English unless the user explicitly asks for another language." \
+  --source "direct user instruction"
+```
+
+## Suggested next steps
+
+- Add repo-specific entries.
+- Evaluate retrieval on 20-30 real tasks.
+- Tune scoring weights in `kb_search.py`.
+- Add a few more route-heavy examples before considering any heavier retrieval method.
+- Package as a plugin only after the workflow becomes stable.

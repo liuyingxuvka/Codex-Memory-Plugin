@@ -1,4 +1,24 @@
+- query: write a reply email for work and respect known language preferences
+  path_hint: work/communication/email
+  expected_ids:
+    - model-002
+- query: after a dependency upgrade the integration fails and behavior changed
+  path_hint: engineering/debugging/version-change
+  expected_ids:
+    - model-001
+- query: the service broke right after bumping an sdk version
+  path_hint: troubleshooting/dependency/regression
+  expected_ids:
+    - model-001
+- query: draft a client-facing work reply without a language instruction
+  path_hint: writing/business/email
+  expected_ids:
+    - model-002
 - query: before starting repository work, quickly scan the local knowledge library first
   path_hint: system/knowledge-library/retrieval
+  expected_ids:
+    - model-004
+- query: this repo task may depend on prior workflow conventions, should local-kb-retrieve run first
+  path_hint: repository/usage/local-kb-retrieve
   expected_ids:
     - model-004

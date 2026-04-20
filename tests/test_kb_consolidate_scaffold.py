@@ -36,12 +36,36 @@ class ConsolidateHistoryTest(unittest.TestCase):
                     "source": {"kind": "task", "agent": "worker-2"},
                     "target": {
                         "kind": "task-observation",
-                        "entry_ids": ["example-entry-002"],
+                        "entry_ids": ["model-release-notes-first"],
                         "route_hint": ["engineering", "debugging", "version-change"],
                         "task_summary": "Missed release notes troubleshooting hint",
                     },
                     "rationale": "retrieval=miss, next=update-card",
                     "context": {"suggested_action": "update-card", "hit_quality": "miss"},
+                },
+                {
+                    "event_id": "obs-update-2",
+                    "event_type": "observation",
+                    "created_at": "2026-04-19T08:06:00+00:00",
+                    "source": {"kind": "task", "agent": "worker-3"},
+                    "target": {
+                        "kind": "task-observation",
+                        "entry_ids": ["model-release-notes-first"],
+                        "route_hint": ["troubleshooting", "dependency", "regression"],
+                        "task_summary": "Release notes card now also covers dependency regression triage",
+                    },
+                    "rationale": "retrieval=weak, next=update-card",
+                    "context": {
+                        "suggested_action": "update-card",
+                        "hit_quality": "weak",
+                        "predictive_observation": {
+                            "scenario": "When a dependency regression needs fast triage after an upgrade.",
+                            "action_taken": "Use the release notes card as the first troubleshooting step.",
+                            "observed_result": "The same card appears in a distinct route context and may need route-specific refinement.",
+                            "operational_use": "Review whether the card should narrow or split.",
+                            "reuse_judgment": "This looks reusable because the same card is being reused outside its primary route.",
+                        },
+                    },
                 },
                 {
                     "event_id": "obs-gap-1",
@@ -80,28 +104,36 @@ class ConsolidateHistoryTest(unittest.TestCase):
                 emit_files=True,
             )
 
-            self.assertEqual(result["event_count"], 4)
-            self.assertEqual(result["candidate_action_count"], 4)
+            self.assertEqual(result["event_count"], 5)
+            self.assertEqual(result["candidate_action_count"], 8)
+            action_types = [action["action_type"] for action in result["actions"]]
+            self.assertEqual(action_types.count("review-confidence"), 1)
+            self.assertEqual(action_types.count("review-cross-index"), 1)
+            self.assertEqual(action_types.count("review-entry-update"), 1)
+            self.assertEqual(action_types.count("investigate-gap"), 1)
+            self.assertEqual(action_types.count("consider-new-candidate"), 1)
+            self.assertEqual(action_types.count("review-observation-evidence"), 2)
+            self.assertEqual(action_types.count("review-candidate"), 1)
+            confidence_action = next(action for action in result["actions"] if action["action_type"] == "review-confidence")
+            entry_update_action = next(action for action in result["actions"] if action["action_type"] == "review-entry-update")
+            self.assertEqual(confidence_action["target"], {"kind": "entry", "ref": "model-release-notes-first"})
+            self.assertEqual(confidence_action["suggested_artifact_kind"], "confidence-review-proposal")
             self.assertEqual(
-                [action["action_type"] for action in result["actions"]],
+                confidence_action["task_summaries"],
                 [
-                    "review-entry-update",
-                    "investigate-gap",
-                    "consider-new-candidate",
-                    "review-candidate",
+                    "Missed release notes troubleshooting hint",
+                    "Release notes card now also covers dependency regression triage",
                 ],
             )
+            self.assertEqual(confidence_action["suggested_confidence_change"]["review_state"], "revise-or-deprecate")
+            self.assertEqual(confidence_action["provenance"]["agents"], ["worker-2", "worker-3"])
             self.assertEqual(
-                result["actions"][0]["target"],
-                {"kind": "entry", "ref": "example-entry-002"},
+                entry_update_action["split_review_suggestion"]["recommendation"],
+                "consider-split-review",
             )
             self.assertEqual(
-                result["actions"][0]["suggested_artifact_kind"],
-                "entry-update-proposal",
-            )
-            self.assertEqual(
-                result["actions"][0]["task_summaries"],
-                ["Missed release notes troubleshooting hint"],
+                entry_update_action["split_review_suggestion"]["distinct_route_count"],
+                2,
             )
             self.assertEqual(
                 result["artifact_paths"]["snapshot_path"],
@@ -118,12 +150,12 @@ class ConsolidateHistoryTest(unittest.TestCase):
             proposal_payload = json.loads(proposal_path.read_text(encoding="utf-8"))
 
             self.assertEqual(snapshot_payload["run_id"], "20260419T090000Z")
-            self.assertEqual(snapshot_payload["event_count"], 4)
-            self.assertEqual(proposal_payload["candidate_action_count"], 4)
+            self.assertEqual(snapshot_payload["event_count"], 5)
+            self.assertEqual(proposal_payload["candidate_action_count"], 8)
             self.assertTrue(proposal_payload["actions"][0]["ai_decision_required"])
-            self.assertEqual(
-                proposal_payload["actions"][2]["suggested_artifact_kind"],
+            self.assertIn(
                 "candidate-entry-proposal",
+                [action["suggested_artifact_kind"] for action in proposal_payload["actions"]],
             )
 
 

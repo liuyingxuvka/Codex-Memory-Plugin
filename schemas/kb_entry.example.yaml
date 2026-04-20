@@ -1,14 +1,20 @@
 id: model-xxx
-title: Short human-readable title
+title: Short human-readable title # Prefer a predicted relation or outcome, including runtime-behavior predictions when applicable
 type: model # model | preference | heuristic | fact
 scope: public # public | private
+# Runtime-behavior cards are valid when the runtime identity is explicit enough to audit later.
+# Example runtime-oriented path: [codex, runtime-behavior, prompt-following]
 domain_path:
   - work
   - reporting
   - ppt
+# Add cross routes when the same card should also be found from prompting, tool-use, workflow, or runtime-family directions.
 cross_index:
   - design/presentation/aesthetics
   - communication/slides/visual-quality
+related_cards:
+  - model-yyy
+  - model-zzz
 tags:
   - presentation
   - slides
