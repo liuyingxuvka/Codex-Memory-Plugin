@@ -46,6 +46,7 @@ This runbook is for the independent `kb-sleeper` maintenance pass. It is operati
    - `--apply-mode related-cards` for direct related-card maintenance
    - `--apply-mode cross-index` for stable alternate-route maintenance on `cross_index`
 6. Inspect per-action proposal stubs with `kb_proposals.py`.
+   - When a grouped route action includes explicit contrastive evidence, prefer candidate scaffolds whose main `predict.expected_result` reflects the stronger revised path and whose `predict.alternatives` preserves the weaker earlier branch.
 7. If a weak observation should be ignored, a candidate should be rejected, a confidence review should be logged, or a split review should be closed without rewriting the trusted card yet, append that decision with `kb_maintenance.py`.
 8. For cards that recur in maintenance output, run a split review:
    - keep a hub card intact when it still expresses one bounded predictive relation
@@ -223,6 +224,7 @@ python .agents/skills/local-kb-retrieve/scripts/kb_taxonomy.py `
   - the route is semantically specific enough to be useful as a scaffold; in the current implementation this means at least 3 route segments, so broad routes remain proposal-only
   - there are at least 2 grouped supporting observations
   - the observations include task summaries
+  - if the supporting observations recorded weaker-path versus revised-path evidence, preserve that branch structure in the scaffold instead of flattening it into one success summary
 - Auto-apply `review-related-cards` actions only when repeated co-use of actually used `entry_ids` already supports a stable direct related-card set
 - Auto-apply `review-cross-index` actions only when repeated route evidence already supports a stable direct `cross_index` update
 - Restore `kb/history/events.jsonl` from a consolidation snapshot

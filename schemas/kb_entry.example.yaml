@@ -1,9 +1,10 @@
 id: model-xxx
 title: Short human-readable title # Prefer a predicted relation or outcome, including runtime-behavior predictions when applicable
 type: model # model | preference | heuristic | fact
-scope: public # public | private
+scope: public # public | private; user-specific interaction models should usually be private
 # Runtime-behavior cards are valid when the runtime identity is explicit enough to audit later.
 # Example runtime-oriented path: [codex, runtime-behavior, prompt-following]
+# User-specific cards are also valid when they stay predictive and task-conditioned rather than sounding like personality labels.
 domain_path:
   - work
   - reporting
@@ -28,6 +29,8 @@ action:
   description: What action, input, or situation is being evaluated.
 predict:
   expected_result: The expected or likely result under the stated conditions.
+  # Alternatives often come from contrastive observations where a weaker earlier path
+  # and a stronger revised path were both recorded explicitly during postflight.
   alternatives:
     - when: If the audience is deeply technical
       result: A more structured and engineering-oriented presentation is likely preferred.

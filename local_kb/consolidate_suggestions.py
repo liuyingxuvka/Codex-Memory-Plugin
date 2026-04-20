@@ -21,6 +21,7 @@ from local_kb.consolidate_events import (
     build_entry_lookup,
     collect_task_summaries,
     events_by_id,
+    has_contrastive_evidence,
     has_predictive_evidence,
     normalize_entry_ids,
     normalize_text_list,
@@ -32,6 +33,8 @@ from local_kb.consolidate_events import (
     summarize_provenance,
     supporting_events_for_action,
 )
+
+NEW_CANDIDATE_ALTERNATIVE_LIMIT = 3
 
 
 def build_next_step(action_type: str, target_kind: str, target_ref: str, routes: list[str]) -> str:
@@ -97,6 +100,164 @@ def suggested_artifact_kind(action_type: str, target_kind: str) -> str:
             return "route-gap-summary"
         return "gap-investigation-summary"
     return "maintenance-note"
+
+
+def _ordered_unique_text(values: list[str]) -> list[str]:
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        text = str(value or "").strip()
+        if not text or text in seen:
+            continue
+        seen.add(text)
+        normalized.append(text)
+    return normalized
+
+
+def _summarize_text_examples(values: list[str], limit: int = 3) -> str:
+    examples = _ordered_unique_text(values)
+    if not examples:
+        return ""
+    clipped = examples[:limit]
+    suffix = " ..." if len(examples) > limit else ""
+    return "; ".join(clipped) + suffix
+
+
+def _normalize_predictive_observation(event: dict[str, Any]) -> dict[str, Any]:
+    predictive = event.get("predictive_observation", {})
+    if not isinstance(predictive, dict):
+        predictive = {}
+    contrastive = predictive.get("contrastive_evidence", {})
+    if not isinstance(contrastive, dict):
+        contrastive = {}
+    return {
+        "scenario": str(predictive.get("scenario", "") or "").strip(),
+        "action_taken": str(predictive.get("action_taken", "") or "").strip(),
+        "observed_result": str(predictive.get("observed_result", "") or "").strip(),
+        "operational_use": str(predictive.get("operational_use", "") or "").strip(),
+        "reuse_judgment": str(predictive.get("reuse_judgment", "") or "").strip(),
+        "contrastive_evidence": {
+            "previous_action": str(contrastive.get("previous_action", "") or "").strip(),
+            "previous_result": str(contrastive.get("previous_result", "") or "").strip(),
+            "revised_action": str(contrastive.get("revised_action", "") or "").strip(),
+            "revised_result": str(contrastive.get("revised_result", "") or "").strip(),
+        },
+    }
+
+
+def _build_contrastive_alternatives(
+    supporting_events: list[dict[str, Any]],
+) -> tuple[list[dict[str, str]], int]:
+    alternatives: list[dict[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    contrastive_event_count = 0
+
+    for event in supporting_events:
+        predictive = _normalize_predictive_observation(event)
+        contrastive = predictive["contrastive_evidence"]
+        previous_action = str(contrastive.get("previous_action", "") or "").strip()
+        previous_result = str(contrastive.get("previous_result", "") or "").strip()
+        revised_action = str(contrastive.get("revised_action", "") or "").strip()
+        revised_result = str(contrastive.get("revised_result", "") or "").strip()
+        if previous_action and previous_result and revised_action and revised_result:
+            contrastive_event_count += 1
+        if not previous_action or not previous_result:
+            continue
+        scenario = str(predictive.get("scenario", "") or "").strip()
+        when_text = f"If Codex repeats the earlier weaker path: {previous_action}"
+        if scenario:
+            when_text = f"{scenario.rstrip('.')} {when_text}"
+        key = (when_text, previous_result)
+        if key in seen:
+            continue
+        seen.add(key)
+        alternatives.append({"when": when_text, "result": previous_result})
+        if len(alternatives) >= NEW_CANDIDATE_ALTERNATIVE_LIMIT:
+            break
+
+    return alternatives, contrastive_event_count
+
+
+def suggest_new_candidate_scaffold(
+    action: dict[str, Any],
+    supporting_events: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    if action.get("action_type") != "consider-new-candidate":
+        return None
+    if str(action.get("target", {}).get("kind", "") or "") != "route":
+        return None
+
+    route_ref = str(action.get("target", {}).get("ref", "") or "").strip()
+    route_segments = parse_route_segments(route_ref)
+    route_title = " / ".join(route_segments) if route_segments else route_ref
+    task_summaries = collect_task_summaries(supporting_events)
+
+    predictive_rows = [_normalize_predictive_observation(event) for event in supporting_events]
+    scenarios = _ordered_unique_text([row["scenario"] for row in predictive_rows])
+    action_taken_examples = _ordered_unique_text([row["action_taken"] for row in predictive_rows])
+    observed_results = _ordered_unique_text([row["observed_result"] for row in predictive_rows])
+    operational_uses = _ordered_unique_text([row["operational_use"] for row in predictive_rows])
+    reuse_judgments = _ordered_unique_text([row["reuse_judgment"] for row in predictive_rows])
+    revised_actions = _ordered_unique_text(
+        [row["contrastive_evidence"]["revised_action"] for row in predictive_rows]
+    )
+    revised_results = _ordered_unique_text(
+        [row["contrastive_evidence"]["revised_result"] for row in predictive_rows]
+    )
+    alternatives, contrastive_event_count = _build_contrastive_alternatives(supporting_events)
+
+    if_notes_parts = [f"Auto-created from {int(action.get('event_count', 0) or 0)} grouped new-candidate observations."]
+    if task_summaries:
+        if_notes_parts.append(f"Example task summaries: {_summarize_text_examples(task_summaries)}.")
+    if scenarios:
+        if_notes_parts.append(f"Repeated scenarios: {_summarize_text_examples(scenarios, limit=2)}.")
+    if contrastive_event_count:
+        if_notes_parts.append(
+            f"{contrastive_event_count} supporting observations explicitly captured both a weaker earlier path and a stronger revised path."
+        )
+
+    if revised_actions:
+        action_description = f"Tasks routed through {route_title} where Codex follows this stronger revised path: {revised_actions[0]}"
+    elif action_taken_examples:
+        action_description = f"Tasks routed through {route_title} where Codex follows this observed path: {action_taken_examples[0]}"
+    else:
+        action_description = f"Handle tasks routed through {route_title} without a consolidated KB card."
+
+    if revised_results:
+        expected_result = revised_results[0]
+    elif observed_results:
+        expected_result = observed_results[0]
+    else:
+        expected_result = (
+            f"Grouped observations suggest Codex will keep missing reusable guidance for {route_title} "
+            "until a route-specific card is authored."
+        )
+
+    guidance_parts = [
+        "Review the cited observations and replace this auto-created scaffold with a specific predictive card before any promotion."
+    ]
+    if operational_uses:
+        guidance_parts.append(_summarize_text_examples(operational_uses, limit=2))
+    elif reuse_judgments:
+        guidance_parts.append(_summarize_text_examples(reuse_judgments, limit=1))
+    if contrastive_event_count or any(has_contrastive_evidence(event) for event in supporting_events):
+        guidance_parts.append(
+            "Preserve weaker-path evidence in predict.alternatives instead of collapsing the lesson into a single success summary."
+        )
+
+    return {
+        "title": f"Contrastive route lesson in {route_title}" if alternatives else f"Repeated route gap in {route_title}",
+        "if": {"notes": " ".join(if_notes_parts).strip()},
+        "action": {"description": action_description},
+        "predict": {
+            "expected_result": expected_result,
+            "alternatives": alternatives,
+        },
+        "use": {
+            "guidance": " ".join(part for part in guidance_parts if part).strip()
+        },
+        "contrastive_event_count": contrastive_event_count,
+    }
 
 
 def _collect_related_card_observation_stats(events: list[dict[str, Any]]) -> dict[str, Any]:
@@ -905,6 +1066,12 @@ def annotate_actions_with_apply_eligibility(
         )
         annotated_action["provenance"] = summarize_provenance(supporting_events)
         annotated_action["predictive_evidence_summary"] = summarize_predictive_evidence(supporting_events)
+        candidate_scaffold = suggest_new_candidate_scaffold(
+            action=annotated_action,
+            supporting_events=supporting_events,
+        )
+        if candidate_scaffold:
+            annotated_action["candidate_scaffold_preview"] = candidate_scaffold
         confidence_review = suggest_confidence_review(
             action=annotated_action,
             supporting_events=supporting_events,

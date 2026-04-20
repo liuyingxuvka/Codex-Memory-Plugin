@@ -188,6 +188,103 @@ class ConsolidateActionStubTests(unittest.TestCase):
             self.assertEqual(candidate_stub["suggested_artifact_kind"], "candidate-entry-proposal")
             self.assertEqual(evidence_stub["disposition_suggestion"]["recommendation"], "rewrite-or-split-observations")
 
+    def test_action_stub_surfaces_contrastive_candidate_preview(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            repo_root = Path(tmp_dir)
+            history_path = repo_root / "kb" / "history" / "events.jsonl"
+            history_path.parent.mkdir(parents=True, exist_ok=True)
+
+            events = [
+                {
+                    "event_id": "obs-contrastive-1",
+                    "event_type": "observation",
+                    "created_at": "2026-04-20T08:09:00+00:00",
+                    "source": {"kind": "task", "agent": "worker-1"},
+                    "target": {
+                        "kind": "task-observation",
+                        "route_hint": ["engineering", "agent-behavior", "postflight"],
+                        "task_summary": "Need a reusable postflight branching card",
+                    },
+                    "rationale": "next=new-candidate",
+                    "context": {
+                        "suggested_action": "new-candidate",
+                        "predictive_observation": {
+                            "scenario": "When Codex closes a non-trivial repository task in this runtime.",
+                            "action_taken": "Treat KB postflight as an explicit done check.",
+                            "observed_result": "Write-back happens more consistently before finalization.",
+                            "contrastive_evidence": {
+                                "previous_action": "Leave KB postflight implicit and move straight to the final answer.",
+                                "previous_result": "The reusable lesson is often never recorded.",
+                                "revised_action": "Make KB postflight part of done and check for a meaningful signal before ending.",
+                                "revised_result": "The lesson is more likely to be captured before finalization.",
+                            },
+                            "operational_use": "Default to an explicit postflight check whenever the task was non-trivial.",
+                        },
+                    },
+                },
+                {
+                    "event_id": "obs-contrastive-2",
+                    "event_type": "observation",
+                    "created_at": "2026-04-20T08:12:00+00:00",
+                    "source": {"kind": "task", "agent": "worker-2"},
+                    "target": {
+                        "kind": "task-observation",
+                        "route_hint": ["engineering", "agent-behavior", "postflight"],
+                        "task_summary": "Need the bad branch to stay visible too",
+                    },
+                    "rationale": "next=new-candidate",
+                    "context": {
+                        "suggested_action": "new-candidate",
+                        "predictive_observation": {
+                            "scenario": "When a repository task finishes and the runtime is tempted to stop at the main deliverable.",
+                            "action_taken": "Record both the weaker path and the corrected path in the observation.",
+                            "observed_result": "Maintenance can synthesize a card with a direct alternative branch.",
+                            "contrastive_evidence": {
+                                "previous_action": "Only summarize the final success path.",
+                                "previous_result": "Maintenance has to guess the bad branch later.",
+                                "revised_action": "Record both the weaker path and the corrected path in the observation.",
+                                "revised_result": "The candidate scaffold keeps an explicit alternative branch.",
+                            },
+                            "operational_use": "Keep mistake-versus-correction evidence visible during maintenance.",
+                        },
+                    },
+                },
+            ]
+            with history_path.open("w", encoding="utf-8") as handle:
+                for event in events:
+                    handle.write(json.dumps(event) + "\n")
+
+            result = consolidate_history(
+                repo_root=repo_root,
+                run_id="contrastive-stub-run",
+                emit_files=True,
+            )
+
+            candidate_stub = next(
+                action
+                for action in result["actions"]
+                if action["action_type"] == "consider-new-candidate"
+            )
+            self.assertEqual(candidate_stub["predictive_evidence_summary"]["contrastive_event_count"], 2)
+            self.assertEqual(candidate_stub["predictive_evidence_summary"]["contrastive_example_count"], 2)
+            self.assertIn("candidate_scaffold_preview", candidate_stub)
+            self.assertEqual(
+                candidate_stub["candidate_scaffold_preview"]["title"],
+                "Contrastive route lesson in engineering / agent-behavior / postflight",
+            )
+            self.assertEqual(
+                len(candidate_stub["candidate_scaffold_preview"]["predict"]["alternatives"]),
+                2,
+            )
+            self.assertIn(
+                "earlier weaker path",
+                candidate_stub["candidate_scaffold_preview"]["predict"]["alternatives"][0]["when"],
+            )
+            self.assertIn(
+                "single success summary",
+                candidate_stub["candidate_scaffold_preview"]["use"]["guidance"],
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

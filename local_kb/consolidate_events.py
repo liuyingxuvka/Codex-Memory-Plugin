@@ -102,6 +102,16 @@ def normalize_text_list(value: Any) -> list[str]:
     return sorted({str(item).strip() for item in normalize_string_list(value) if str(item).strip()})
 
 
+def normalize_contrastive_evidence(value: Any) -> dict[str, str]:
+    contrastive = value if isinstance(value, dict) else {}
+    return {
+        "previous_action": str(contrastive.get("previous_action", "") or "").strip(),
+        "previous_result": str(contrastive.get("previous_result", "") or "").strip(),
+        "revised_action": str(contrastive.get("revised_action", "") or "").strip(),
+        "revised_result": str(contrastive.get("revised_result", "") or "").strip(),
+    }
+
+
 def normalize_event(raw: dict[str, Any], source_line: int) -> dict[str, Any]:
     event = dict(raw)
     source = event.get("source", {}) if isinstance(event.get("source"), dict) else {}
@@ -141,10 +151,12 @@ def normalize_event(raw: dict[str, Any], source_line: int) -> dict[str, Any]:
     predictive_observation = context.get("predictive_observation", {})
     if not isinstance(predictive_observation, dict):
         predictive_observation = {}
+    contrastive_evidence = normalize_contrastive_evidence(predictive_observation.get("contrastive_evidence", {}))
     event["predictive_observation"] = {
         "scenario": str(predictive_observation.get("scenario", "") or "").strip(),
         "action_taken": str(predictive_observation.get("action_taken", "") or "").strip(),
         "observed_result": str(predictive_observation.get("observed_result", "") or "").strip(),
+        "contrastive_evidence": contrastive_evidence,
         "operational_use": str(predictive_observation.get("operational_use", "") or "").strip(),
         "reuse_judgment": str(predictive_observation.get("reuse_judgment", "") or "").strip(),
     }
@@ -170,6 +182,24 @@ def has_predictive_evidence(event: dict[str, Any]) -> bool:
         str(predictive.get(field, "") or "").strip()
         for field in ("scenario", "action_taken", "observed_result")
     )
+
+
+def has_contrastive_evidence(event: dict[str, Any]) -> bool:
+    predictive = event.get("predictive_observation", {})
+    if not isinstance(predictive, dict):
+        return False
+    contrastive = predictive.get("contrastive_evidence", {})
+    if not isinstance(contrastive, dict):
+        return False
+    previous_pair_complete = all(
+        str(contrastive.get(field, "") or "").strip()
+        for field in ("previous_action", "previous_result")
+    )
+    revised_pair_complete = all(
+        str(contrastive.get(field, "") or "").strip()
+        for field in ("revised_action", "revised_result")
+    )
+    return previous_pair_complete or revised_pair_complete
 
 
 def load_history_events(repo_root: Path, max_events: int | None = None) -> list[dict[str, Any]]:
@@ -601,15 +631,19 @@ def summarize_predictive_evidence(events: list[dict[str, Any]]) -> dict[str, Any
     examples: list[dict[str, Any]] = []
     complete_event_count = 0
     incomplete_event_count = 0
+    contrastive_event_count = 0
     for event in events:
         predictive = event.get("predictive_observation", {})
         if not isinstance(predictive, dict):
             predictive = {}
+        contrastive = normalize_contrastive_evidence(predictive.get("contrastive_evidence", {}))
         complete = has_predictive_evidence(event)
         if complete:
             complete_event_count += 1
         else:
             incomplete_event_count += 1
+        if has_contrastive_evidence(event):
+            contrastive_event_count += 1
         if len(examples) >= 3:
             continue
         example = {
@@ -621,11 +655,15 @@ def summarize_predictive_evidence(events: list[dict[str, Any]]) -> dict[str, Any
             "operational_use": str(predictive.get("operational_use", "") or ""),
             "reuse_judgment": str(predictive.get("reuse_judgment", "") or ""),
         }
+        if any(contrastive.values()):
+            example["contrastive_evidence"] = contrastive
         if any(value for key, value in example.items() if key != "event_id"):
             examples.append(example)
     return {
         "complete_event_count": complete_event_count,
         "incomplete_event_count": incomplete_event_count,
+        "contrastive_event_count": contrastive_event_count,
+        "contrastive_example_count": sum(1 for example in examples if example.get("contrastive_evidence")),
         "example_count": len(examples),
         "examples": examples,
     }

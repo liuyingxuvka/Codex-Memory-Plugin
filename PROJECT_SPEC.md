@@ -43,6 +43,15 @@ Example:
 - Predicted result: English is the preferred output
 - Operational use: draft in English unless the user overrides it
 
+This also applies to **user-specific interaction patterns** when they are written as bounded predictive models rather than vague impressions.
+
+Example:
+
+- Scenario: public GitHub release presentation for this user
+- Action/input: hide version visibility and place developer-oriented setup before the user entry
+- Predicted result: review friction is more likely and the page is less likely to match the user's preferred presentation order
+- Operational use: keep these cards private by default and adapt release presentation to visible versioning, clear user entry, and the user's preferred ordering when the evidence is stable
+
 Likewise, a debugging heuristic can also be predictive.
 
 Example:
@@ -302,6 +311,10 @@ Modeling discipline for v0.1:
 - `use` must remain downstream of `predict`; operational guidance cannot replace the predictive claim itself.
 - Titles should preferably name the predicted relation or outcome, not only the recommended behavior.
 - Cards about **model or runtime behavior** are allowed when they are still written as bounded predictive models rather than folklore.
+- Cards about a **specific user** are also allowed when they stay bounded, evidence-based, and behaviorally framed.
+- User-specific cards should be `private` by default unless the user explicitly wants them shared.
+- Such cards should describe repeated task-conditioned interaction patterns, preferences, or judgments, not personality labels or broad character summaries.
+- A good user-specific card answers: under what conditions, what request style, structure, or omission makes what user reaction or preference more likely.
 - Such cards should be scoped to the most precise runtime identity that is actually known.
 - If the exact model version is surfaced reliably, the card may name it directly.
 - If the exact model version is not surfaced reliably, scope the card more conservatively to the active Codex runtime, current environment, or known model family instead of guessing a precise version.
@@ -378,6 +391,7 @@ The skill should do the following:
    These should be the cards that materially influenced the work, not every card that appeared in retrieval results.
 10. When a reusable lesson is specifically about how the current model or runtime behaves, it may still be captured as a valid card if the runtime identity and triggering conditions are explicit enough to audit later.
 11. When recording such a lesson, preserve both the runtime-facing route and any workflow or prompting routes that materially shaped the behavior, so later retrieval can find the card from more than one valid direction.
+12. When a reusable lesson is specifically about how a user tends to respond, prefer a private predictive card that captures the task condition and likely user preference or reaction, rather than a vague impression about the user's personality.
 
 For non-trivial work, KB postflight should be treated as part of done rather than optional housekeeping. Before a task is considered complete, Codex should explicitly check whether the task exposed:
 
@@ -664,6 +678,15 @@ When an observation is intended to support a future card, it should preserve pre
 - the observed or expected result
 - the operational use implied by that result
 
+When the task included a mistake, weak path, or later correction, the strongest observation is often **contrastive evidence** rather than a single-path summary. In that case, preserve both:
+
+- the earlier action or condition that produced the weaker result
+- the weaker or failed result that followed
+- the revised action or condition
+- the improved result after the revision
+
+This style is especially valuable because later card creation can often map it directly into `predict.expected_result` plus one or more `predict.alternatives` branches, instead of forcing maintenance to infer the negative branch from vague prose.
+
 Observations that only say “should”, “avoid”, or “best practice” without a clear scenario-action-result relation should be treated as weak evidence until AI rewrites or splits them into a proper predictive model hypothesis.
 
 Observations about **model/runtime behavior** should follow the same rule. They are valid when they answer:
@@ -674,6 +697,15 @@ Observations about **model/runtime behavior** should follow the same rule. They 
 - how Codex should operationally adapt because of that result
 
 If the runtime identity is uncertain, the observation should explicitly scope itself to the known environment level rather than claiming an exact model version.
+
+Observations about a **specific user** should also stay predictive and bounded. They are strongest when they answer:
+
+- in what task or interaction context the behavior appeared
+- what structure, omission, or request style preceded the reaction
+- what user preference, correction, or judgment became more likely
+- how Codex should adapt next time
+
+These observations should avoid personality summaries and should default to `private` handling unless the user explicitly asks for them to be shared.
 
 When later card creation is likely, Codex should preserve enough route context that the resulting card can be found from more than one valid direction. Runtime-behavior cards are usually strongest when they are reachable from both:
 

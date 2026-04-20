@@ -75,6 +75,10 @@ Preferred operating pattern:
      --scenario "<when does this pattern apply>" `
      --action-taken "<what action or condition led to the result>" `
      --observed-result "<what actually happened>" `
+     --previous-action "<earlier weaker or mistaken action when relevant>" `
+     --previous-result "<what weaker result that earlier path produced>" `
+     --revised-action "<what changed when the path was corrected>" `
+     --revised-result "<what improved after the revision>" `
      --operational-use "<how future Codex behavior should use this>" `
      --reuse-judgment "<why this looks reusable or why it might stay one-off>" `
      --agent-name "<which agent recorded this>" `
@@ -86,6 +90,7 @@ Preferred operating pattern:
    ```
 
 9. If the explicit postflight check found no meaningful signal, make that explicit and end the KB flow there rather than silently forgetting to check.
+10. When the task included a worse path and a corrected path, prefer recording both sides explicitly. Those contrastive observations are often the easiest ones for later maintenance to turn into cards with useful alternative branches.
 
 ## Default Decisions
 

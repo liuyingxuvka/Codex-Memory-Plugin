@@ -1,6 +1,6 @@
 # Codex-Memory-Plugin
 
-Current template version: `v0.1.3`
+Current template version: `v0.1.4`
 
 A minimal, file-based starter for a local predictive knowledge / experience library that Codex can consult through a repo-local skill.
 

@@ -58,13 +58,14 @@ For alternate-route maintenance, `python .agents/skills/local-kb-retrieve/script
 11. When drafting or updating cards, rewrite the evidence into predictive form: `if / action -> predicted result -> operational use`. Reject “should / avoid / best practice” wording unless the causal prediction is explicit.
 12. Model/runtime behavior cards are valid when they stay bounded and auditable. Scope them to the most precise runtime identity that is actually known. If exact model identity is not surfaced reliably, scope them more conservatively to the active Codex runtime, current environment, or known model family.
 13. When maintaining those cards, prefer more than one retrieval path when justified: a runtime-facing route such as `codex/runtime-behavior/...` or `ai/runtime/...`, plus any prompting, tool-use, workflow, or planning routes that materially exposed the behavior.
-14. For `review-related-cards` actions, only keep direct related-card links that are supported by repeated co-use of actually used `entry_ids`. Keep the card surface simple: no recursive graph expansion and no more than 3 related cards per entry.
-15. For `review-cross-index` actions, only keep direct alternate retrieval paths that are supported by repeated actual route usage. Low-risk auto-apply should strengthen stable `cross_index` paths; pruning should stay proposal-first until stronger removal evidence exists. Do not use this to perform broad taxonomy rewrites.
-16. Read the resulting `snapshot.json`, `proposal.json`, action stub paths, and `apply.json` paths from the consolidation output.
-17. If the maintenance pass needs recovery, inspect and optionally restore history events:
+14. User-specific cards are also valid when they stay bounded, evidence-based, and behaviorally framed. Keep them private by default, prefer task-conditioned preference or reaction models over personality summaries, and reject broad character-label wording even when the interaction signal feels strong.
+15. For `review-related-cards` actions, only keep direct related-card links that are supported by repeated co-use of actually used `entry_ids`. Keep the card surface simple: no recursive graph expansion and no more than 3 related cards per entry.
+16. For `review-cross-index` actions, only keep direct alternate retrieval paths that are supported by repeated actual route usage. Low-risk auto-apply should strengthen stable `cross_index` paths; pruning should stay proposal-first until stronger removal evidence exists. Do not use this to perform broad taxonomy rewrites.
+17. Read the resulting `snapshot.json`, `proposal.json`, action stub paths, and `apply.json` paths from the consolidation output.
+18. If the maintenance pass needs recovery, inspect and optionally restore history events:
 `python .agents/skills/local-kb-retrieve/scripts/kb_rollback.py inspect --run-id <run_id> --write-manifest --json`
 `python .agents/skills/local-kb-retrieve/scripts/kb_rollback.py restore --run-id <run_id> --artifact history-events --json`
-18. Summarize the pass:
+19. Summarize the pass:
    - run id
    - observations processed
    - candidates created

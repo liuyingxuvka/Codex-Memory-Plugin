@@ -129,6 +129,8 @@ def build_action_stub_payload(
         payload["provenance"] = dict(action["provenance"])
     if action.get("predictive_evidence_summary"):
         payload["predictive_evidence_summary"] = dict(action["predictive_evidence_summary"])
+    if action.get("candidate_scaffold_preview"):
+        payload["candidate_scaffold_preview"] = dict(action["candidate_scaffold_preview"])
     if action.get("suggested_confidence_change"):
         payload["suggested_confidence_change"] = dict(action["suggested_confidence_change"])
     if action.get("disposition_suggestion"):
@@ -221,36 +223,84 @@ def build_auto_candidate_entry(
     route_title = " / ".join(route_segments) if route_segments else route_ref
     task_summaries = collect_task_summaries(supporting_events)
     updated_at = generated_at[:10]
+    scaffold_preview = action.get("candidate_scaffold_preview", {})
+    if not isinstance(scaffold_preview, dict):
+        scaffold_preview = {}
+    if_block = scaffold_preview.get("if", {})
+    if not isinstance(if_block, dict):
+        if_block = {}
+    action_block = scaffold_preview.get("action", {})
+    if not isinstance(action_block, dict):
+        action_block = {}
+    predict_block = scaffold_preview.get("predict", {})
+    if not isinstance(predict_block, dict):
+        predict_block = {}
+    use_block = scaffold_preview.get("use", {})
+    if not isinstance(use_block, dict):
+        use_block = {}
+    alternatives = [
+        item
+        for item in predict_block.get("alternatives", [])
+        if isinstance(item, dict)
+        and (str(item.get("when", "") or "").strip() or str(item.get("result", "") or "").strip())
+    ]
+    tags = sorted(set(route_segments + ["auto-generated", "consolidation"]))
+    if alternatives:
+        tags = sorted(set(tags + ["contrastive-evidence"]))
     return {
         "id": route_candidate_id(route_ref),
-        "title": f"Repeated route gap in {route_title}",
+        "title": str(scaffold_preview.get("title", "") or f"Repeated route gap in {route_title}"),
         "type": "model",
         "scope": AUTO_CANDIDATE_SCOPE,
         "domain_path": route_segments,
         "cross_index": [],
-        "tags": sorted(set(route_segments + ["auto-generated", "consolidation"])),
+        "tags": tags,
         "trigger_keywords": sorted(set(route_segments)),
         "if": {
-            "notes": (
-                f"Auto-created from {action['event_count']} grouped new-candidate observations. "
-                f"Example task summaries: {summarize_examples(task_summaries)}"
+            "notes": str(
+                if_block.get(
+                    "notes",
+                    (
+                        f"Auto-created from {action['event_count']} grouped new-candidate observations. "
+                        f"Example task summaries: {summarize_examples(task_summaries)}"
+                    ).strip(),
+                )
+                or ""
             ).strip()
         },
         "action": {
-            "description": f"Handle tasks routed through {route_title} without a consolidated KB card."
+            "description": str(
+                action_block.get(
+                    "description",
+                    f"Handle tasks routed through {route_title} without a consolidated KB card.",
+                )
+                or ""
+            ).strip()
         },
         "predict": {
-            "expected_result": (
-                f"Grouped observations suggest Codex will keep missing reusable guidance for {route_title} "
-                "until a route-specific card is authored."
-            ),
-            "alternatives": [],
+            "expected_result": str(
+                predict_block.get(
+                    "expected_result",
+                    (
+                        f"Grouped observations suggest Codex will keep missing reusable guidance for {route_title} "
+                        "until a route-specific card is authored."
+                    ),
+                )
+                or ""
+            ).strip(),
+            "alternatives": alternatives,
         },
         "use": {
-            "guidance": (
-                "Review the cited observations and replace this auto-created scaffold with a specific "
-                "predictive card before any promotion."
-            )
+            "guidance": str(
+                use_block.get(
+                    "guidance",
+                    (
+                        "Review the cited observations and replace this auto-created scaffold with a specific "
+                        "predictive card before any promotion."
+                    ),
+                )
+                or ""
+            ).strip()
         },
         "confidence": round(min(0.75, 0.45 + (0.05 * int(action["event_count"]))), 2),
         "source": [

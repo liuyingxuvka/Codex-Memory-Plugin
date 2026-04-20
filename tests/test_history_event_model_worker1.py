@@ -17,6 +17,10 @@ class HistoryEventModelTests(unittest.TestCase):
             scenario="When repository work may depend on prior workflow conventions or stored lessons",
             action_taken="Run a lightweight KB scan before starting the main task",
             observed_result="Relevant local models were surfaced early and avoidable re-derivation dropped",
+            previous_action="Start the task without any KB scan and rely on memory",
+            previous_result="Relevant local constraints stayed hidden until later correction",
+            revised_action="Add a lightweight KB scan before substantive work begins",
+            revised_result="Relevant prior workflow guidance surfaced before the main implementation path",
             operational_use="Prefer a quick KB recall before non-trivial repository work",
             reuse_judgment="Looks reusable across repository tasks that may depend on prior lessons",
             suggested_action="update-card",
@@ -49,6 +53,22 @@ class HistoryEventModelTests(unittest.TestCase):
         self.assertEqual(
             event["context"]["predictive_observation"]["observed_result"],
             "Relevant local models were surfaced early and avoidable re-derivation dropped",
+        )
+        self.assertEqual(
+            event["context"]["predictive_observation"]["contrastive_evidence"]["previous_action"],
+            "Start the task without any KB scan and rely on memory",
+        )
+        self.assertEqual(
+            event["context"]["predictive_observation"]["contrastive_evidence"]["previous_result"],
+            "Relevant local constraints stayed hidden until later correction",
+        )
+        self.assertEqual(
+            event["context"]["predictive_observation"]["contrastive_evidence"]["revised_action"],
+            "Add a lightweight KB scan before substantive work begins",
+        )
+        self.assertEqual(
+            event["context"]["predictive_observation"]["contrastive_evidence"]["revised_result"],
+            "Relevant prior workflow guidance surfaced before the main implementation path",
         )
         self.assertIn("next=update-card", event["rationale"])
 

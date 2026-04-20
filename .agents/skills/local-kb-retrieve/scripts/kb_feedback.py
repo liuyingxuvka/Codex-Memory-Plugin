@@ -33,6 +33,10 @@ def main() -> None:
     parser.add_argument("--scenario", default="")
     parser.add_argument("--action-taken", default="")
     parser.add_argument("--observed-result", default="")
+    parser.add_argument("--previous-action", default="")
+    parser.add_argument("--previous-result", default="")
+    parser.add_argument("--revised-action", default="")
+    parser.add_argument("--revised-result", default="")
     parser.add_argument("--operational-use", default="")
     parser.add_argument("--reuse-judgment", default="")
     parser.add_argument(
@@ -62,6 +66,10 @@ def main() -> None:
         scenario=args.scenario,
         action_taken=args.action_taken,
         observed_result=args.observed_result,
+        previous_action=args.previous_action,
+        previous_result=args.previous_result,
+        revised_action=args.revised_action,
+        revised_result=args.revised_result,
         operational_use=args.operational_use,
         reuse_judgment=args.reuse_judgment,
         source_kind=args.source_kind,

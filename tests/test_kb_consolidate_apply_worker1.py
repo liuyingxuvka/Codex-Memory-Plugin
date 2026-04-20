@@ -355,6 +355,109 @@ class ConsolidateApplyModeTests(unittest.TestCase):
             )
             self.assertEqual(len(list((repo_root / "kb" / "candidates").glob("*.yaml"))), 1)
 
+    def test_apply_mode_writes_contrastive_candidate_branches_from_observations(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            repo_root = Path(tmp_dir)
+            history_path = repo_root / "kb" / "history" / "events.jsonl"
+            history_path.parent.mkdir(parents=True, exist_ok=True)
+
+            events = [
+                {
+                    "event_id": "obs-contrastive-1",
+                    "event_type": "observation",
+                    "created_at": "2026-04-20T08:09:00+00:00",
+                    "source": {"kind": "task", "agent": "worker-1"},
+                    "target": {
+                        "kind": "task-observation",
+                        "route_hint": ["engineering", "agent-behavior", "postflight"],
+                        "task_summary": "Need a reusable postflight branching card",
+                    },
+                    "rationale": "next=new-candidate",
+                    "context": {
+                        "suggested_action": "new-candidate",
+                        "predictive_observation": {
+                            "scenario": "When Codex closes a non-trivial repository task in this runtime.",
+                            "action_taken": "Treat KB postflight as an explicit done check.",
+                            "observed_result": "Write-back happens more consistently before finalization.",
+                            "contrastive_evidence": {
+                                "previous_action": "Leave KB postflight implicit and move straight to the final answer.",
+                                "previous_result": "The task outcome may ship, but the reusable lesson is often never recorded.",
+                                "revised_action": "Make KB postflight part of done and check for a meaningful signal before ending.",
+                                "revised_result": "The lesson is more likely to be captured as a reusable observation or candidate.",
+                            },
+                            "operational_use": "Default to an explicit postflight check whenever the task was non-trivial.",
+                            "reuse_judgment": "This is reusable because the same runtime keeps dropping the memory write-back when it stays implicit.",
+                        },
+                    },
+                },
+                {
+                    "event_id": "obs-contrastive-2",
+                    "event_type": "observation",
+                    "created_at": "2026-04-20T08:12:00+00:00",
+                    "source": {"kind": "task", "agent": "worker-2"},
+                    "target": {
+                        "kind": "task-observation",
+                        "route_hint": ["engineering", "agent-behavior", "postflight"],
+                        "task_summary": "Need the card to preserve the weaker branch too",
+                    },
+                    "rationale": "next=new-candidate",
+                    "context": {
+                        "suggested_action": "new-candidate",
+                        "predictive_observation": {
+                            "scenario": "When a repository task finishes and the runtime is tempted to stop at the main deliverable.",
+                            "action_taken": "Explicitly ask whether there was a KB miss, route gap, or reusable lesson.",
+                            "observed_result": "Observation quality improves because the mistake-and-fix branch is still visible.",
+                            "contrastive_evidence": {
+                                "previous_action": "Only summarize the final success path.",
+                                "previous_result": "Maintenance later has to guess the bad branch instead of reading it directly.",
+                                "revised_action": "Record both the weaker path and the corrected path in the observation.",
+                                "revised_result": "Maintenance can synthesize a card with a direct alternative branch.",
+                            },
+                            "operational_use": "Keep mistake-versus-correction evidence visible so candidate synthesis can stay model-like.",
+                            "reuse_judgment": "This should recur whenever the same runtime learns from correction episodes.",
+                        },
+                    },
+                },
+            ]
+            with history_path.open("w", encoding="utf-8") as handle:
+                for event in events:
+                    handle.write(json.dumps(event) + "\n")
+
+            result = consolidate_history(
+                repo_root=repo_root,
+                run_id="apply-contrastive",
+                apply_mode="new-candidates",
+            )
+
+            self.assertEqual(result["apply_summary"]["created_candidate_count"], 1)
+            created_candidate = result["apply_summary"]["created_candidates"][0]
+            candidate_path = repo_root / created_candidate["entry_path"]
+            candidate_payload = yaml.safe_load(candidate_path.read_text(encoding="utf-8"))
+
+            self.assertEqual(candidate_payload["title"], "Contrastive route lesson in engineering / agent-behavior / postflight")
+            self.assertIn(
+                "weaker earlier path and a stronger revised path",
+                candidate_payload["if"]["notes"],
+            )
+            self.assertIn(
+                "stronger revised path",
+                candidate_payload["action"]["description"],
+            )
+            self.assertIn(
+                "reusable observation or candidate",
+                candidate_payload["predict"]["expected_result"],
+            )
+            self.assertEqual(len(candidate_payload["predict"]["alternatives"]), 2)
+            self.assertIn(
+                "earlier weaker path",
+                candidate_payload["predict"]["alternatives"][0]["when"],
+            )
+            self.assertIn(
+                "single success summary",
+                candidate_payload["use"]["guidance"],
+            )
+            self.assertIn("contrastive-evidence", candidate_payload["tags"])
+
 
 if __name__ == "__main__":
     unittest.main()

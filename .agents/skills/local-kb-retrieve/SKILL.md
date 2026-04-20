@@ -57,8 +57,10 @@ Independent maintenance thread:
 11. If the answer is no, make that an explicit conclusion rather than silently forgetting to check.
 12. If a reusable new lesson emerges during the task, record it into candidates or structured history rather than trying to fully consolidate it inside the active task thread.
 13. When a reusable lesson is being recorded, do not stop at a generic summary. Preserve predictive-model evidence: the scenario, the action or condition, the observed result, and how future Codex behavior should use that result.
-14. Lessons about current model or runtime behavior are valid when they stay bounded and auditable. Preserve the most precise runtime identity that is actually known, and if exact model identity is not surfaced reliably, scope the lesson more conservatively to the active Codex runtime, current environment, or known model family.
-15. When such a lesson is likely to become a card later, keep more than one retrieval path in view: a runtime-facing route such as `codex/runtime-behavior/...` plus any prompting, tool-use, workflow, or planning routes that materially shaped the behavior.
+14. When the task involved a weaker path, mistake, or later correction, preserve both sides of the contrast whenever possible: what the earlier action was, what weaker result it led to, what changed, and what improved afterward. These contrastive observations are often the easiest ones to turn into future card alternatives.
+15. Lessons about current model or runtime behavior are valid when they stay bounded and auditable. Preserve the most precise runtime identity that is actually known, and if exact model identity is not surfaced reliably, scope the lesson more conservatively to the active Codex runtime, current environment, or known model family.
+16. When such a lesson is likely to become a card later, keep more than one retrieval path in view: a runtime-facing route such as `codex/runtime-behavior/...` plus any prompting, tool-use, workflow, or planning routes that materially shaped the behavior.
+17. Lessons about a specific user are also valid when they stay bounded, evidence-based, and behaviorally framed. Record them as task-conditioned private predictions about likely preference, correction, or judgment rather than as personality labels or broad character impressions.
 
 Sleep maintenance checklist:
 
@@ -97,6 +99,7 @@ Output discipline:
 - Treat those entry ids as the cards that materially influenced the work, not merely every card that happened to be retrieved.
 - If the entries are weak or ambiguous, say so.
 - Do not expose private entry content unless the user is authorized to see it.
+- User-specific lessons should default to private handling and should describe what this user is likely to prefer or reject in a concrete task context, not who the user “is” in general.
 - Keep sidecar agents scoped: `kb-scout` should be read-mostly and `kb-recorder` should default to history, comments, and candidate writes rather than broad structural edits.
 - In a maintenance thread, be explicit about what the tooling actually changed versus what still remains a proposal.
 - For non-trivial work, treat the explicit postflight observation check as part of done rather than optional housekeeping.
