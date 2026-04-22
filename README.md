@@ -1,7 +1,7 @@
 # Codex-Memory-Plugin
 
-- Repository head (`main`) / 仓库主线（`main`）: `v0.1.9`
-- Latest released version / 最新已发布版本: `v0.1.9`
+- Repository head (`main`) / 仓库主线（`main`）: `v0.1.10`
+- Latest released version / 最新已发布版本: `v0.1.10`
 - 中文正文在前；后半部分是完整英文镜像。
 - Chinese comes first; the second half is a full English mirror.
 
