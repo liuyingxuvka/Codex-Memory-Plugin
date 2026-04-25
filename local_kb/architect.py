@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import hashlib
 import json
+import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -118,7 +118,7 @@ CATEGORY_KEYWORDS = (
     ("rollback", {"rollback", "snapshot", "restore"}),
     ("validation", {"test", "validation", "check"}),
     ("proposal-queue", {"proposal", "queue", "status", "watching"}),
-    ("sleep-dream-boundary", {"sleep", "dream", "overlap", "cooldown"}),
+    ("sleep-dream-boundary", {"sleep", "dream", "overlap", "lane-status"}),
 )
 
 
@@ -153,69 +153,11 @@ def architect_queue_path(repo_root: Path) -> Path:
     return architecture_root(repo_root) / QUEUE_FILENAME
 
 
-def _latest_run_guard(
-    repo_root: Path,
-    *,
-    root_parts: tuple[str, ...],
-    prefix: str,
-    cooldown_minutes: int,
-    now: datetime | None = None,
-) -> dict[str, Any]:
-    reference_time = now or datetime.now(timezone.utc)
-    root = repo_root.joinpath(*root_parts)
-    latest_run_dir: Path | None = None
-    latest_mtime: float | None = None
-    if root.exists():
-        for path in root.iterdir():
-            if not path.is_dir() or (prefix and not path.name.startswith(prefix)):
-                continue
-            stat = path.stat()
-            if latest_mtime is None or stat.st_mtime > latest_mtime:
-                latest_mtime = stat.st_mtime
-                latest_run_dir = path
-
-    minutes_since_latest: float | None = None
-    if latest_mtime is not None:
-        minutes_since_latest = max(0.0, (reference_time.timestamp() - latest_mtime) / 60.0)
-    blocked = (
-        cooldown_minutes > 0
-        and minutes_since_latest is not None
-        and minutes_since_latest < cooldown_minutes
-    )
-    return {
-        "blocked": blocked,
-        "cooldown_minutes": cooldown_minutes,
-        "latest_run_dir": relative_repo_path(repo_root, latest_run_dir) if latest_run_dir else "",
-        "minutes_since_latest_run": round(minutes_since_latest, 2)
-        if minutes_since_latest is not None
-        else None,
-    }
-
-
-def build_architect_guards(
-    repo_root: Path,
-    *,
-    sleep_cooldown_minutes: int,
-    dream_cooldown_minutes: int,
-) -> dict[str, Any]:
+def build_architect_guards(repo_root: Path) -> dict[str, Any]:
     lane_guard = build_lane_guard(repo_root, "kb-architect")
-    sleep_guard = _latest_run_guard(
-        repo_root,
-        root_parts=("kb", "history", "consolidation"),
-        prefix="kb-sleep",
-        cooldown_minutes=sleep_cooldown_minutes,
-    )
-    dream_guard = _latest_run_guard(
-        repo_root,
-        root_parts=("kb", "history", "dream"),
-        prefix="kb-dream",
-        cooldown_minutes=dream_cooldown_minutes,
-    )
     return {
-        "blocked": bool(lane_guard["blocked"] or sleep_guard["blocked"] or dream_guard["blocked"]),
+        "blocked": bool(lane_guard["blocked"]),
         "lane": lane_guard,
-        "sleep": sleep_guard,
-        "dream": dream_guard,
     }
 
 
@@ -771,7 +713,7 @@ def _write_skip_event(
         task_summary=f"KB Architect run {run_id} skipped because another maintenance lane may overlap",
         route_hint=ARCHITECT_ROUTE_HINT,
         hit_quality="none",
-        outcome="Architect skipped before proposal review because another core maintenance lane was still running or a legacy cooldown guard was active.",
+        outcome="Architect skipped before proposal review because another core maintenance lane was still running.",
         comment="Architect should not overlap with Sleep or Dream maintenance runs.",
         suggested_action="none",
         scenario="Scheduled Architect run starts while another KB maintenance lane is still running.",
@@ -795,8 +737,6 @@ def run_architect_maintenance(
     *,
     run_id: str | None = None,
     max_events: int | None = None,
-    sleep_cooldown_minutes: int = 0,
-    dream_cooldown_minutes: int = 0,
 ) -> dict[str, Any]:
     generated_at = utc_now_iso()
     resolved_run_id = sanitize_run_id(run_id or f"kb-architect-{utc_now_compact()}")
@@ -807,11 +747,7 @@ def run_architect_maintenance(
     execution_plan = build_initial_execution_plan(repo_root, run_id=resolved_run_id, generated_at=generated_at)
     write_json_file(run_dir / EXECUTION_PLAN_FILENAME, execution_plan)
 
-    guards = build_architect_guards(
-        repo_root,
-        sleep_cooldown_minutes=max(0, sleep_cooldown_minutes),
-        dream_cooldown_minutes=max(0, dream_cooldown_minutes),
-    )
+    guards = build_architect_guards(repo_root)
     plan_payload = {
         "schema_version": ARCHITECT_SCHEMA_VERSION,
         "kind": "local-kb-architect-plan",
@@ -848,7 +784,7 @@ def run_architect_maintenance(
             "run_id": resolved_run_id,
             "generated_at": generated_at,
             "status": "skipped",
-            "reason": "maintenance-lane-active" if guards["lane"]["blocked"] else "maintenance-lane-cooldown",
+            "reason": "maintenance-lane-active",
             "guards": guards,
             "history_event_ids": [event_id],
             "artifact_paths": {

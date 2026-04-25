@@ -202,7 +202,5 @@ Report:
 Run one dream pass manually:
 
 ```powershell
-python .agents/skills/local-kb-retrieve/scripts/kb_dream.py `
-  --sleep-cooldown-minutes 0 `
-  --json
+python .agents/skills/local-kb-retrieve/scripts/kb_dream.py --json
 ```

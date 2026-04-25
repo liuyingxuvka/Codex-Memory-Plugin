@@ -36,8 +36,6 @@ class KBArchitectTests(unittest.TestCase):
             result = run_architect_maintenance(
                 repo_root,
                 run_id="architect-test",
-                sleep_cooldown_minutes=0,
-                dream_cooldown_minutes=0,
             )
 
             self.assertEqual(result["status"], "completed")

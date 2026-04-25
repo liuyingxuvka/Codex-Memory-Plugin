@@ -102,10 +102,7 @@ Out-of-scope signals should not be deleted. Architect can record that they belon
 Run one Architect pass manually:
 
 ```powershell
-python .agents/skills/local-kb-retrieve/scripts/kb_architect.py `
-  --sleep-cooldown-minutes 0 `
-  --dream-cooldown-minutes 0 `
-  --json
+python .agents/skills/local-kb-retrieve/scripts/kb_architect.py --json
 ```
 
 The runner writes:

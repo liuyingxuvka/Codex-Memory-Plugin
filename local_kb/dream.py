@@ -61,47 +61,8 @@ def dream_run_dir(repo_root: Path, run_id: str) -> Path:
     return repo_root / "kb" / "history" / "dream" / run_id
 
 
-def build_sleep_guard(
-    repo_root: Path,
-    *,
-    cooldown_minutes: int,
-    now: datetime | None = None,
-) -> dict[str, Any]:
-    reference_time = now or datetime.now(timezone.utc)
-    consolidation_root = repo_root / "kb" / "history" / "consolidation"
-    lane_guard = build_lane_guard(repo_root, "kb-dream")
-    latest_run_dir: Path | None = None
-    latest_mtime: float | None = None
-
-    if consolidation_root.exists():
-        for path in consolidation_root.iterdir():
-            if not path.is_dir() or not path.name.startswith("kb-sleep"):
-                continue
-            stat = path.stat()
-            if latest_mtime is None or stat.st_mtime > latest_mtime:
-                latest_mtime = stat.st_mtime
-                latest_run_dir = path
-
-    minutes_since_latest: float | None = None
-    if latest_mtime is not None:
-        minutes_since_latest = max(0.0, (reference_time.timestamp() - latest_mtime) / 60.0)
-
-    cooldown_blocked = (
-        cooldown_minutes > 0
-        and minutes_since_latest is not None
-        and minutes_since_latest < cooldown_minutes
-    )
-    blocked = bool(lane_guard["blocked"] or cooldown_blocked)
-    return {
-        "blocked": blocked,
-        "lane_guard": lane_guard,
-        "cooldown_minutes": cooldown_minutes,
-        "cooldown_blocked": cooldown_blocked,
-        "latest_sleep_run_dir": relative_repo_path(repo_root, latest_run_dir) if latest_run_dir else "",
-        "minutes_since_latest_sleep_run": round(minutes_since_latest, 2)
-        if minutes_since_latest is not None
-        else None,
-    }
+def build_dream_guard(repo_root: Path) -> dict[str, Any]:
+    return build_lane_guard(repo_root, "kb-dream")
 
 
 def _entry_route(entry: Any) -> list[str]:
@@ -851,7 +812,7 @@ def _set_checkpoint_status(
         return
 
 
-def _write_skip_event(repo_root: Path, run_id: str, sleep_guard: dict[str, Any]) -> str:
+def _write_skip_event(repo_root: Path, run_id: str, lane_guard: dict[str, Any]) -> str:
     event = build_history_event(
         "dream-skipped",
         source={
@@ -865,8 +826,8 @@ def _write_skip_event(repo_root: Path, run_id: str, sleep_guard: dict[str, Any])
             "kind": "maintenance-run",
             "run_id": run_id,
         },
-        rationale="Skipped dream mode because another core maintenance lane is still running or a legacy cooldown guard is active.",
-        context={"sleep_guard": sleep_guard},
+        rationale="Skipped dream mode because another core maintenance lane is still running.",
+        context={"lane_guard": lane_guard},
     )
     record_history_event(repo_root, event)
     return str(event["event_id"])
@@ -877,7 +838,6 @@ def run_dream_maintenance(
     *,
     run_id: str | None = None,
     max_events: int | None = None,
-    sleep_cooldown_minutes: int = 0,
 ) -> dict[str, Any]:
     generated_at = utc_now_iso()
     resolved_run_id = sanitize_run_id(run_id or f"kb-dream-{utc_now_compact()}")
@@ -885,18 +845,18 @@ def run_dream_maintenance(
     run_dir.mkdir(parents=True, exist_ok=True)
     write_lane_status(repo_root, "kb-dream", "running", run_id=resolved_run_id)
 
-    sleep_guard = build_sleep_guard(repo_root, cooldown_minutes=sleep_cooldown_minutes)
+    lane_guard = build_dream_guard(repo_root)
     plan_payload = {
         "schema_version": DREAM_SCHEMA_VERSION,
         "kind": "local-kb-dream-plan",
         "run_id": resolved_run_id,
         "generated_at": generated_at,
-        "sleep_guard": sleep_guard,
+        "lane_guard": lane_guard,
     }
     write_json_file(run_dir / PLAN_FILENAME, plan_payload)
 
-    if sleep_guard["blocked"]:
-        skipped_event_id = _write_skip_event(repo_root, resolved_run_id, sleep_guard)
+    if lane_guard["blocked"]:
+        skipped_event_id = _write_skip_event(repo_root, resolved_run_id, lane_guard)
         write_lane_status(repo_root, "kb-dream", "skipped", run_id=resolved_run_id)
         result = {
             "schema_version": DREAM_SCHEMA_VERSION,
@@ -904,8 +864,8 @@ def run_dream_maintenance(
             "run_id": resolved_run_id,
             "generated_at": generated_at,
             "status": "skipped",
-            "reason": "maintenance-lane-active" if sleep_guard["lane_guard"]["blocked"] else "recent-sleep-run",
-            "sleep_guard": sleep_guard,
+            "reason": "maintenance-lane-active",
+            "lane_guard": lane_guard,
             "history_event_ids": [skipped_event_id],
             "artifact_paths": {
                 "run_dir": relative_repo_path(repo_root, run_dir),
@@ -1199,7 +1159,7 @@ def run_dream_maintenance(
         "run_id": resolved_run_id,
         "generated_at": generated_at,
         "status": "completed",
-        "sleep_guard": sleep_guard,
+        "lane_guard": lane_guard,
         "history_path": relative_repo_path(repo_root, history_events_path(repo_root)),
         "preflight": preflight,
         "execution_plan": execution_plan,

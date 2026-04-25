@@ -22,7 +22,6 @@ def main() -> None:
     parser.add_argument("--repo-root", default="auto")
     parser.add_argument("--run-id", default="")
     parser.add_argument("--max-events", type=int, default=0)
-    parser.add_argument("--sleep-cooldown-minutes", type=int, default=0)
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
 
@@ -31,7 +30,6 @@ def main() -> None:
         repo_root=repo_root,
         run_id=args.run_id or None,
         max_events=args.max_events or None,
-        sleep_cooldown_minutes=max(0, args.sleep_cooldown_minutes),
     )
 
     if args.json:

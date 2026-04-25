@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.2.2 - 2026-04-25
+
+- Replaced Sleep/Dream/Architect post-completion cooldown windows with explicit core maintenance lane status checks.
+- Restored the default local cadence to Sleep 12:00, Dream 13:00, and Architect 14:00 while preventing overlap when another core lane is still running.
+- Removed Dream and Architect cooldown CLI knobs from runner prompts, automation specs, docs, and tests so other machines inherit the same behavior after bootstrap.
+- Refreshed installer validation for repository-managed maintenance skills and automations.
+
 ## v0.2.1 - 2026-04-24
 
 - Refined the desktop card browser UI with lighter card shadows, subtler gradient surfaces, tighter spacing, and denser card layout.

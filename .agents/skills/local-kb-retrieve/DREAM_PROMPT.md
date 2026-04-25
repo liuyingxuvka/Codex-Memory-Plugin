@@ -18,7 +18,7 @@ Goal:
 Default path:
 
 1. Run the dedicated dream runner:
-`python .agents/skills/local-kb-retrieve/scripts/kb_dream.py --json --sleep-cooldown-minutes 0`
+`python .agents/skills/local-kb-retrieve/scripts/kb_dream.py --json`
 2. Inspect the generated artifacts under `kb/history/dream/<run-id>/`.
 3. Report:
    - run id

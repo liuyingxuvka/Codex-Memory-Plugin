@@ -8,6 +8,7 @@ from pathlib import Path
 import yaml
 
 from local_kb.dream import run_dream_maintenance
+from local_kb.maintenance_lanes import write_lane_status
 
 
 def write_jsonl(path: Path, events: list[dict]) -> None:
@@ -131,7 +132,6 @@ class DreamMaintenanceTests(unittest.TestCase):
             result = run_dream_maintenance(
                 repo_root=repo_root,
                 run_id="kb-dream-priority",
-                sleep_cooldown_minutes=0,
             )
 
             self.assertEqual(result["status"], "completed")
@@ -202,7 +202,6 @@ class DreamMaintenanceTests(unittest.TestCase):
             result = run_dream_maintenance(
                 repo_root=repo_root,
                 run_id="kb-dream-test",
-                sleep_cooldown_minutes=0,
             )
 
             self.assertEqual(result["status"], "completed")
@@ -302,7 +301,6 @@ class DreamMaintenanceTests(unittest.TestCase):
             result = run_dream_maintenance(
                 repo_root=repo_root,
                 run_id="kb-dream-entry-validation",
-                sleep_cooldown_minutes=0,
             )
 
             self.assertEqual(result["status"], "completed")
@@ -318,23 +316,20 @@ class DreamMaintenanceTests(unittest.TestCase):
             self.assertEqual(execution_plan_payload["selected_experiment"]["kind"], "entry-validation")
             self.assertEqual(execution_plan_payload["selected_experiment"]["safety_tier"], "read-only")
 
-    def test_dream_run_skips_when_recent_sleep_run_exists(self) -> None:
+    def test_dream_run_skips_when_another_core_lane_is_running(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             repo_root = Path(tmp_dir)
-            sleep_run_dir = repo_root / "kb" / "history" / "consolidation" / "kb-sleep-recent"
-            sleep_run_dir.mkdir(parents=True, exist_ok=True)
-            (sleep_run_dir / "snapshot.json").write_text("{}", encoding="utf-8")
+            write_lane_status(repo_root, "kb-sleep", "running", run_id="kb-sleep-running")
             history_path = repo_root / "kb" / "history" / "events.jsonl"
             history_path.parent.mkdir(parents=True, exist_ok=True)
 
             result = run_dream_maintenance(
                 repo_root=repo_root,
                 run_id="kb-dream-skip",
-                sleep_cooldown_minutes=120,
             )
 
             self.assertEqual(result["status"], "skipped")
-            self.assertEqual(result["reason"], "recent-sleep-run")
+            self.assertEqual(result["reason"], "maintenance-lane-active")
             history_events = [
                 json.loads(line)
                 for line in history_path.read_text(encoding="utf-8").splitlines()
@@ -375,7 +370,6 @@ class DreamMaintenanceTests(unittest.TestCase):
             result = run_dream_maintenance(
                 repo_root=repo_root,
                 run_id="kb-dream-gap",
-                sleep_cooldown_minutes=0,
             )
 
             self.assertEqual(result["status"], "completed")
