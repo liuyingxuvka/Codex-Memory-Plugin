@@ -6,8 +6,15 @@ from typing import Any
 from local_kb.common import normalize_string_list, normalize_text, parse_route_segments, safe_float
 from local_kb.consolidate_events import load_history_events
 from local_kb.i18n import DEFAULT_LANGUAGE, localized_entry, localized_route_label, normalize_language
-from local_kb.search import get_guidance, get_predicted_result, search_entries
-from local_kb.store import load_entries
+from local_kb.adoption import blocked_organization_download_hashes, card_exchange_hash, dedupe_local_entries_by_exchange_hash
+from local_kb.search import get_guidance, get_predicted_result, search_entries, search_multi_source_entries
+from local_kb.skill_sharing import (
+    annotate_dependencies_with_registry_status,
+    extract_skill_dependencies,
+    load_organization_skill_registry,
+)
+from local_kb.source_labels import card_source_summary
+from local_kb.store import load_entries, load_organization_entries
 from local_kb.taxonomy import build_taxonomy_gap_report, build_taxonomy_view
 
 
@@ -36,6 +43,17 @@ def _entry_sort_key(item: dict[str, Any]) -> tuple[int, float, str]:
     )
 
 
+def _entry_display_path(entry: Any, repo_root: Path) -> str:
+    source = getattr(entry, "source", {}) if hasattr(entry, "source") else {}
+    source_path = str(source.get("path") or "").strip() if isinstance(source, dict) else ""
+    if source_path and source.get("kind") == "organization":
+        return source_path
+    try:
+        return entry.path.relative_to(repo_root).as_posix()
+    except ValueError:
+        return str(entry.path)
+
+
 def summarize_entry(
     entry: Any,
     repo_root: Path,
@@ -45,6 +63,7 @@ def summarize_entry(
     language: str = DEFAULT_LANGUAGE,
 ) -> dict[str, Any]:
     data = localized_entry(entry.data, normalize_language(language))
+    skill_dependencies = extract_skill_dependencies(entry.data)
     domain_path = parse_route_segments(data.get("domain_path", []))
     cross_index = normalize_string_list(data.get("cross_index", []))
     summary = {
@@ -60,9 +79,12 @@ def summarize_entry(
         "related_cards": normalize_string_list(data.get("related_cards", [])),
         "tags": data.get("tags", []),
         "trigger_keywords": data.get("trigger_keywords", []),
+        "skill_dependency_count": len(skill_dependencies),
         "predicted_result": get_predicted_result(data),
         "guidance": get_guidance(data),
-        "path": entry.path.relative_to(repo_root).as_posix(),
+        "path": _entry_display_path(entry, repo_root),
+        "source_info": getattr(entry, "source", {}),
+        **card_source_summary(data, getattr(entry, "source", {})),
         "route_reason": route_reason,
         "match_route": match_route or domain_path,
     }
@@ -107,8 +129,46 @@ def _cross_route_match(data: dict[str, Any], prefix: list[str]) -> list[str] | N
     return None
 
 
-def build_route_view_payload(repo_root: Path, route: str = "", language: str = DEFAULT_LANGUAGE) -> dict[str, Any]:
-    entries = load_entries(repo_root)
+def _load_organization_entries_from_sources(
+    organization_sources: list[dict[str, Any]] | None,
+) -> list[Any]:
+    organization_entries: list[Any] = []
+    for source in organization_sources or []:
+        org_root = Path(str(source.get("path") or source.get("local_path") or ""))
+        organization_id = str(source.get("organization_id") or source.get("id") or "").strip()
+        if not org_root.exists() or not organization_id:
+            continue
+        organization_entries.extend(
+            load_organization_entries(
+                org_root,
+                organization_id,
+                source_repo=str(source.get("source_repo") or source.get("repo_url") or ""),
+                source_commit=str(source.get("source_commit") or ""),
+            )
+        )
+    return organization_entries
+
+
+def _load_entries_for_views(repo_root: Path, organization_sources: list[dict[str, Any]] | None = None) -> list[Any]:
+    local_entries = dedupe_local_entries_by_exchange_hash(load_entries(repo_root))
+    if not organization_sources:
+        return local_entries
+    blocked_hashes = blocked_organization_download_hashes(repo_root)
+    organization_entries = [
+        entry
+        for entry in _load_organization_entries_from_sources(organization_sources)
+        if card_exchange_hash(entry.data) not in blocked_hashes
+    ]
+    return [*local_entries, *organization_entries]
+
+
+def build_route_view_payload(
+    repo_root: Path,
+    route: str = "",
+    language: str = DEFAULT_LANGUAGE,
+    organization_sources: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    entries = _load_entries_for_views(repo_root, organization_sources)
     prefix = parse_route_segments(route)
     taxonomy_view = build_taxonomy_view(repo_root, route="/".join(prefix))
     normalized_language = normalize_language(language)
@@ -164,6 +224,31 @@ def build_route_view_payload(repo_root: Path, route: str = "", language: str = D
     }
 
 
+def build_source_view_payload(
+    repo_root: Path,
+    source_kind: str,
+    language: str = DEFAULT_LANGUAGE,
+    organization_sources: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    source_kind = str(source_kind or "").strip().lower()
+    normalized_language = normalize_language(language)
+    deck = [
+        summarize_entry(
+            entry,
+            repo_root,
+            route_reason="source",
+            match_route=parse_route_segments(entry.data.get("domain_path", [])),
+            language=normalized_language,
+        )
+        for entry in _load_entries_for_views(repo_root, organization_sources)
+        if str((getattr(entry, "source", {}) or {}).get("kind") or "local").lower() == source_kind
+    ]
+    return {
+        "source_kind": source_kind,
+        "deck": sorted(deck, key=_entry_sort_key),
+    }
+
+
 def _entry_history(repo_root: Path, entry_id: str, max_events: int = 8) -> list[dict[str, Any]]:
     events = load_history_events(repo_root, max_events=400)
     matched: list[dict[str, Any]] = []
@@ -190,14 +275,99 @@ def _entry_history(repo_root: Path, entry_id: str, max_events: int = 8) -> list[
     return matched
 
 
-def build_card_detail_payload(repo_root: Path, entry_id: str, language: str = DEFAULT_LANGUAGE) -> dict[str, Any] | None:
+def _load_entries_for_detail(
+    repo_root: Path,
+    organization_sources: list[dict[str, Any]] | None = None,
+    *,
+    prefer_source_info: dict[str, Any] | None = None,
+) -> list[Any]:
+    local_entries = load_entries(repo_root)
+    organization_entries = _load_organization_entries_from_sources(organization_sources)
+    if (prefer_source_info or {}).get("kind") == "organization":
+        return [*organization_entries, *local_entries]
+    return [*local_entries, *organization_entries]
+
+
+def _entry_matches_source_info(entry: Any, source_info: dict[str, Any] | None) -> bool:
+    if not source_info:
+        return True
+    entry_source = getattr(entry, "source", {}) if hasattr(entry, "source") else {}
+    if not isinstance(entry_source, dict):
+        return False
+    for key in ("kind", "organization_id", "path"):
+        expected = str(source_info.get(key) or "").strip()
+        if expected and str(entry_source.get(key) or "").strip() != expected:
+            return False
+    return True
+
+
+def _merged_skill_registry(organization_sources: list[dict[str, Any]] | None) -> dict[str, Any]:
+    merged: dict[str, Any] = {"ok": True, "errors": [], "skills": [], "by_id": {}, "by_bundle_id": {}}
+    for source in organization_sources or []:
+        org_root = Path(str(source.get("path") or source.get("local_path") or ""))
+        if not org_root.exists():
+            continue
+        registry = load_organization_skill_registry(org_root)
+        if not registry.get("ok"):
+            merged["ok"] = False
+            merged["errors"].extend(registry.get("errors") or [])
+        merged["skills"].extend(registry.get("skills") or [])
+        for skill_id, item in (registry.get("by_id") or {}).items():
+            merged["by_id"][skill_id] = item
+        for bundle_id, item in (registry.get("by_bundle_id") or {}).items():
+            merged["by_bundle_id"][bundle_id] = item
+    return merged
+
+
+def build_skill_registry_payload(
+    organization_sources: list[dict[str, Any]] | None,
+    *,
+    local_policy_allows_auto_install: bool = False,
+) -> dict[str, Any]:
+    registry = _merged_skill_registry(organization_sources)
+    skills = []
+    for skill in registry.get("skills") or []:
+        annotated = {
+            **skill,
+            "auto_install": annotate_dependencies_with_registry_status(
+                [{"id": skill.get("id"), "requirement": "optional"}],
+                registry,
+                local_policy_allows_auto_install=local_policy_allows_auto_install,
+            )[0]["auto_install"],
+        }
+        skills.append(annotated)
+    return {
+        "ok": registry.get("ok"),
+        "errors": registry.get("errors") or [],
+        "skills": skills,
+        "counts": {
+            "candidate": sum(1 for item in skills if item.get("status") == "candidate"),
+            "approved": sum(1 for item in skills if item.get("status") == "approved"),
+            "rejected": sum(1 for item in skills if item.get("status") == "rejected"),
+        },
+    }
+
+
+def build_card_detail_payload(
+    repo_root: Path,
+    entry_id: str,
+    language: str = DEFAULT_LANGUAGE,
+    organization_sources: list[dict[str, Any]] | None = None,
+    source_info: dict[str, Any] | None = None,
+    local_policy_allows_skill_auto_install: bool = False,
+) -> dict[str, Any] | None:
     normalized_language = normalize_language(language)
-    for entry in load_entries(repo_root):
+    for entry in _load_entries_for_detail(repo_root, organization_sources, prefer_source_info=source_info):
         if _entry_id(entry) != entry_id:
+            continue
+        if not _entry_matches_source_info(entry, source_info):
             continue
         raw_data = entry.data
         data = localized_entry(entry.data, normalized_language)
         summary = summarize_entry(entry, repo_root, language=normalized_language)
+        is_local_entry = summary.get("source_info", {}).get("kind") != "organization"
+        dependencies = extract_skill_dependencies(raw_data)
+        registry = _merged_skill_registry(organization_sources)
         return {
             **summary,
             "if": data.get("if"),
@@ -207,7 +377,12 @@ def build_card_detail_payload(repo_root: Path, entry_id: str, language: str = DE
             "source": data.get("source"),
             "updated_at": data.get("updated_at"),
             "raw": raw_data,
-            "recent_history": _entry_history(repo_root, entry_id),
+            "skill_dependencies": annotate_dependencies_with_registry_status(
+                dependencies,
+                registry,
+                local_policy_allows_auto_install=local_policy_allows_skill_auto_install,
+            ),
+            "recent_history": _entry_history(repo_root, entry_id) if is_local_entry else [],
         }
     return None
 
@@ -247,6 +422,7 @@ def build_search_payload(
     route_hint: str = "",
     top_k: int = 12,
     language: str = DEFAULT_LANGUAGE,
+    organization_sources: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     results = [
         summarize_entry(
@@ -256,7 +432,13 @@ def build_search_payload(
             match_route=parse_route_segments(entry.data.get("domain_path", [])),
             language=language,
         )
-        for entry in search_entries(repo_root, query=query, path_hint=route_hint, top_k=top_k)
+        for entry in search_multi_source_entries(
+            repo_root,
+            query=query,
+            path_hint=route_hint,
+            top_k=top_k,
+            organization_sources=organization_sources,
+        )
     ]
     return {
         "query": query,

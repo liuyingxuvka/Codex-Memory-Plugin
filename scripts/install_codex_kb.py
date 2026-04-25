@@ -41,6 +41,7 @@ def main() -> int:
             print(f"launcher_path: {payload['launcher_path']}")
             print(f"global_agents_path: {payload['global_agents_path']}")
             print(f"install_state_path: {payload['install_state_path']}")
+            print(f"maintenance_skills: {', '.join(payload.get('maintenance_skill_names', []))}")
             print("checklist:")
             for item in payload.get("checklist", []):
                 marker = "[OK]" if item.get("ok") else "[MISSING]"
@@ -68,6 +69,7 @@ def main() -> int:
         print(f"skill_path: {payload['skill_path']}")
         print(f"launcher_path: {payload['launcher_path']}")
         print(f"install_state_path: {payload['install_state_path']}")
+        print(f"maintenance_skills: {', '.join(payload.get('maintenance_skill_names', []))}")
     return 0
 
 

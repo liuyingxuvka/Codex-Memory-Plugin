@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from local_kb.adoption import card_exchange_hash, find_local_entry_by_exchange_hash
 from local_kb.common import parse_route_segments, utc_now_iso
 from local_kb.consolidate import APPLY_MODE_NONE, consolidate_history, sanitize_run_id
 from local_kb.consolidate_apply import build_auto_candidate_entry
@@ -575,6 +576,7 @@ def _create_dream_candidate(
 ) -> tuple[dict[str, Any] | None, str]:
     supporting_events = supporting_events_for_action(action, indexed_events)
     entry = build_auto_candidate_entry(
+        repo_root,
         action=action,
         supporting_events=supporting_events,
         run_id=run_id,
@@ -597,6 +599,10 @@ def _create_dream_candidate(
     if sources and isinstance(sources[0], dict):
         sources[0]["origin"] = "dream exploration"
         sources[0]["dream_mode"] = creation_mode
+
+    existing_same_hash = find_local_entry_by_exchange_hash(repo_root, card_exchange_hash(entry))
+    if existing_same_hash is not None:
+        return None, f"Candidate content hash already exists: {relative_repo_path(repo_root, existing_same_hash.path)}"
 
     target_path = candidate_dir(repo_root) / f"{entry['id']}.yaml"
     relative_target_path = relative_repo_path(repo_root, target_path)

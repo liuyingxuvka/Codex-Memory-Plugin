@@ -1,0 +1,4 @@
+interface:
+  display_name: "Organization Review"
+  short_description: "Review organization KB card-and-Skill bundles safely."
+  default_prompt: "Review this organization KB maintenance proposal for evidence quality, privacy, Skill safety, and merge readiness."

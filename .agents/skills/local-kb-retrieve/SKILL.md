@@ -52,7 +52,7 @@ Independent maintenance thread:
 6. Prefer entries with stronger route alignment, `status: trusted`, and higher `confidence`.
 7. Use retrieved entries as bounded context. Do not overgeneralize beyond the entry scope.
 8. If no relevant entries are found, continue without forcing the library into the answer; the absence of hits is still a useful signal.
-9. Before finalizing any non-trivial task, run one explicit KB postflight check: did this task expose a reusable lesson, a miss, a route gap, a card weakness, or a KB-process failure?
+9. Before finalizing any non-trivial task, run one explicit KB postflight check: did this task expose a reusable lesson, a skill/plugin or subagent/delegation usage lesson, a miss, a route gap, a card weakness, or a KB-process failure?
 10. If the answer is yes, let `kb-recorder` append structured feedback so the scheduled AI consolidation flow can process it later. When more than one card materially influenced the task, record all of those entry ids rather than only the top hit.
 11. If the answer is no, make that an explicit conclusion rather than silently forgetting to check.
 12. If a reusable new lesson emerges during the task, record it into candidates or structured history rather than trying to fully consolidate it inside the active task thread.
@@ -63,6 +63,7 @@ Independent maintenance thread:
 17. When such a lesson is likely to become a card later, keep more than one retrieval path in view: a runtime-facing route such as `codex/runtime-behavior/...` plus any prompting, tool-use, workflow, or planning routes that materially shaped the behavior.
 18. Lessons about a specific user are also valid when they stay bounded, evidence-based, and behaviorally framed. Record them as task-conditioned private predictions about likely preference, correction, or judgment rather than as personality labels or broad character impressions.
 19. Lessons about Codex Skill or plugin use are valid personal-KB evidence when the Skill is new, repeatedly useful, task-critical, missing, misleading, used as fallback, combined with another Skill, or when the task shows that a Skill should be invoked earlier or avoided under known conditions. Do not record generic praise or every routine invocation; record scenario, Skill action/choice, observed result, and future operational use. Preserve a skill-facing route such as `codex/workflow/skills` or `codex/skill-use/<skill-name>` plus the task-facing route that made the Skill relevant.
+20. Lessons about Codex subagent/delegation use are valid personal-KB evidence when spawning, avoiding, sequencing, waiting for, or parallelizing subagents materially changes speed, coordination overhead, context isolation, main-thread clarity, verification quality, or task outcome. Do not record generic praise for parallelism or every routine sidecar; record scenario, delegation action/choice, observed result, and future operational use. Preserve a workflow-facing route such as `codex/workflow/subagents` plus the task-facing route that made delegation relevant.
 
 Sleep maintenance checklist:
 
@@ -104,6 +105,7 @@ Output discipline:
 - Do not expose private entry content unless the user is authorized to see it.
 - User-specific lessons should default to private handling and should describe what this user is likely to prefer or reject in a concrete task context, not who the user “is” in general.
 - Keep sidecar agents scoped: `kb-scout` should be read-mostly and `kb-recorder` should default to history, comments, and candidate writes rather than broad structural edits.
+- Record subagent/delegation usage lessons when sidecars materially helped or hurt speed, main-thread focus, context isolation, verification, or integration.
 - In a maintenance thread, be explicit about what the tooling actually changed versus what still remains a proposal.
 - For non-trivial work, treat the explicit postflight observation check as part of done rather than optional housekeeping.
 - After meaningful tasks, prefer recording one structured observation even when the outcome was a workflow or rule clarification. Sleep maintenance depends on accumulated evidence, not only on bug-fix episodes.

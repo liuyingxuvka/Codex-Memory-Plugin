@@ -9,6 +9,7 @@ from typing import Any
 class Entry:
     path: Path
     data: dict[str, Any]
+    source: dict[str, Any] = field(default_factory=dict)
     score: float = 0.0
 
 
@@ -18,4 +19,3 @@ class RouteBranch:
     route: list[str]
     entry_ids: set[str] = field(default_factory=set)
     direct_entry_ids: set[str] = field(default_factory=set)
-

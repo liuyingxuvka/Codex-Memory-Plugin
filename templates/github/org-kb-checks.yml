@@ -1,0 +1,37 @@
+name: Organization KB Checks
+
+on:
+  pull_request:
+    paths:
+      - "khaos_org_kb.yaml"
+      - "kb/**"
+      - "skills/**"
+      - "docs/**"
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  organization-kb-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out organization KB
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Collect changed files
+        shell: bash
+        run: |
+          git fetch origin "${{ github.base_ref }}" --depth=1
+          git diff --name-only "origin/${{ github.base_ref }}...HEAD" > changed-files.txt
+          cat changed-files.txt
+
+      - name: Install check dependencies
+        shell: bash
+        run: python -m pip install pyyaml
+
+      - name: Validate organization KB
+        shell: bash
+        run: python .github/scripts/org_kb_check.py --org-root . --changed-files-file changed-files.txt --enforce-low-risk

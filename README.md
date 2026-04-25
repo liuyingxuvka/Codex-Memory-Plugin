@@ -149,6 +149,14 @@ The two screenshots below show the current desktop app in English UI, intended a
 - 它不会把 `kb/private/`、`kb/history/`、`kb/candidates/` 或真实经验卡片封进二进制
 - 源码入口仍然是 `python scripts/kb_desktop.py --repo-root . --language en`
 
+### 自愿支持项目维护
+
+如果这个项目对你有帮助，你可以通过下面的链接自愿支持项目维护：
+
+[通过 PayPal 请开发者喝杯咖啡](https://paypal.me/Yingxuliu)
+
+所有支持都是自愿的，不代表购买技术支持、质保、优先服务、商业授权或功能定制。
+
 ### 手动安装与检查（可选）
 
 如果你是协作者，或者你就是想手动跑一遍：
@@ -191,7 +199,7 @@ python scripts/kb_desktop.py --repo-root . --language en
 
 如果需要 Windows exe、桌面快捷方式或 Codex 打开 UI 的 skill，见 `docs/windows_desktop_app.md`。
 
-如果你在评估下一阶段的组织共享模式，见 `docs/organization_mode_plan.md`。它记录了 GitHub-backed organization KB、身份、权限、Skill registry、贡献管线和 UI 分层的计划，但还不是默认启用功能。
+如果你在评估可选的组织共享模式，见 `docs/organization_mode_plan.md`。个人模式仍是默认入口；只有在 Settings 里配置并验证一个 Khaos organization KB GitHub 仓库后，组织来源、组织卡片、Skill registry 和贡献管线才会启用。
 
 无界面检查可以运行：
 
@@ -368,6 +376,14 @@ The current GitHub Release includes the Windows preview entry `KhaosBrain.exe`:
 - it does not bundle `kb/private/`, `kb/history/`, `kb/candidates/`, or real memory cards into the binary
 - the source entry remains `python scripts/kb_desktop.py --repo-root . --language en`
 
+### Voluntary Support
+
+If this project is useful to you, you can support its development here:
+
+[Buy me a coffee via PayPal](https://paypal.me/Yingxuliu)
+
+Contributions are voluntary and do not purchase support, warranty, priority service, commercial rights, or feature requests.
+
 ### Manual Install And Check (Optional)
 
 If you are a collaborator, or you simply want to run it yourself:
@@ -412,7 +428,7 @@ The desktop viewer supports a local display-language setting. English card field
 
 For the Windows exe, desktop shortcut, or Codex UI-opening skill, see `docs/windows_desktop_app.md`.
 
-For the planned organization-sharing direction, see `docs/organization_mode_plan.md`. It records the proposed GitHub-backed organization KB, identity, permissions, Skill registry, contribution pipeline, and UI layering, but it is not enabled by default yet.
+For the optional organization-sharing mode, see `docs/organization_mode_plan.md`. Personal mode remains the default. Organization sources, organization cards, the Skill registry, and the contribution pipeline are enabled only after Settings validates a Khaos organization KB GitHub repository.
 
 For a headless check:
 

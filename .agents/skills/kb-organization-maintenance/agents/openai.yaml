@@ -1,0 +1,7 @@
+interface:
+  display_name: "KB Organization Maintenance"
+  short_description: "Inspect and review a validated organization KB repository"
+  default_prompt: "Use $kb-organization-maintenance to run one settings-gated organization KB maintenance pass for this repository."
+
+policy:
+  allow_implicit_invocation: false

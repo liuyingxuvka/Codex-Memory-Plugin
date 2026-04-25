@@ -1,0 +1,7 @@
+interface:
+  display_name: "KB Organization Contribute"
+  short_description: "Export shareable local KB cards into the organization proposal lane"
+  default_prompt: "Use $kb-organization-contribute to run one settings-gated organization KB contribution pass for this repository."
+
+policy:
+  allow_implicit_invocation: false

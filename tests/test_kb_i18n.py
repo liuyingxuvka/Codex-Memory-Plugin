@@ -190,7 +190,18 @@ class KbI18nTests(unittest.TestCase):
         card = {"id": "runtime-card", "title": "Codex 运行时工具环境中的对照式路线经验"}
 
         self.assertEqual(_cover_title(card, "zh-CN"), "Codex 运行时工具环境中的对照式路线经验")
-        self.assertEqual(_cover_title({"title": "Codex runtime behavior model"}, "en"), "Runtime Behavior")
+        self.assertEqual(_cover_title({"title": "Codex runtime behavior model"}, "en"), "Codex runtime behavior model")
+
+    def test_english_card_cover_keeps_full_localized_title(self) -> None:
+        card = {
+            "id": "model-004",
+            "title": "Repository tasks surface more prior models when the local KB is scanned first",
+        }
+
+        self.assertEqual(
+            _cover_title(card, "en"),
+            "Repository tasks surface more prior models when the local KB is scanned first",
+        )
 
     def test_language_selector_labels_are_bilingual_and_roundtrip(self) -> None:
         self.assertEqual(_language_display("en"), "English / 英文")

@@ -185,6 +185,55 @@ class ConsolidateApplyModeTests(unittest.TestCase):
                 created_candidate["action_key"],
             )
 
+    def test_new_candidate_apply_uses_content_hash_not_id_to_skip_existing_candidate(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            repo_root = Path(tmp_dir)
+            history_path = repo_root / "kb" / "history" / "events.jsonl"
+            history_path.parent.mkdir(parents=True, exist_ok=True)
+
+            event = {
+                "event_id": "obs-new-cand-1",
+                "event_type": "observation",
+                "created_at": "2026-04-19T08:09:00+00:00",
+                "source": {"kind": "task", "agent": "worker-1"},
+                "target": {
+                    "kind": "task-observation",
+                    "route_hint": ["work", "communication", "email"],
+                    "task_summary": "Need reusable email preference guidance",
+                },
+                "rationale": "next=new-candidate",
+                "context": {
+                    "suggested_action": "new-candidate",
+                    "predictive_observation": {
+                        "scenario": "Email workflow tasks repeatedly need route-specific preference guidance.",
+                        "action_taken": "Record a new-candidate observation for the communication email route.",
+                        "observed_result": "Maintenance can synthesize a candidate instead of losing the route gap.",
+                        "operational_use": "Prefer a route-specific email card when similar tasks recur.",
+                        "reuse_judgment": "Reusable for email workflow tasks.",
+                    },
+                },
+            }
+            history_path.write_text(json.dumps(event) + "\n", encoding="utf-8")
+
+            first = consolidate_history(
+                repo_root=repo_root,
+                run_id="apply-first",
+                apply_mode="new-candidates",
+            )
+            second = consolidate_history(
+                repo_root=repo_root,
+                run_id="apply-second",
+                apply_mode="new-candidates",
+            )
+
+            self.assertEqual(first["apply_summary"]["created_candidate_count"], 1)
+            first_id = first["apply_summary"]["created_candidates"][0]["entry_id"]
+            self.assertRegex(first_id, r"^cand-\d{8}T\d{6}Z-inst[0-9a-f]{8}-[0-9a-f]{6}$")
+            self.assertEqual(second["apply_summary"]["created_candidate_count"], 0)
+            self.assertTrue(
+                any("Candidate content hash already exists" in item["reason"] for item in second["apply_summary"]["skipped_actions"])
+            )
+
     def test_apply_mode_creates_low_confidence_seed_candidate_from_complete_single_observation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             repo_root = Path(tmp_dir)

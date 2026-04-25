@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -9,6 +10,7 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
+from local_kb.card_ids import load_or_create_installation_id
 from local_kb.common import utc_now_iso
 from local_kb.config import (
     KB_ROOT_ENV_VAR,
@@ -22,6 +24,8 @@ from local_kb.config import (
 
 GLOBAL_SKILL_NAME = "predictive-kb-preflight"
 GLOBAL_SKILL_ROOT = Path("skills") / GLOBAL_SKILL_NAME
+GLOBAL_SKILLS_ROOT = Path("skills")
+REPO_SKILLS_ROOT = Path(".agents") / "skills"
 TEMPLATE_ROOT = Path("templates") / GLOBAL_SKILL_NAME
 AUTOMATIONS_ROOT = Path("automations")
 GLOBAL_AGENTS_FILENAME = "AGENTS.md"
@@ -35,13 +39,49 @@ AUTOMATION_REASONING_EFFORT_ENV_VAR = "CODEX_KB_AUTOMATION_REASONING_EFFORT"
 AUTOMATION_FALLBACK_MODEL = "gpt-5.5"
 AUTOMATION_FALLBACK_REASONING_EFFORT = "xhigh"
 REASONING_EFFORT_ORDER = ("none", "minimal", "low", "medium", "high", "xhigh")
+AUTOMATION_DAILY_BYDAY = "SU,MO,TU,WE,TH,FR,SA"
+ORG_CONTRIBUTE_WINDOW = (10 * 60, 13 * 60 + 59)
+ORG_MAINTENANCE_WINDOW = (14 * 60, 16 * 60)
+MAINTENANCE_SKILL_SPECS = (
+    {
+        "name": "kb-sleep-maintenance",
+        "automation_id": "kb-sleep",
+        "prompt_marker": "MAINTENANCE_PROMPT.md",
+    },
+    {
+        "name": "kb-dream-pass",
+        "automation_id": "kb-dream",
+        "prompt_marker": "DREAM_PROMPT.md",
+    },
+    {
+        "name": "kb-architect-pass",
+        "automation_id": "kb-architect",
+        "prompt_marker": "ARCHITECT_PROMPT.md",
+    },
+    {
+        "name": "kb-organization-contribute",
+        "automation_id": "kb-org-contribute",
+        "prompt_marker": "scripts/kb_org_outbox.py",
+    },
+    {
+        "name": "kb-organization-maintenance",
+        "automation_id": "kb-org-maintenance",
+        "prompt_marker": "scripts/kb_org_maintainer.py",
+    },
+)
+MAINTENANCE_SKILL_NAMES = tuple(item["name"] for item in MAINTENANCE_SKILL_SPECS)
 
 SLEEP_AUTOMATION_PROMPT = (
-    "Run the repository's local KB sleep-maintenance pass for this workspace. Use PROJECT_SPEC.md, "
+    "Use $kb-sleep-maintenance to run the repository's local KB sleep-maintenance pass for this workspace. "
+    "Use PROJECT_SPEC.md, "
     "docs/maintenance_runbook.md, and .agents/skills/local-kb-retrieve/MAINTENANCE_PROMPT.md as the "
     "authoritative guides. First write a visible sleep execution plan with checkpoint statuses, start with a "
     "sleep self-preflight search against system/knowledge-library/maintenance, then run proposal mode, inspect "
-    "taxonomy and route gaps, review candidate route quality by preferring functional "
+    "taxonomy and route gaps, run a mandatory similar-card merge checkpoint, run a mandatory overloaded-card "
+    "split checkpoint, run an organization Skill bundle consolidation checkpoint that groups imported read-only "
+    "Skills by bundle_id and keeps only the latest approved version by version_time, record skip-with-reason "
+    "decisions when merge, split, or Skill replacement is not safe, review "
+    "candidate route quality by preferring functional "
     "domain paths over project-name roots, allow the current low-risk new-candidate, related-card, cross-index, "
     "AI-authored semantic-review, and AI-authored i18n apply paths when clearly eligible, "
     "require future utility before auto-creating candidate cards, require semantic-review utility assessments, "
@@ -60,7 +100,8 @@ SLEEP_AUTOMATION_PROMPT = (
 )
 
 DREAM_AUTOMATION_PROMPT = (
-    "Run one bounded local KB dream-mode pass for this workspace. Use PROJECT_SPEC.md, docs/dream_runbook.md, "
+    "Use $kb-dream-pass to run one bounded local KB dream-mode pass for this workspace. "
+    "Use PROJECT_SPEC.md, docs/dream_runbook.md, "
     "and .agents/skills/local-kb-retrieve/DREAM_PROMPT.md as the authoritative guides. Run "
     "`python .agents/skills/local-kb-retrieve/scripts/kb_dream.py --json --sleep-cooldown-minutes 45`, "
     "inspect the generated preflight, plan, opportunity, experiment, execution-plan, "
@@ -73,7 +114,8 @@ DREAM_AUTOMATION_PROMPT = (
 )
 
 ARCHITECT_AUTOMATION_PROMPT = (
-    "Run one KB Architect mechanism-maintenance pass for this workspace. Use PROJECT_SPEC.md, "
+    "Use $kb-architect-pass to run one KB Architect mechanism-maintenance pass for this workspace. "
+    "Use PROJECT_SPEC.md, "
     "docs/architecture_runbook.md, and .agents/skills/local-kb-retrieve/ARCHITECT_PROMPT.md as the "
     "authoritative guides. Before the first stateful command, write a visible Architect execution plan with "
     "checkpoint statuses and include every required checkpoint; do not skip any checkpoint silently. Start with "
@@ -92,12 +134,61 @@ ARCHITECT_AUTOMATION_PROMPT = (
     "postflight observation status, and watching items left for long observation."
 )
 
+ORG_CONTRIBUTE_AUTOMATION_PROMPT = (
+    "Use $kb-organization-contribute to run one settings-gated organization KB contribution pass for this "
+    "workspace. Use PROJECT_SPEC.md, docs/organization_mode_plan.md, and .agents/skills/local-kb-retrieve/SKILL.md "
+    "as the authoritative guides. Start by reading .local/khaos_brain_desktop_settings.json through "
+    "scripts/kb_org_outbox.py --automation; if the desktop settings are personal mode, missing, unvalidated, or not "
+    "connected to a validated organization repository, return a successful no-op. When organization mode is valid, "
+    "run KB preflight against system/knowledge-library/organization, then export only shareable public model and "
+    "heuristic cards through the content-hash-gated outbox. Respect prior download hashes, prior upload hashes, "
+    "current local card hashes, current organization repository hashes, and current import hashes; do not export "
+    "private cards, personal preferences, credentials, raw local paths, or raw machine identifiers. When cards "
+    "depend on local Skills, upload card-bound Skill bundles with bundle_id, content_hash, version_time, "
+    "original_author, readonly_when_imported, and update_policy=original_author_only; if several local cards point "
+    "at the same bundle_id, upload the local latest version for that bundle rather than an older card-carried copy. Use "
+    "`python scripts/kb_org_outbox.py --automation` for the safe scheduled pass; add --prepare-branch, commit, "
+    "or --push only when organization policy allows branch creation or remote submission. Run KB postflight after "
+    "any non-skipped pass, record a "
+    "structured observation, and report the settings gate, preflight entries, created and skipped proposal counts, "
+    "outbox path, branch or import proposal status, push or pull request URL if attempted, postflight path, and "
+    "errors."
+)
+
+ORG_MAINTENANCE_AUTOMATION_PROMPT = (
+    "Use $kb-organization-maintenance to run one settings-gated organization-level Sleep-like maintenance pass "
+    "for this workspace. Use PROJECT_SPEC.md, docs/organization_mode_plan.md, "
+    ".agents/skills/local-kb-retrieve/SKILL.md, and $organization-review as the authoritative guides. Start by "
+    "reading .local/khaos_brain_desktop_settings.json through scripts/kb_org_maintainer.py --automation; if the "
+    "desktop settings are personal mode, missing, unvalidated, or organization maintenance participation is not "
+    "requested, return a successful no-op. When participation is available for a validated organization "
+    "repository, run KB preflight against system/knowledge-library/organization, validate the organization "
+    "manifest, expected paths, imports lane, candidates lane, trusted lane, Skill registry, and current Git state, "
+    "then run the organization candidate intake checkpoint, content-hash checkpoint, mandatory organization "
+    "similar-card merge checkpoint, mandatory organization overloaded-card split checkpoint, candidate decision "
+    "checkpoint, Skill safety checkpoint, Skill bundle version checkpoint, and GitHub merge-readiness checkpoint. Inspect organization candidates, "
+    "imports, Skill registry entries, card-and-Skill bundles, privacy boundaries, and GitHub auto-merge readiness "
+    "using organization-review. Treat duplicate content hashes as maintenance signals and duplicate entry ids as "
+    "non-blocking handles. For card-bound Skill bundles, group by bundle_id, approve only original-author updates "
+    "on the same bundle, require sha256 content_hash and version_time, treat non-author changes as forks, and select "
+    "the latest approved version by version_time for organization distribution. Use candidate, approved, and rejected "
+    "as the first-pass Skill states; do not auto-install candidate, rejected, unknown, unpinned, or non-hash-verified "
+    "Skills. It is acceptable to skip applying a change when evidence, "
+    "safety, tooling, permissions, or scope is insufficient, but the inspection and recorded decision must still "
+    "happen. Run KB postflight after any non-skipped pass, record a structured observation, and report the settings "
+    "gate, participation status, preflight entries, manifest status, candidate and import counts, content-hash "
+    "duplicate decisions, organization merge checkpoint decisions, organization split checkpoint decisions, "
+    "candidate approval or rejection decisions, Skill dependency decisions, Skill bundle version decisions, GitHub "
+    "merge-readiness result, organization-review availability, recommendations, postflight path, and errors."
+)
+
 REPO_AUTOMATION_SPECS = (
     {
         "id": "kb-sleep",
         "name": "KB Sleep",
         "kind": "cron",
         "prompt": SLEEP_AUTOMATION_PROMPT,
+        "skill_name": "kb-sleep-maintenance",
         "status": "ACTIVE",
         "rrule": "FREQ=WEEKLY;BYDAY=SU,MO,TU,WE,TH,FR,SA;BYHOUR=12;BYMINUTE=0",
         "model_policy": AUTOMATION_MODEL_POLICY,
@@ -109,6 +200,7 @@ REPO_AUTOMATION_SPECS = (
         "name": "KB Dream",
         "kind": "cron",
         "prompt": DREAM_AUTOMATION_PROMPT,
+        "skill_name": "kb-dream-pass",
         "status": "ACTIVE",
         "rrule": "FREQ=WEEKLY;BYDAY=SU,MO,TU,WE,TH,FR,SA;BYHOUR=13;BYMINUTE=0",
         "model_policy": AUTOMATION_MODEL_POLICY,
@@ -120,8 +212,33 @@ REPO_AUTOMATION_SPECS = (
         "name": "KB Architect",
         "kind": "cron",
         "prompt": ARCHITECT_AUTOMATION_PROMPT,
+        "skill_name": "kb-architect-pass",
         "status": "ACTIVE",
         "rrule": "FREQ=WEEKLY;BYDAY=SU,MO,TU,WE,TH,FR,SA;BYHOUR=14;BYMINUTE=0",
+        "model_policy": AUTOMATION_MODEL_POLICY,
+        "reasoning_effort_policy": AUTOMATION_REASONING_EFFORT_POLICY,
+        "execution_environment": "local",
+    },
+    {
+        "id": "kb-org-contribute",
+        "name": "KB Organization Contribute",
+        "kind": "cron",
+        "prompt": ORG_CONTRIBUTE_AUTOMATION_PROMPT,
+        "skill_name": "kb-organization-contribute",
+        "status": "ACTIVE",
+        "jitter_window": ORG_CONTRIBUTE_WINDOW,
+        "model_policy": AUTOMATION_MODEL_POLICY,
+        "reasoning_effort_policy": AUTOMATION_REASONING_EFFORT_POLICY,
+        "execution_environment": "local",
+    },
+    {
+        "id": "kb-org-maintenance",
+        "name": "KB Organization Maintenance",
+        "kind": "cron",
+        "prompt": ORG_MAINTENANCE_AUTOMATION_PROMPT,
+        "skill_name": "kb-organization-maintenance",
+        "status": "ACTIVE",
+        "jitter_window": ORG_MAINTENANCE_WINDOW,
         "model_policy": AUTOMATION_MODEL_POLICY,
         "reasoning_effort_policy": AUTOMATION_REASONING_EFFORT_POLICY,
         "execution_environment": "local",
@@ -139,6 +256,15 @@ def default_local_appdata() -> Path:
 def global_skill_dir(codex_home: Path | None = None) -> Path:
     home = codex_home or default_codex_home()
     return home / GLOBAL_SKILL_ROOT
+
+
+def maintenance_skill_source_dir(repo_root: Path, skill_name: str) -> Path:
+    return repo_root / REPO_SKILLS_ROOT / skill_name
+
+
+def maintenance_skill_install_dir(skill_name: str, codex_home: Path | None = None) -> Path:
+    home = codex_home or default_codex_home()
+    return home / GLOBAL_SKILLS_ROOT / skill_name
 
 
 def codex_shell_bin_dir(path_env: str | None = None, local_appdata: Path | None = None) -> Path:
@@ -162,6 +288,37 @@ def automation_dir(codex_home: Path | None = None) -> Path:
 
 def automation_toml_path(automation_id: str, codex_home: Path | None = None) -> Path:
     return automation_dir(codex_home) / automation_id / "automation.toml"
+
+
+def _rrule_for_local_minute(total_minutes: int) -> str:
+    hour = max(0, min(23, int(total_minutes) // 60))
+    minute = max(0, min(59, int(total_minutes) % 60))
+    return f"FREQ=WEEKLY;BYDAY={AUTOMATION_DAILY_BYDAY};BYHOUR={hour};BYMINUTE={minute}"
+
+
+def _stable_window_minute(repo_root: Path, automation_id: str, window: tuple[int, int]) -> int:
+    start, end = int(window[0]), int(window[1])
+    if end < start:
+        raise ValueError(f"Invalid automation jitter window: {window}")
+    installation_id = load_or_create_installation_id(repo_root)
+    digest = hashlib.sha256(f"{installation_id}:{automation_id}".encode("utf-8")).digest()
+    offset = int.from_bytes(digest[:8], "big") % (end - start + 1)
+    return start + offset
+
+
+def automation_rrule_for_spec(spec: dict[str, Any], repo_root: Path) -> str:
+    window = spec.get("jitter_window")
+    if isinstance(window, tuple) and len(window) == 2:
+        return _rrule_for_local_minute(_stable_window_minute(repo_root, str(spec["id"]), window))
+    return str(spec["rrule"])
+
+
+def automation_time_window_label(spec: dict[str, Any]) -> str:
+    window = spec.get("jitter_window")
+    if not isinstance(window, tuple) or len(window) != 2:
+        return ""
+    start, end = int(window[0]), int(window[1])
+    return f"{start // 60:02d}:{start % 60:02d}-{end // 60:02d}:{end % 60:02d}"
 
 
 def global_agents_path(codex_home: Path | None = None) -> Path:
@@ -557,11 +714,12 @@ def install_codex_shell_tools(
 
 
 def _automation_spec_payload(
-    spec: dict[str, str],
+    spec: dict[str, Any],
     repo_root: Path,
     codex_home: Path | None = None,
 ) -> dict[str, Any]:
     runtime = resolve_automation_runtime(codex_home)
+    schedule_window = automation_time_window_label(spec)
     return {
         "version": 1,
         "id": spec["id"],
@@ -569,7 +727,9 @@ def _automation_spec_payload(
         "name": spec["name"],
         "prompt": spec["prompt"],
         "status": spec["status"],
-        "rrule": spec["rrule"],
+        "rrule": automation_rrule_for_spec(spec, repo_root),
+        "schedule_policy": "stable-jitter" if schedule_window else "fixed",
+        "schedule_window": schedule_window,
         "model": runtime["model"],
         "reasoning_effort": runtime["reasoning_effort"],
         "model_policy": spec.get("model_policy", runtime["model_policy"]),
@@ -603,6 +763,8 @@ def _write_automation_toml(path: Path, payload: dict[str, Any]) -> None:
         f"prompt = {json.dumps(payload['prompt'], ensure_ascii=False)}",
         f"status = {json.dumps(payload['status'], ensure_ascii=False)}",
         f"rrule = {json.dumps(payload['rrule'], ensure_ascii=False)}",
+        f"schedule_policy = {json.dumps(payload.get('schedule_policy', 'fixed'), ensure_ascii=False)}",
+        f"schedule_window = {json.dumps(payload.get('schedule_window', ''), ensure_ascii=False)}",
         f"model = {json.dumps(payload['model'], ensure_ascii=False)}",
         f"reasoning_effort = {json.dumps(payload['reasoning_effort'], ensure_ascii=False)}",
         f"model_policy = {json.dumps(payload['model_policy'], ensure_ascii=False)}",
@@ -613,6 +775,36 @@ def _write_automation_toml(path: Path, payload: dict[str, Any]) -> None:
         f"updated_at = {int(payload['updated_at'])}",
     ]
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def install_repo_maintenance_skills(repo_root: Path, codex_home: Path | None = None) -> list[dict[str, Any]]:
+    home = codex_home or default_codex_home()
+    installed: list[dict[str, Any]] = []
+    for spec in MAINTENANCE_SKILL_SPECS:
+        skill_name = spec["name"]
+        source = maintenance_skill_source_dir(repo_root, skill_name)
+        destination = maintenance_skill_install_dir(skill_name, home)
+        skill_path = source / "SKILL.md"
+        if not skill_path.exists():
+            raise FileNotFoundError(f"Repository-managed maintenance skill is missing: {skill_path}")
+        if destination.exists():
+            shutil.rmtree(destination)
+        shutil.copytree(
+            source,
+            destination,
+            ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+        )
+        installed.append(
+            {
+                "name": skill_name,
+                "source_path": str(source),
+                "install_path": str(destination),
+                "skill_path": str(destination / "SKILL.md"),
+                "openai_path": str(destination / "agents" / "openai.yaml"),
+                "automation_id": spec["automation_id"],
+            }
+        )
+    return installed
 
 
 def install_repo_automations(repo_root: Path, codex_home: Path | None = None) -> list[dict[str, Any]]:
@@ -636,6 +828,8 @@ def install_repo_automations(repo_root: Path, codex_home: Path | None = None) ->
                 "name": payload["name"],
                 "path": str(path),
                 "rrule": payload["rrule"],
+                "schedule_policy": payload["schedule_policy"],
+                "schedule_window": payload["schedule_window"],
                 "model": payload["model"],
                 "reasoning_effort": payload["reasoning_effort"],
                 "model_policy": payload["model_policy"],
@@ -678,6 +872,7 @@ def install_codex_integration(
     )
     launcher_path.write_text(_read_template(repo_root, "kb_launch.py"), encoding="utf-8")
     openai_path.write_text(_read_template(repo_root, Path("agents") / "openai.yaml"), encoding="utf-8")
+    maintenance_skills = install_repo_maintenance_skills(repo_root=repo_root, codex_home=home)
     shell_tools = install_codex_shell_tools(
         shell_bin_dir=shell_bin_dir,
         git_executable=git_executable,
@@ -697,6 +892,8 @@ def install_codex_integration(
         "openai_path": str(openai_path),
         "global_agents_path": global_agents,
         "env_var_name": KB_ROOT_ENV_VAR,
+        "maintenance_skill_names": list(MAINTENANCE_SKILL_NAMES),
+        "maintenance_skills": maintenance_skills,
         "shell_tools": shell_tools,
         "automation_runtime": automation_runtime,
         "automation_ids": [item["id"] for item in automations],
@@ -722,6 +919,7 @@ def build_installation_check(
     manifest_root_raw = str(manifest.get("repo_root", "") or "").strip()
     env_value = os.environ.get(KB_ROOT_ENV_VAR, "").strip()
     managed_automations = manifest.get("automations", [])
+    managed_maintenance_skills = manifest.get("maintenance_skills", [])
     shell_tools_manifest = manifest.get("shell_tools", {}) if isinstance(manifest.get("shell_tools"), dict) else {}
 
     issues: list[str] = []
@@ -776,6 +974,11 @@ def build_installation_check(
             "Global skill default_prompt does not mention skill/plugin usage lessons as KB signals. "
             "Re-run the installer to refresh the installed prompt."
         )
+    if openai_text and "subagent/delegation usage lesson" not in openai_text:
+        issues.append(
+            "Global skill default_prompt does not mention subagent/delegation usage lessons as KB signals. "
+            "Re-run the installer to refresh the installed prompt."
+        )
     if not global_agents.exists():
         issues.append(
             f"Global AGENTS defaults file is missing: {global_agents}. "
@@ -809,6 +1012,11 @@ def build_installation_check(
             "Global AGENTS defaults do not mention skill/plugin usage lessons as KB signals. "
             "Re-run the installer to refresh the session-wide defaults."
         )
+    if global_agents_text and "subagent/delegation usage" not in global_agents_text:
+        issues.append(
+            "Global AGENTS defaults do not mention subagent/delegation usage lessons as KB signals. "
+            "Re-run the installer to refresh the session-wide defaults."
+        )
 
     shell_bin = Path(
         str(shell_tools_manifest.get("shell_bin_dir", "") or codex_shell_bin_dir())
@@ -830,8 +1038,69 @@ def build_installation_check(
             "Re-run the installer to restore stable ripgrep command resolution."
         )
 
-    automation_checks: list[dict[str, Any]] = []
     expected_repo_root = repo_root or (Path(manifest_root_raw) if manifest_root_raw else Path("."))
+    maintenance_skill_checks: list[dict[str, Any]] = []
+    for spec in MAINTENANCE_SKILL_SPECS:
+        skill_name = spec["name"]
+        source_dir = maintenance_skill_source_dir(expected_repo_root, skill_name)
+        install_dir = maintenance_skill_install_dir(skill_name, home)
+        source_skill_path = source_dir / "SKILL.md"
+        install_skill_path = install_dir / "SKILL.md"
+        install_openai_path = install_dir / "agents" / "openai.yaml"
+        issues_for_skill: list[str] = []
+        if not source_skill_path.exists():
+            issues_for_skill.append(f"Repository maintenance skill source is missing: {source_skill_path}")
+        if not install_skill_path.exists():
+            issues_for_skill.append(f"Installed maintenance skill file is missing: {install_skill_path}")
+            skill_text = ""
+        else:
+            try:
+                skill_text = install_skill_path.read_text(encoding="utf-8")
+            except OSError as exc:
+                issues_for_skill.append(f"Installed maintenance skill could not be read: {exc}")
+                skill_text = ""
+        if not install_openai_path.exists():
+            issues_for_skill.append(f"Installed maintenance skill openai.yaml is missing: {install_openai_path}")
+            skill_openai_text = ""
+        else:
+            try:
+                skill_openai_text = install_openai_path.read_text(encoding="utf-8")
+            except OSError as exc:
+                issues_for_skill.append(f"Installed maintenance skill openai.yaml could not be read: {exc}")
+                skill_openai_text = ""
+        if skill_text:
+            if f"name: {skill_name}" not in skill_text:
+                issues_for_skill.append(f"Installed maintenance skill {skill_name} has the wrong frontmatter name.")
+            if "[TODO" in skill_text:
+                issues_for_skill.append(f"Installed maintenance skill {skill_name} still contains TODO scaffolding.")
+            if str(spec["prompt_marker"]) not in skill_text:
+                issues_for_skill.append(
+                    f"Installed maintenance skill {skill_name} is missing prompt marker {spec['prompt_marker']}."
+                )
+        if skill_openai_text:
+            if "allow_implicit_invocation: false" not in skill_openai_text:
+                issues_for_skill.append(
+                    f"Installed maintenance skill {skill_name} should disable implicit invocation."
+                )
+            if f"${skill_name}" not in skill_openai_text:
+                issues_for_skill.append(
+                    f"Installed maintenance skill {skill_name} default prompt should mention ${skill_name}."
+                )
+        if issues_for_skill:
+            issues.extend(issues_for_skill)
+        maintenance_skill_checks.append(
+            {
+                "name": skill_name,
+                "source_path": str(source_dir),
+                "install_path": str(install_dir),
+                "exists": install_skill_path.exists(),
+                "openai_exists": install_openai_path.exists(),
+                "automation_id": spec["automation_id"],
+                "issues": issues_for_skill,
+            }
+        )
+
+    automation_checks: list[dict[str, Any]] = []
     automation_runtime = resolve_automation_runtime(home)
     for spec in REPO_AUTOMATION_SPECS:
         expected = _automation_spec_payload(spec, expected_repo_root, codex_home=home)
@@ -861,6 +1130,14 @@ def build_installation_check(
                 issues_for_automation.append(
                     f"Automation {expected['id']} should use rrule {expected['rrule']}."
                 )
+            if str(payload.get("schedule_policy", "") or "") != expected["schedule_policy"]:
+                issues_for_automation.append(
+                    f"Automation {expected['id']} should record schedule_policy={expected['schedule_policy']}."
+                )
+            if str(payload.get("schedule_window", "") or "") != expected["schedule_window"]:
+                issues_for_automation.append(
+                    f"Automation {expected['id']} should record schedule_window={expected['schedule_window']}."
+                )
             if str(payload.get("model", "") or "") != expected["model"]:
                 issues_for_automation.append(
                     f"Automation {expected['id']} should use model={expected['model']} from policy={expected['model_policy']}."
@@ -888,6 +1165,11 @@ def build_installation_check(
                     f"Automation {expected['id']} should target cwds={expected['cwds']}."
                 )
             prompt_text = str(payload.get("prompt", "") or "")
+            expected_skill_name = str(spec.get("skill_name", "") or "")
+            if expected_skill_name and f"${expected_skill_name}" not in prompt_text:
+                issues_for_automation.append(
+                    f"Automation {expected['id']} prompt must explicitly invoke ${expected_skill_name}."
+                )
             required_prompt_markers = (
                 ".agents/skills/local-kb-retrieve",
                 "PROJECT_SPEC.md",
@@ -923,6 +1205,11 @@ def build_installation_check(
                     "checkpoint statuses",
                     "sleep self-preflight",
                     "system/knowledge-library/maintenance",
+                    "mandatory similar-card merge checkpoint",
+                    "mandatory overloaded-card split checkpoint",
+                    "organization Skill bundle consolidation checkpoint",
+                    "latest approved version by version_time",
+                    "skip-with-reason decisions",
                     "every safe checkpoint",
                     "supported low-risk repairs",
                     "rerun the relevant validation",
@@ -954,6 +1241,53 @@ def build_installation_check(
                         issues_for_automation.append(
                             f"Automation kb-architect prompt is missing architect lifecycle marker: {marker}"
                         )
+            if expected["id"] == "kb-org-contribute":
+                for marker in (
+                    "scripts/kb_org_outbox.py",
+                    "desktop settings",
+                    "organization mode",
+                    "validated organization repository",
+                    "successful no-op",
+                    "KB preflight",
+                    "content-hash-gated outbox",
+                    "prior download hashes",
+                    "prior upload hashes",
+                    "KB postflight",
+                ):
+                    if marker not in prompt_text:
+                        issues_for_automation.append(
+                            f"Automation kb-org-contribute prompt is missing organization contribution marker: {marker}"
+                        )
+            if expected["id"] == "kb-org-maintenance":
+                for marker in (
+                    "scripts/kb_org_maintainer.py",
+                    "organization-level Sleep-like maintenance",
+                    "desktop settings",
+                    "organization maintenance participation",
+                    "successful no-op",
+                    "KB preflight",
+                    "organization candidate intake checkpoint",
+                    "content-hash checkpoint",
+                    "mandatory organization similar-card merge checkpoint",
+                    "mandatory organization overloaded-card split checkpoint",
+                    "candidate decision checkpoint",
+                    "Skill safety checkpoint",
+                    "Skill bundle version checkpoint",
+                    "GitHub merge-readiness checkpoint",
+                    "organization-review",
+                    "Skill registry",
+                    "duplicate content hashes",
+                    "duplicate entry ids",
+                    "bundle_id",
+                    "original-author updates",
+                    "latest approved version by version_time",
+                    "do not auto-install",
+                    "KB postflight",
+                ):
+                    if marker not in prompt_text:
+                        issues_for_automation.append(
+                            f"Automation kb-org-maintenance prompt is missing organization maintenance marker: {marker}"
+                        )
         if issues_for_automation:
             issues.extend(issues_for_automation)
         automation_checks.append(
@@ -961,17 +1295,26 @@ def build_installation_check(
                 "id": spec["id"],
                 "path": str(path),
                 "exists": path.exists(),
+                "rrule": expected["rrule"],
+                "schedule_policy": expected["schedule_policy"],
+                "schedule_window": expected["schedule_window"],
                 "issues": issues_for_automation,
             }
         )
 
     if not managed_automations:
         warnings.append(
-            "Install manifest does not record the repository-managed sleep/dream/architect automations. "
+            "Install manifest does not record the repository-managed KB automations. "
             "Re-run the installer to refresh automation setup."
+        )
+    if not managed_maintenance_skills:
+        warnings.append(
+            "Install manifest does not record the repository-managed KB skills. "
+            "Re-run the installer to refresh skill setup."
         )
 
     automation_issue_map = {item["id"]: item["issues"] for item in automation_checks}
+    maintenance_skill_ok = all(not item["issues"] for item in maintenance_skill_checks)
     global_skill_present = skill_path.exists() and launcher_path.exists() and openai_path.exists()
     global_skill_implicit = bool(openai_text and "allow_implicit_invocation: true" in openai_text)
     global_skill_postflight = bool(
@@ -980,6 +1323,7 @@ def build_installation_check(
         and "required default preflight" in openai_text
     )
     global_skill_skill_usage = bool(openai_text and "skill/plugin usage lesson" in openai_text)
+    global_skill_subagent_usage = bool(openai_text and "subagent/delegation usage lesson" in openai_text)
     global_agents_present = global_agents.exists()
     global_agents_managed = bool(
         global_agents_text
@@ -989,9 +1333,13 @@ def build_installation_check(
     global_agents_preflight = bool(global_agents_text and "$predictive-kb-preflight" in global_agents_text)
     global_agents_postflight = bool(global_agents_text and "explicit KB postflight check" in global_agents_text)
     global_agents_skill_usage = bool(global_agents_text and "skill/plugin usage" in global_agents_text)
+    global_agents_subagent_usage = bool(global_agents_text and "subagent/delegation usage" in global_agents_text)
     kb_sleep_ok = not automation_issue_map.get("kb-sleep")
     kb_dream_ok = not automation_issue_map.get("kb-dream")
     kb_architect_ok = not automation_issue_map.get("kb-architect")
+    kb_org_contribute_ok = not automation_issue_map.get("kb-org-contribute")
+    kb_org_maintenance_ok = not automation_issue_map.get("kb-org-maintenance")
+    automation_check_map = {item["id"]: item for item in automation_checks}
     codex_shell_tools_ok = git_shim_path.exists() and rg_path.exists()
     strong_defaults_ok = (
         global_skill_implicit
@@ -1001,6 +1349,9 @@ def build_installation_check(
         and global_agents_postflight
         and global_skill_skill_usage
         and global_agents_skill_usage
+        and global_skill_subagent_usage
+        and global_agents_subagent_usage
+        and maintenance_skill_ok
     )
     checklist = [
         _checklist_item(
@@ -1025,6 +1376,12 @@ def build_installation_check(
             "global_skill_skill_usage",
             "Global predictive KB prompt treats skill/plugin lessons as recordable KB signals",
             global_skill_skill_usage,
+            f"openai_path={openai_path}",
+        ),
+        _checklist_item(
+            "global_skill_subagent_usage",
+            "Global predictive KB prompt treats subagent/delegation lessons as recordable KB signals",
+            global_skill_subagent_usage,
             f"openai_path={openai_path}",
         ),
         _checklist_item(
@@ -1058,6 +1415,18 @@ def build_installation_check(
             f"global_agents_path={global_agents}",
         ),
         _checklist_item(
+            "global_agents_subagent_usage",
+            "Global AGENTS defaults treat subagent/delegation lessons as recordable KB signals",
+            global_agents_subagent_usage,
+            f"global_agents_path={global_agents}",
+        ),
+        _checklist_item(
+            "repo_maintenance_skills",
+            "Repository-managed KB maintenance and organization skills are installed",
+            maintenance_skill_ok,
+            "; ".join(f"{item['name']}={item['install_path']}" for item in maintenance_skill_checks),
+        ),
+        _checklist_item(
             "kb_sleep_automation",
             "KB Sleep automation is installed and matches the repository spec",
             kb_sleep_ok,
@@ -1074,6 +1443,26 @@ def build_installation_check(
             "KB Architect automation is installed and matches the repository spec",
             kb_architect_ok,
             f"path={automation_toml_path('kb-architect', home)}",
+        ),
+        _checklist_item(
+            "kb_org_contribute_automation",
+            "KB Organization Contribute automation is installed and matches the repository spec",
+            kb_org_contribute_ok,
+            (
+                f"path={automation_toml_path('kb-org-contribute', home)}; "
+                f"rrule={automation_check_map.get('kb-org-contribute', {}).get('rrule', '')}; "
+                f"window={automation_check_map.get('kb-org-contribute', {}).get('schedule_window', '')}"
+            ),
+        ),
+        _checklist_item(
+            "kb_org_maintenance_automation",
+            "KB Organization Maintenance automation is installed and matches the repository spec",
+            kb_org_maintenance_ok,
+            (
+                f"path={automation_toml_path('kb-org-maintenance', home)}; "
+                f"rrule={automation_check_map.get('kb-org-maintenance', {}).get('rrule', '')}; "
+                f"window={automation_check_map.get('kb-org-maintenance', {}).get('schedule_window', '')}"
+            ),
         ),
         _checklist_item(
             "codex_shell_tools",
@@ -1102,6 +1491,7 @@ def build_installation_check(
         "install_state_path": str(install_state_path(home)),
         "env_var_name": KB_ROOT_ENV_VAR,
         "env_var_value": env_value,
+        "maintenance_skill_names": list(MAINTENANCE_SKILL_NAMES),
         "shell_tools": {
             "shell_bin_dir": str(shell_bin),
             "git_shim_path": str(git_shim_path),
@@ -1109,6 +1499,7 @@ def build_installation_check(
         },
         "automation_runtime": automation_runtime,
         "checklist": checklist,
+        "maintenance_skill_checks": maintenance_skill_checks,
         "automation_checks": automation_checks,
         "issues": issues,
         "warnings": warnings,

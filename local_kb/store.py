@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -16,6 +17,65 @@ except ImportError as exc:  # pragma: no cover
 
 
 DEFAULT_SCOPES = ("public", "private", "candidates")
+DEFAULT_ORGANIZATION_SCOPES = ("trusted", "candidates")
+
+
+def local_source_scope(scope: str) -> str:
+    if scope == "candidates":
+        return "candidate"
+    if scope in {"public", "private"}:
+        return scope
+    return "unknown"
+
+
+def build_local_entry_source(repo_root: Path, scope: str, path: Path) -> dict[str, Any]:
+    source_scope = local_source_scope(scope)
+    return {
+        "kind": "local",
+        "source_id": "local",
+        "scope": source_scope,
+        "label": f"local/{source_scope}",
+        "organization_id": "",
+        "source_repo": "",
+        "source_commit": "",
+        "read_only": False,
+        "editable": True,
+        "contribution_eligible": source_scope in {"public", "candidate"},
+        "path": os.path.relpath(path, repo_root),
+    }
+
+
+def organization_source_scope(scope: str) -> str:
+    if scope == "candidates":
+        return "candidate"
+    if scope == "trusted":
+        return "trusted"
+    return "unknown"
+
+
+def build_organization_entry_source(
+    org_root: Path,
+    organization_id: str,
+    scope: str,
+    path: Path,
+    *,
+    source_repo: str = "",
+    source_commit: str = "",
+) -> dict[str, Any]:
+    source_scope = organization_source_scope(scope)
+    return {
+        "kind": "organization",
+        "source_id": organization_id,
+        "scope": source_scope,
+        "label": f"org/{organization_id}/{source_scope}" if organization_id else f"org/{source_scope}",
+        "organization_id": organization_id,
+        "source_repo": source_repo,
+        "source_commit": source_commit,
+        "read_only": True,
+        "editable": False,
+        "contribution_eligible": source_scope == "candidate",
+        "path": os.path.relpath(path, org_root),
+    }
 
 
 def resolve_repo_root(value: str | os.PathLike[str]) -> Path:
@@ -69,7 +129,40 @@ def load_entries(repo_root: Path, scopes: Iterable[str] = DEFAULT_SCOPES) -> lis
             entry_id = str(data.get("id", "") or "").strip()
             if scope == "candidates" and entry_id and entry_id in rejected_candidates:
                 continue
-            entries.append(Entry(path=path, data=data))
+            entries.append(Entry(path=path, data=data, source=build_local_entry_source(repo_root, scope, path)))
+    return entries
+
+
+def load_organization_entries(
+    org_root: Path,
+    organization_id: str,
+    *,
+    source_repo: str = "",
+    source_commit: str = "",
+    scopes: Iterable[str] = DEFAULT_ORGANIZATION_SCOPES,
+) -> list[Entry]:
+    entries: list[Entry] = []
+    kb_root = Path(org_root) / "kb"
+    for scope in tuple(scopes):
+        target = kb_root / scope
+        if not target.exists():
+            continue
+        for path in sorted(target.rglob("*.yaml")):
+            data = load_yaml_file(path)
+            entries.append(
+                Entry(
+                    path=path,
+                    data=data,
+                    source=build_organization_entry_source(
+                        Path(org_root),
+                        organization_id,
+                        scope,
+                        path,
+                        source_repo=source_repo,
+                        source_commit=source_commit,
+                    ),
+                )
+            )
     return entries
 
 

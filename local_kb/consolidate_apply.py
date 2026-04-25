@@ -6,6 +6,8 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
+from local_kb.adoption import card_exchange_hash, find_local_entry_by_exchange_hash
+from local_kb.card_ids import new_card_id
 from local_kb.common import normalize_string_list, parse_route_segments, slugify
 from local_kb.consolidate_events import (
     APPLY_MODE_CROSS_INDEX,
@@ -229,12 +231,6 @@ def emit_artifacts(
     return artifact_paths
 
 
-def route_candidate_id(route_ref: str) -> str:
-    route_slug = slugify(route_ref.replace("/", "-"))[:32] or "route"
-    route_hash = hashlib.sha1(route_ref.encode("utf-8")).hexdigest()[:8]
-    return f"cand-auto-{route_slug}-{route_hash}"
-
-
 def summarize_examples(values: list[str], limit: int = 3) -> str:
     if not values:
         return ""
@@ -244,6 +240,7 @@ def summarize_examples(values: list[str], limit: int = 3) -> str:
 
 
 def build_auto_candidate_entry(
+    repo_root: Path,
     action: dict[str, Any],
     supporting_events: list[dict[str, Any]],
     run_id: str,
@@ -285,7 +282,7 @@ def build_auto_candidate_entry(
     if alternatives:
         tags = sorted(set(tags + ["contrastive-evidence"]))
     return {
-        "id": route_candidate_id(route_ref),
+        "id": new_card_id(repo_root, prefix="cand", generated_at=generated_at),
         "title": str(scaffold_preview.get("title", "") or f"Repeated route gap in {route_title}"),
         "type": "model",
         "scope": AUTO_CANDIDATE_SCOPE,
@@ -435,11 +432,24 @@ def apply_new_candidate_actions(
             continue
 
         entry = build_auto_candidate_entry(
+            repo_root,
             action=action,
             supporting_events=supporting_events,
             run_id=run_id,
             generated_at=generated_at,
         )
+        existing_same_hash = find_local_entry_by_exchange_hash(repo_root, card_exchange_hash(entry))
+        if existing_same_hash is not None:
+            skipped_actions.append(
+                {
+                    "action_key": action["action_key"],
+                    "action_type": action["action_type"],
+                    "target": dict(action["target"]),
+                    "reason": f"Candidate content hash already exists: {relative_repo_path(repo_root, existing_same_hash.path)}",
+                    "event_ids": list(action["event_ids"]),
+                }
+            )
+            continue
         target_path = candidate_dir(repo_root) / f"{entry['id']}.yaml"
         relative_target_path = relative_repo_path(repo_root, target_path)
         if target_path.exists():

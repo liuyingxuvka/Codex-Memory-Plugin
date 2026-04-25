@@ -235,6 +235,15 @@ The repository should be organized so the file system itself supports the concep
 │  └─ maintenance_runbook.md
 ├─ .agents/
 │  └─ skills/
+│     ├─ kb-sleep-maintenance/
+│     │  ├─ SKILL.md
+│     │  └─ agents/openai.yaml
+│     ├─ kb-dream-pass/
+│     │  ├─ SKILL.md
+│     │  └─ agents/openai.yaml
+│     ├─ kb-architect-pass/
+│     │  ├─ SKILL.md
+│     │  └─ agents/openai.yaml
 │     └─ local-kb-retrieve/
 │        ├─ ARCHITECT_PROMPT.md
 │        ├─ SKILL.md
@@ -285,7 +294,7 @@ Codex currently discovers repository skills from `.agents/skills/...`, and a ski
 
 Each entry should support the following structure:
 
-- `id`: stable identifier
+- `id`: stable system reference handle, not the content identity
 - `title`: short readable title
 - `type`: `model`, `preference`, `heuristic`, or `fact`
 - `scope`: `public` or `private`
@@ -312,6 +321,7 @@ A card is operational, not merely descriptive.
 - `predict` defines the expected result
 - `use` defines what Codex should do because of that prediction
 - `related_cards` defines a small direct-navigation surface between cards that are repeatedly used together; it is not a concept graph and should stay short
+- `id` is used for references, UI handles, history targets, and filenames. New card ids should be generated from a timestamp, a sanitized author or local-installation short label, and random code. They must not embed raw machine identifiers. Exact duplicate detection should use normalized `content_hash`, not `id`.
 
 This keeps the knowledge unit useful for action selection.
 
@@ -404,6 +414,7 @@ The skill should do the following:
 11. When recording such a lesson, preserve both the runtime-facing route and any workflow or prompting routes that materially shaped the behavior, so later retrieval can find the card from more than one valid direction.
 12. When a reusable lesson is specifically about how a user tends to respond, prefer a private predictive card that captures the task condition and likely user preference or reaction, rather than a vague impression about the user's personality.
 13. When a reusable lesson is specifically about using another Codex skill or plugin, capture it as valid KB evidence when the skill choice, ordering, combination, fallback, or failure mode materially changes the result. Preserve both a skill-facing route such as `codex/workflow/skills` or `codex/skill-use/<skill-name>` and the task-facing route that made the skill relevant.
+14. When a reusable lesson is specifically about Codex subagent or delegation use, capture it as valid KB evidence when the decision to spawn, avoid, sequence, wait for, or parallelize subagents materially changes speed, coordination overhead, context isolation, main-thread clarity, verification quality, or task outcome. Preserve both a workflow-facing route such as `codex/workflow/subagents` and the task-facing route that made delegation relevant.
 
 Skill-use evidence should be captured as part of the personal KB, not only as a
 future organization-sharing concern. This should not mean writing an observation
@@ -412,9 +423,18 @@ observation when a Skill is new, repeatedly useful, task-critical, missing,
 misleading, used as a fallback, combined with another Skill, or when the task
 reveals that a Skill should be invoked earlier or avoided in a known scenario.
 
+Subagent/delegation evidence should be captured at the same level as Skill-use
+evidence. This should not mean writing an observation for every sidecar agent.
+It does mean Codex should record a structured observation when delegation was
+new, repeatedly useful, task-critical, slower than expected, avoided for good
+reason, caused coordination overhead, protected the main thread from distraction,
+or made retrieval, implementation, verification, or integration materially
+clearer.
+
 For non-trivial work, KB postflight should be treated as part of done rather than optional housekeeping. Before a task is considered complete, Codex should explicitly check whether the task exposed:
 
 - a reusable lesson
+- a skill/plugin or subagent/delegation usage lesson
 - a retrieval miss
 - a route gap
 - a card weakness
@@ -812,6 +832,23 @@ Skill-use observation before proposing that Skill as reusable organization
 capability. The observation should explain the card-facing evidence for the
 Skill, not merely state that the Skill exists.
 
+Observations about **subagent or delegation use** should follow the same
+predictive rule. They are valid when they answer:
+
+- which subagent, sidecar role, or delegation pattern was selected, skipped,
+  sequenced, waited on, or used as a fallback
+- under what task conditions that delegation choice mattered
+- what outcome changed because of the delegation choice, coordination cost, or
+  isolation benefit
+- how future Codex work should adapt its subagent spawning, waiting,
+  integration, or fallback behavior
+
+These observations should avoid generic praise for parallelism. The useful
+evidence is the trigger condition, delegation action, observed result, and
+future operational rule, especially when subagents made the task faster or
+slower, kept the main thread clearer, prevented context pollution, improved
+verification coverage, or added unnecessary coordination overhead.
+
 Observations about a **specific user** should also stay predictive and bounded. They are strongest when they answer:
 
 - in what task or interaction context the behavior appeared
@@ -827,6 +864,10 @@ When later card creation is likely, Codex should preserve enough route context t
 - a task-facing route such as `prompting/...`, `codex/workflow/...`, or another route that captures the condition that exposed the behavior
 
 Skill-use observations should be similarly reachable from both a skill-facing route, such as `codex/workflow/skills` or `codex/skill-use/<skill-name>`, and the task-facing route that made the skill relevant.
+
+Subagent-use observations should likewise be reachable from both a workflow
+route such as `codex/workflow/subagents` or `codex/delegation/<pattern>` and
+the task-facing route that made delegation relevant.
 
 Card creation should then happen mainly during scheduled AI consolidation:
 
@@ -978,7 +1019,14 @@ The default cadence is after Sleep and Dream, for example:
 - `KB Dream`: 13:00
 - `KB Architect`: 14:00
 
-The installer should provision all three repository-managed automations, and the install check should verify all three.
+The installer should provision all three repository-managed maintenance skills (`kb-sleep-maintenance`, `kb-dream-pass`, and `kb-architect-pass`) plus all three repository-managed automations, and the install check should verify all six. The maintenance skills are explicit entry points for scheduled or manual maintenance; they should remain narrow and should not enable broad implicit invocation.
+
+Each automation prompt should explicitly name its maintenance skill (`$kb-sleep-maintenance`, `$kb-dream-pass`, or `$kb-architect-pass`) while preserving enough fallback markers for install checks to detect prompt drift. Cron automation remains responsible for schedule, workspace, model policy, and reasoning policy; the skill owns the maintenance workflow contract.
+
+The install check should also verify that the global predictive KB defaults
+name both skill/plugin usage lessons and subagent/delegation usage lessons as
+recordable KB signals, so cross-machine installs inherit both workflow-learning
+paths.
 
 Automation specs must encode model intent as `model_policy = "strongest-available"` and `reasoning_effort_policy = "deepest"` rather than pinning a fixed model slug. During installation, the repo installer resolves that policy against the current machine's Codex model cache/config, writes the concrete runtime values into the automation files, and records the policy fields so future machines can pick newer models without changing the spec.
 

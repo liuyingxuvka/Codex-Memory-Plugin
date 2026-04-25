@@ -11,8 +11,14 @@ from local_kb.common import (
     safe_float,
     tokenize,
 )
+from local_kb.adoption import (
+    blocked_organization_download_hashes,
+    card_exchange_hash,
+    dedupe_local_entries_by_exchange_hash,
+)
 from local_kb.models import Entry
-from local_kb.store import load_entries
+from local_kb.source_labels import card_source_summary
+from local_kb.store import load_entries, load_organization_entries
 
 
 def longest_common_prefix(left: list[str], right: list[str]) -> int:
@@ -81,6 +87,8 @@ def score_entry(entry: Entry, query_tokens: list[str], path_hint_segments: list[
         return 0.0
 
     score = relevance_score + confidence * 2.0
+    if status == "rejected":
+        return 0.0
     if status == "trusted":
         score += 4.0
     if status == "deprecated":
@@ -88,14 +96,61 @@ def score_entry(entry: Entry, query_tokens: list[str], path_hint_segments: list[
     return score
 
 
-def search_entries(repo_root: Path, query: str, path_hint: str = "", top_k: int = 5) -> list[Entry]:
+def search_loaded_entries(entries: list[Entry], query: str, path_hint: str = "", top_k: int = 5) -> list[Entry]:
     query_tokens = tokenize(query)
     path_hint_segments = parse_route_segments(path_hint)
-    entries = load_entries(repo_root)
     for entry in entries:
         entry.score = score_entry(entry, query_tokens, path_hint_segments)
     ranked = [entry for entry in sorted(entries, key=lambda item: item.score, reverse=True) if entry.score > 0]
     return ranked[:top_k]
+
+
+def search_entries(repo_root: Path, query: str, path_hint: str = "", top_k: int = 5) -> list[Entry]:
+    return search_loaded_entries(
+        dedupe_local_entries_by_exchange_hash(load_entries(repo_root)),
+        query=query,
+        path_hint=path_hint,
+        top_k=top_k,
+    )
+
+
+def search_multi_source_entries(
+    repo_root: Path,
+    query: str,
+    path_hint: str = "",
+    top_k: int = 5,
+    organization_sources: list[dict[str, Any]] | None = None,
+) -> list[Entry]:
+    local_entries = dedupe_local_entries_by_exchange_hash(load_entries(repo_root))
+    local_results = search_loaded_entries(local_entries, query=query, path_hint=path_hint, top_k=top_k)
+    blocked_hashes = blocked_organization_download_hashes(repo_root) if organization_sources else set()
+    organization_results: list[Entry] = []
+    for source in organization_sources or []:
+        org_root = Path(str(source.get("path") or source.get("local_path") or ""))
+        organization_id = str(source.get("organization_id") or source.get("id") or "").strip()
+        if not org_root.exists() or not organization_id:
+            continue
+        entries = load_organization_entries(
+            org_root,
+            organization_id,
+            source_repo=str(source.get("source_repo") or source.get("repo_url") or ""),
+            source_commit=str(source.get("source_commit") or ""),
+        )
+        for entry in search_loaded_entries(entries, query=query, path_hint=path_hint, top_k=top_k):
+            if card_exchange_hash(entry.data) in blocked_hashes:
+                continue
+            organization_results.append(entry)
+    return [*local_results, *organization_results][:top_k]
+
+
+def _display_path(entry: Entry, repo_root: Path) -> str:
+    source_path = str(entry.source.get("path") or "").strip()
+    if source_path and entry.source.get("kind") == "organization":
+        return source_path
+    try:
+        return os.path.relpath(entry.path, repo_root)
+    except ValueError:
+        return str(entry.path)
 
 
 def render_entry(entry: Entry, repo_root: Path) -> dict[str, Any]:
@@ -114,7 +169,9 @@ def render_entry(entry: Entry, repo_root: Path) -> dict[str, Any]:
         "trigger_keywords": data.get("trigger_keywords", []),
         "predicted_result": get_predicted_result(data),
         "guidance": get_guidance(data),
-        "path": os.path.relpath(entry.path, repo_root),
+        "path": _display_path(entry, repo_root),
+        "source_info": entry.source,
+        **card_source_summary(data, entry.source),
         "score": round(entry.score, 3),
     }
 

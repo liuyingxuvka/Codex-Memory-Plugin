@@ -1,0 +1,32 @@
+name: Organization KB Check
+description: Validate a Khaos Brain organization KB repository for maintenance pull requests.
+inputs:
+  org-root:
+    description: Organization KB repository root.
+    required: false
+    default: "."
+  changed-files-file:
+    description: Text file containing changed files, one per line.
+    required: false
+    default: ""
+  enforce-low-risk:
+    description: Fail when changed files are not eligible for low-risk auto-merge.
+    required: false
+    default: "true"
+runs:
+  using: composite
+  steps:
+    - name: Install Python dependencies
+      shell: bash
+      run: python -m pip install pyyaml
+    - name: Run organization KB checks
+      shell: bash
+      run: |
+        args=(--org-root "${{ inputs.org-root }}")
+        if [ -n "${{ inputs.changed-files-file }}" ]; then
+          args+=(--changed-files-file "${{ inputs.changed-files-file }}")
+        fi
+        if [ "${{ inputs.enforce-low-risk }}" = "true" ]; then
+          args+=(--enforce-low-risk)
+        fi
+        python "$GITHUB_ACTION_PATH/../../../scripts/kb_org_check.py" "${args[@]}"

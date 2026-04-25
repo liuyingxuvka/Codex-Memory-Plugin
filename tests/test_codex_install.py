@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -10,6 +11,10 @@ from unittest import mock
 from local_kb.install import (
     AUTOMATION_MODEL_ENV_VAR,
     AUTOMATION_REASONING_EFFORT_ENV_VAR,
+    ORG_CONTRIBUTE_WINDOW,
+    ORG_MAINTENANCE_WINDOW,
+    REPO_AUTOMATION_SPECS,
+    automation_rrule_for_spec,
     build_installation_check,
     global_agents_path,
     install_codex_integration,
@@ -20,6 +25,21 @@ from local_kb.install import (
 def write_cmd(path: Path, body: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(f"@echo off\r\n{body}\r\n", encoding="utf-8")
+
+
+def rrule_local_minute(rrule: str) -> int:
+    hour = re.search(r"BYHOUR=(\d+)", rrule)
+    minute = re.search(r"BYMINUTE=(\d+)", rrule)
+    if not hour or not minute:
+        raise AssertionError(f"rrule does not contain BYHOUR/BYMINUTE: {rrule}")
+    return int(hour.group(1)) * 60 + int(minute.group(1))
+
+
+def toml_string_value(text: str, key: str) -> str:
+    match = re.search(rf"^{re.escape(key)} = \"([^\"]*)\"$", text, re.MULTILINE)
+    if not match:
+        raise AssertionError(f"toml text does not contain string value for {key}")
+    return match.group(1)
 
 
 class CodexInstallTests(unittest.TestCase):
@@ -66,11 +86,37 @@ class CodexInstallTests(unittest.TestCase):
             self.assertTrue((codex_home / "automations" / "kb-sleep" / "automation.toml").exists())
             self.assertTrue((codex_home / "automations" / "kb-dream" / "automation.toml").exists())
             self.assertTrue((codex_home / "automations" / "kb-architect" / "automation.toml").exists())
+            self.assertTrue((codex_home / "automations" / "kb-org-contribute" / "automation.toml").exists())
+            self.assertTrue((codex_home / "automations" / "kb-org-maintenance" / "automation.toml").exists())
+            self.assertTrue((codex_home / "skills" / "kb-sleep-maintenance" / "SKILL.md").exists())
+            self.assertTrue((codex_home / "skills" / "kb-dream-pass" / "SKILL.md").exists())
+            self.assertTrue((codex_home / "skills" / "kb-architect-pass" / "SKILL.md").exists())
+            self.assertTrue((codex_home / "skills" / "kb-organization-contribute" / "SKILL.md").exists())
+            self.assertTrue((codex_home / "skills" / "kb-organization-maintenance" / "SKILL.md").exists())
             self.assertTrue(global_agents_path(codex_home).exists())
             self.assertTrue((shell_bin_dir / "git.cmd").exists())
             self.assertTrue((shell_bin_dir / "rg.exe").exists())
             self.assertEqual(payload["repo_root"], str(repo_root))
-            self.assertEqual(payload["automation_ids"], ["kb-sleep", "kb-dream", "kb-architect"])
+            self.assertEqual(
+                payload["maintenance_skill_names"],
+                [
+                    "kb-sleep-maintenance",
+                    "kb-dream-pass",
+                    "kb-architect-pass",
+                    "kb-organization-contribute",
+                    "kb-organization-maintenance",
+                ],
+            )
+            self.assertEqual(
+                payload["automation_ids"],
+                [
+                    "kb-sleep",
+                    "kb-dream",
+                    "kb-architect",
+                    "kb-org-contribute",
+                    "kb-org-maintenance",
+                ],
+            )
             self.assertEqual(payload["automation_runtime"], automation_runtime)
             self.assertEqual(payload["shell_tools"]["shell_bin_dir"], str(shell_bin_dir))
             self.assertTrue(payload["shell_tools"]["git_shim_installed"])
@@ -83,6 +129,7 @@ class CodexInstallTests(unittest.TestCase):
             self.assertIn("--route-hint", skill_text)
             self.assertIn("search-style calls without the explicit `search` subcommand", skill_text)
             self.assertIn("Skill and plugin usage lessons count as reusable signals", skill_text)
+            self.assertIn("Subagent and delegation usage lessons count as reusable signals", skill_text)
 
             openai_text = (
                 codex_home / "skills" / "predictive-kb-preflight" / "agents" / "openai.yaml"
@@ -91,15 +138,88 @@ class CodexInstallTests(unittest.TestCase):
             self.assertIn("record a KB follow-up observation", openai_text)
             self.assertIn("required default preflight", openai_text)
             self.assertIn("skill/plugin usage lesson", openai_text)
+            self.assertIn("subagent/delegation usage lesson", openai_text)
 
             global_agents_text = global_agents_path(codex_home).read_text(encoding="utf-8")
             self.assertIn("BEGIN MANAGED PREDICTIVE KB DEFAULTS", global_agents_text)
             self.assertIn("$predictive-kb-preflight", global_agents_text)
             self.assertIn("explicit KB postflight check", global_agents_text)
             self.assertIn("skill/plugin usage", global_agents_text)
+            self.assertIn("subagent/delegation usage", global_agents_text)
+
+            sleep_skill_text = (codex_home / "skills" / "kb-sleep-maintenance" / "SKILL.md").read_text(
+                encoding="utf-8"
+            )
+            sleep_skill_openai = (
+                codex_home / "skills" / "kb-sleep-maintenance" / "agents" / "openai.yaml"
+            ).read_text(encoding="utf-8")
+            self.assertIn("name: kb-sleep-maintenance", sleep_skill_text)
+            self.assertIn("MAINTENANCE_PROMPT.md", sleep_skill_text)
+            self.assertIn("mandatory similar-card merge checkpoint", sleep_skill_text)
+            self.assertIn("mandatory overloaded-card split checkpoint", sleep_skill_text)
+            self.assertIn("organization Skill bundle consolidation checkpoint", sleep_skill_text)
+            self.assertIn("Do not skip the merge, split, or Skill bundle consolidation checkpoint itself", sleep_skill_text)
+            self.assertIn("allow_implicit_invocation: false", sleep_skill_openai)
+            self.assertIn("$kb-sleep-maintenance", sleep_skill_openai)
+
+            dream_skill_text = (codex_home / "skills" / "kb-dream-pass" / "SKILL.md").read_text(
+                encoding="utf-8"
+            )
+            dream_skill_openai = (
+                codex_home / "skills" / "kb-dream-pass" / "agents" / "openai.yaml"
+            ).read_text(encoding="utf-8")
+            self.assertIn("name: kb-dream-pass", dream_skill_text)
+            self.assertIn("DREAM_PROMPT.md", dream_skill_text)
+            self.assertIn("allow_implicit_invocation: false", dream_skill_openai)
+            self.assertIn("$kb-dream-pass", dream_skill_openai)
+
+            architect_skill_text = (codex_home / "skills" / "kb-architect-pass" / "SKILL.md").read_text(
+                encoding="utf-8"
+            )
+            architect_skill_openai = (
+                codex_home / "skills" / "kb-architect-pass" / "agents" / "openai.yaml"
+            ).read_text(encoding="utf-8")
+            self.assertIn("name: kb-architect-pass", architect_skill_text)
+            self.assertIn("ARCHITECT_PROMPT.md", architect_skill_text)
+            self.assertIn("allow_implicit_invocation: false", architect_skill_openai)
+            self.assertIn("$kb-architect-pass", architect_skill_openai)
+
+            org_contribute_skill_text = (
+                codex_home / "skills" / "kb-organization-contribute" / "SKILL.md"
+            ).read_text(encoding="utf-8")
+            org_contribute_skill_openai = (
+                codex_home / "skills" / "kb-organization-contribute" / "agents" / "openai.yaml"
+            ).read_text(encoding="utf-8")
+            self.assertIn("name: kb-organization-contribute", org_contribute_skill_text)
+            self.assertIn("scripts/kb_org_outbox.py", org_contribute_skill_text)
+            self.assertIn("card-bound Skill bundle", org_contribute_skill_text)
+            self.assertIn("local latest version for that bundle", org_contribute_skill_text)
+            self.assertIn("allow_implicit_invocation: false", org_contribute_skill_openai)
+            self.assertIn("$kb-organization-contribute", org_contribute_skill_openai)
+
+            org_maintenance_skill_text = (
+                codex_home / "skills" / "kb-organization-maintenance" / "SKILL.md"
+            ).read_text(encoding="utf-8")
+            org_maintenance_skill_openai = (
+                codex_home / "skills" / "kb-organization-maintenance" / "agents" / "openai.yaml"
+            ).read_text(encoding="utf-8")
+            self.assertIn("name: kb-organization-maintenance", org_maintenance_skill_text)
+            self.assertIn("scripts/kb_org_maintainer.py", org_maintenance_skill_text)
+            self.assertIn("organization-level Sleep-like maintenance", org_maintenance_skill_text)
+            self.assertIn("organization candidate intake checkpoint", org_maintenance_skill_text)
+            self.assertIn("mandatory organization similar-card merge checkpoint", org_maintenance_skill_text)
+            self.assertIn("mandatory organization overloaded-card split checkpoint", org_maintenance_skill_text)
+            self.assertIn("Skill safety checkpoint", org_maintenance_skill_text)
+            self.assertIn("Skill bundle version checkpoint", org_maintenance_skill_text)
+            self.assertIn("latest approved version by `version_time`", org_maintenance_skill_text)
+            self.assertIn("GitHub merge-readiness checkpoint", org_maintenance_skill_text)
+            self.assertIn("organization-review", org_maintenance_skill_text)
+            self.assertIn("allow_implicit_invocation: false", org_maintenance_skill_openai)
+            self.assertIn("$kb-organization-maintenance", org_maintenance_skill_openai)
 
             sleep_toml = (codex_home / "automations" / "kb-sleep" / "automation.toml").read_text(encoding="utf-8")
             self.assertIn('kind = "cron"', sleep_toml)
+            self.assertIn("$kb-sleep-maintenance", sleep_toml)
             self.assertIn('rrule = "FREQ=WEEKLY;BYDAY=SU,MO,TU,WE,TH,FR,SA;BYHOUR=12;BYMINUTE=0"', sleep_toml)
             self.assertIn(f'model = "{automation_runtime["model"]}"', sleep_toml)
             self.assertIn(f'reasoning_effort = "{automation_runtime["reasoning_effort"]}"', sleep_toml)
@@ -112,6 +232,11 @@ class CodexInstallTests(unittest.TestCase):
             self.assertIn("rerun the relevant validation", sleep_toml)
             self.assertIn("sleep self-preflight", sleep_toml)
             self.assertIn("system/knowledge-library/maintenance", sleep_toml)
+            self.assertIn("mandatory similar-card merge checkpoint", sleep_toml)
+            self.assertIn("mandatory overloaded-card split checkpoint", sleep_toml)
+            self.assertIn("organization Skill bundle consolidation checkpoint", sleep_toml)
+            self.assertIn("latest approved version by version_time", sleep_toml)
+            self.assertIn("skip-with-reason decisions", sleep_toml)
             self.assertIn("sleep postflight check", sleep_toml)
             self.assertIn("structured maintenance observation", sleep_toml)
             self.assertIn("recursively consolidating", sleep_toml)
@@ -119,6 +244,7 @@ class CodexInstallTests(unittest.TestCase):
 
             dream_toml = (codex_home / "automations" / "kb-dream" / "automation.toml").read_text(encoding="utf-8")
             self.assertIn('kind = "cron"', dream_toml)
+            self.assertIn("$kb-dream-pass", dream_toml)
             self.assertIn('kb_dream.py', dream_toml)
             self.assertIn('rrule = "FREQ=WEEKLY;BYDAY=SU,MO,TU,WE,TH,FR,SA;BYHOUR=13;BYMINUTE=0"', dream_toml)
             self.assertIn(f'model = "{automation_runtime["model"]}"', dream_toml)
@@ -137,6 +263,7 @@ class CodexInstallTests(unittest.TestCase):
                 codex_home / "automations" / "kb-architect" / "automation.toml"
             ).read_text(encoding="utf-8")
             self.assertIn('kind = "cron"', architect_toml)
+            self.assertIn("$kb-architect-pass", architect_toml)
             self.assertIn('kb_architect.py', architect_toml)
             self.assertIn('rrule = "FREQ=WEEKLY;BYDAY=SU,MO,TU,WE,TH,FR,SA;BYHOUR=14;BYMINUTE=0"', architect_toml)
             self.assertIn(f'model = "{automation_runtime["model"]}"', architect_toml)
@@ -155,24 +282,161 @@ class CodexInstallTests(unittest.TestCase):
             self.assertIn("validation bundle", architect_toml)
             self.assertIn("postflight observation status", architect_toml)
 
+            org_contribute_toml = (
+                codex_home / "automations" / "kb-org-contribute" / "automation.toml"
+            ).read_text(encoding="utf-8")
+            self.assertIn('kind = "cron"', org_contribute_toml)
+            self.assertIn("$kb-organization-contribute", org_contribute_toml)
+            self.assertIn("scripts/kb_org_outbox.py", org_contribute_toml)
+            self.assertIn('schedule_policy = "stable-jitter"', org_contribute_toml)
+            self.assertIn('schedule_window = "10:00-13:59"', org_contribute_toml)
+            org_contribute_minute = rrule_local_minute(toml_string_value(org_contribute_toml, "rrule"))
+            self.assertGreaterEqual(org_contribute_minute, ORG_CONTRIBUTE_WINDOW[0])
+            self.assertLessEqual(org_contribute_minute, ORG_CONTRIBUTE_WINDOW[1])
+            self.assertIn(f'model = "{automation_runtime["model"]}"', org_contribute_toml)
+            self.assertIn(f'reasoning_effort = "{automation_runtime["reasoning_effort"]}"', org_contribute_toml)
+            self.assertIn("desktop settings", org_contribute_toml)
+            self.assertIn("validated organization repository", org_contribute_toml)
+            self.assertIn("successful no-op", org_contribute_toml)
+            self.assertIn("KB preflight", org_contribute_toml)
+            self.assertIn("content-hash-gated outbox", org_contribute_toml)
+            self.assertIn("prior download hashes", org_contribute_toml)
+            self.assertIn("prior upload hashes", org_contribute_toml)
+            self.assertIn("card-bound Skill bundles", org_contribute_toml)
+            self.assertIn("bundle_id", org_contribute_toml)
+            self.assertIn("local latest version for that bundle", org_contribute_toml)
+            self.assertIn("KB postflight", org_contribute_toml)
+
+            org_maintenance_toml = (
+                codex_home / "automations" / "kb-org-maintenance" / "automation.toml"
+            ).read_text(encoding="utf-8")
+            self.assertIn('kind = "cron"', org_maintenance_toml)
+            self.assertIn("$kb-organization-maintenance", org_maintenance_toml)
+            self.assertIn("scripts/kb_org_maintainer.py", org_maintenance_toml)
+            self.assertIn("organization-level Sleep-like maintenance", org_maintenance_toml)
+            self.assertIn('schedule_policy = "stable-jitter"', org_maintenance_toml)
+            self.assertIn('schedule_window = "14:00-16:00"', org_maintenance_toml)
+            org_maintenance_minute = rrule_local_minute(toml_string_value(org_maintenance_toml, "rrule"))
+            self.assertGreaterEqual(org_maintenance_minute, ORG_MAINTENANCE_WINDOW[0])
+            self.assertLessEqual(org_maintenance_minute, ORG_MAINTENANCE_WINDOW[1])
+            self.assertIn(f'model = "{automation_runtime["model"]}"', org_maintenance_toml)
+            self.assertIn(f'reasoning_effort = "{automation_runtime["reasoning_effort"]}"', org_maintenance_toml)
+            self.assertIn("desktop settings", org_maintenance_toml)
+            self.assertIn("organization maintenance participation", org_maintenance_toml)
+            self.assertIn("successful no-op", org_maintenance_toml)
+            self.assertIn("KB preflight", org_maintenance_toml)
+            self.assertIn("organization candidate intake checkpoint", org_maintenance_toml)
+            self.assertIn("content-hash checkpoint", org_maintenance_toml)
+            self.assertIn("mandatory organization similar-card merge checkpoint", org_maintenance_toml)
+            self.assertIn("mandatory organization overloaded-card split checkpoint", org_maintenance_toml)
+            self.assertIn("candidate decision checkpoint", org_maintenance_toml)
+            self.assertIn("Skill safety checkpoint", org_maintenance_toml)
+            self.assertIn("Skill bundle version checkpoint", org_maintenance_toml)
+            self.assertIn("GitHub merge-readiness checkpoint", org_maintenance_toml)
+            self.assertIn("organization-review", org_maintenance_toml)
+            self.assertIn("Skill registry", org_maintenance_toml)
+            self.assertIn("duplicate content hashes", org_maintenance_toml)
+            self.assertIn("duplicate entry ids", org_maintenance_toml)
+            self.assertIn("bundle_id", org_maintenance_toml)
+            self.assertIn("original-author updates", org_maintenance_toml)
+            self.assertIn("latest approved version by version_time", org_maintenance_toml)
+            self.assertIn("do not auto-install", org_maintenance_toml)
+            self.assertIn("KB postflight", org_maintenance_toml)
+
             check = build_installation_check(repo_root=repo_root, codex_home=codex_home)
             self.assertTrue(check["ok"], check["issues"])
             self.assertEqual(check["automation_runtime"], automation_runtime)
             self.assertEqual(
+                check["maintenance_skill_names"],
+                [
+                    "kb-sleep-maintenance",
+                    "kb-dream-pass",
+                    "kb-architect-pass",
+                    "kb-organization-contribute",
+                    "kb-organization-maintenance",
+                ],
+            )
+            self.assertEqual(
+                [item["name"] for item in check["maintenance_skill_checks"]],
+                [
+                    "kb-sleep-maintenance",
+                    "kb-dream-pass",
+                    "kb-architect-pass",
+                    "kb-organization-contribute",
+                    "kb-organization-maintenance",
+                ],
+            )
+            self.assertEqual(
                 [item["id"] for item in check["automation_checks"]],
-                ["kb-sleep", "kb-dream", "kb-architect"],
+                [
+                    "kb-sleep",
+                    "kb-dream",
+                    "kb-architect",
+                    "kb-org-contribute",
+                    "kb-org-maintenance",
+                ],
             )
             checklist = {item["id"]: item for item in check["checklist"]}
             self.assertIn("codex_shell_tools", checklist)
             self.assertIn("strong_session_defaults", checklist)
+            self.assertIn("repo_maintenance_skills", checklist)
             self.assertIn("kb_architect_automation", checklist)
+            self.assertIn("kb_org_contribute_automation", checklist)
+            self.assertIn("kb_org_maintenance_automation", checklist)
             self.assertTrue(checklist["codex_shell_tools"]["ok"])
+            self.assertTrue(checklist["repo_maintenance_skills"]["ok"])
             self.assertTrue(checklist["kb_architect_automation"]["ok"])
+            self.assertTrue(checklist["kb_org_contribute_automation"]["ok"])
+            self.assertTrue(checklist["kb_org_maintenance_automation"]["ok"])
             self.assertTrue(checklist["strong_session_defaults"]["ok"])
             self.assertTrue(checklist["global_agents_block"]["ok"])
             self.assertTrue(checklist["global_skill_postflight"]["ok"])
             self.assertTrue(checklist["global_skill_skill_usage"]["ok"])
+            self.assertTrue(checklist["global_skill_subagent_usage"]["ok"])
             self.assertTrue(checklist["global_agents_skill_usage"]["ok"])
+            self.assertTrue(checklist["global_agents_subagent_usage"]["ok"])
+
+    def test_organization_automation_times_are_stable_and_windowed(self) -> None:
+        specs = {str(spec["id"]): spec for spec in REPO_AUTOMATION_SPECS}
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            repo_root = Path(tmp_dir) / "repo"
+            identity_path = repo_root / ".local" / "khaos_brain_installation.json"
+            identity_path.parent.mkdir(parents=True, exist_ok=True)
+            identity_path.write_text(
+                json.dumps({"local_installation_id": "stable-installation-a"}),
+                encoding="utf-8",
+            )
+
+            contribute_first = automation_rrule_for_spec(specs["kb-org-contribute"], repo_root)
+            contribute_second = automation_rrule_for_spec(specs["kb-org-contribute"], repo_root)
+            maintenance_first = automation_rrule_for_spec(specs["kb-org-maintenance"], repo_root)
+            maintenance_second = automation_rrule_for_spec(specs["kb-org-maintenance"], repo_root)
+
+            self.assertEqual(contribute_first, contribute_second)
+            self.assertEqual(maintenance_first, maintenance_second)
+            contribute_minute = rrule_local_minute(contribute_first)
+            maintenance_minute = rrule_local_minute(maintenance_first)
+            self.assertGreaterEqual(contribute_minute, ORG_CONTRIBUTE_WINDOW[0])
+            self.assertLessEqual(contribute_minute, ORG_CONTRIBUTE_WINDOW[1])
+            self.assertGreaterEqual(maintenance_minute, ORG_MAINTENANCE_WINDOW[0])
+            self.assertLessEqual(maintenance_minute, ORG_MAINTENANCE_WINDOW[1])
+
+        first_machine_rrule = contribute_first
+        staggered = False
+        for index in range(1, 8):
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                repo_root = Path(tmp_dir) / "repo"
+                identity_path = repo_root / ".local" / "khaos_brain_installation.json"
+                identity_path.parent.mkdir(parents=True, exist_ok=True)
+                identity_path.write_text(
+                    json.dumps({"local_installation_id": f"stable-installation-b-{index}"}),
+                    encoding="utf-8",
+                )
+                if automation_rrule_for_spec(specs["kb-org-contribute"], repo_root) != first_machine_rrule:
+                    staggered = True
+                    break
+
+        self.assertTrue(staggered)
 
     def test_automation_runtime_prefers_newest_full_gpt_model_with_deepest_reasoning(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:

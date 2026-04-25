@@ -1,0 +1,7 @@
+interface:
+  display_name: "KB Dream Pass"
+  short_description: "Run one bounded local KB dream pass"
+  default_prompt: "Use $kb-dream-pass to run one bounded KB Dream pass for this repository."
+
+policy:
+  allow_implicit_invocation: false

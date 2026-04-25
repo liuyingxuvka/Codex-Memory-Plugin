@@ -1,0 +1,113 @@
+from __future__ import annotations
+
+import tempfile
+import unittest
+from pathlib import Path
+
+from local_kb.org_maintenance import build_organization_maintenance_report
+from local_kb.store import write_yaml_file
+
+
+class OrganizationMaintenanceTests(unittest.TestCase):
+    def _write_org_repo(self, root: Path) -> None:
+        write_yaml_file(
+            root / "khaos_org_kb.yaml",
+            {
+                "kind": "khaos-organization-kb",
+                "schema_version": 1,
+                "organization_id": "sandbox",
+                "kb": {
+                    "trusted_path": "kb/trusted",
+                    "candidates_path": "kb/candidates",
+                    "imports_path": "kb/imports",
+                },
+                "skills": {
+                    "registry_path": "skills/registry.yaml",
+                    "candidates_path": "skills/candidates",
+                },
+            },
+        )
+        write_yaml_file(root / "kb" / "trusted" / "model.yaml", {"id": "shared-card", "status": "trusted"})
+        write_yaml_file(root / "kb" / "candidates" / "dupe.yaml", {"id": "shared-card", "status": "candidate"})
+        (root / "kb" / "imports").mkdir(parents=True)
+        write_yaml_file(root / "skills" / "registry.yaml", {"skills": [{"id": "demo-skill", "status": "approved"}]})
+        (root / "skills" / "candidates").mkdir(parents=True)
+
+    def test_maintenance_report_ignores_duplicate_ids_and_detects_candidates_skills_and_outbox(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo_root = root / "repo"
+            org = root / "org"
+            self._write_org_repo(org)
+            write_yaml_file(repo_root / "kb" / "outbox" / "organization" / "sandbox" / "proposal.yaml", {"id": "proposal"})
+
+            report = build_organization_maintenance_report(org, repo_root=repo_root)
+
+        self.assertTrue(report["ok"], report)
+        self.assertEqual(report["organization_id"], "sandbox")
+        self.assertEqual(report["outbox_count"], 1)
+        self.assertIn("review-organization-candidates", report["recommendations"])
+        self.assertNotIn("review-duplicate-entry-ids", report["recommendations"])
+        self.assertIn("review-local-outbox-proposals", report["recommendations"])
+        self.assertIn("review-skill-registry", report["recommendations"])
+        self.assertIn("install-organization-review-skill-before-full-maintenance", report["recommendations"])
+        self.assertFalse(report["organization_review_skill"]["installed"])
+
+    def test_maintenance_report_detects_installed_organization_review_skill(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo_root = root / "repo"
+            org = root / "org"
+            self._write_org_repo(org)
+            skill_dir = repo_root / ".agents" / "skills" / "organization-review"
+            skill_dir.mkdir(parents=True)
+            (skill_dir / "SKILL.md").write_text(
+                "---\nname: organization-review\ndescription: Review organization KB proposals.\n---\n",
+                encoding="utf-8",
+            )
+
+            report = build_organization_maintenance_report(org, repo_root=repo_root)
+
+        self.assertTrue(report["ok"], report)
+        self.assertTrue(report["organization_review_skill"]["installed"])
+        self.assertNotIn("install-organization-review-skill-before-full-maintenance", report["recommendations"])
+
+    def test_maintenance_report_surfaces_duplicate_hash_cleanup_signal(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo_root = root / "repo"
+            org = root / "org"
+            self._write_org_repo(org)
+            duplicate_card = {
+                "id": "duplicate-a",
+                "title": "Duplicate organization card",
+                "type": "model",
+                "scope": "public",
+                "status": "candidate",
+                "confidence": 0.7,
+                "domain_path": ["shared"],
+                "tags": ["duplicate"],
+                "trigger_keywords": ["duplicate"],
+                "if": {"notes": "Same reusable condition."},
+                "action": {"description": "Use the same action."},
+                "predict": {"expected_result": "Duplicate hash should be detected."},
+                "use": {"guidance": "Keep only one canonical version."},
+            }
+            second_duplicate = dict(duplicate_card)
+            second_duplicate["id"] = "duplicate-b"
+            write_yaml_file(org / "kb" / "imports" / "alice" / "duplicate-a.yaml", duplicate_card)
+            write_yaml_file(org / "kb" / "imports" / "bob" / "duplicate-b.yaml", second_duplicate)
+
+            report = build_organization_maintenance_report(org, repo_root=repo_root)
+
+        self.assertTrue(report["ok"], report)
+        self.assertEqual(report["cleanup"]["duplicate_content_hash_count"], 1)
+        self.assertIn("review-duplicate-card-content-hashes", report["recommendations"])
+        self.assertIn("duplicate card content hashes require organization maintenance", report["organization_check"]["auto_merge_blockers"])
+        self.assertEqual(report["cleanup"]["similar_card_merge_apply"], "planned")
+        self.assertEqual(report["cleanup"]["weak_card_rejection_apply"], "planned")
+        self.assertEqual(report["cleanup"]["skill_bundle_cleanup_apply"], "partial")
+
+
+if __name__ == "__main__":
+    unittest.main()
