@@ -148,7 +148,10 @@ class OrganizationAdoptionTests(unittest.TestCase):
                 root,
             )
 
-        self.assertEqual(payload, [])
+        # Download/use history no longer hides the foreign card.  The complete
+        # organization snapshot remains directly usable; local Sleep may later
+        # decide whether a separate local model is warranted.
+        self.assertEqual([item["id"] for item in payload], ["org-card"])
 
     def test_adopting_organization_card_installs_card_bound_skill_bundle(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

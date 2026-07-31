@@ -12,11 +12,7 @@ from local_kb.common import (
     safe_float,
     tokenize,
 )
-from local_kb.adoption import (
-    blocked_organization_download_hashes,
-    card_exchange_hash,
-    dedupe_local_entries_by_exchange_hash,
-)
+from local_kb.adoption import card_exchange_hash, dedupe_local_entries_by_exchange_hash
 from local_kb.models import Entry
 from local_kb.logicguard_models import read_bound_argument_context
 from local_kb.model_projection import binding_from_projection
@@ -563,19 +559,42 @@ def search_multi_source_entries(
         path_hint=path_hint,
         top_k=top_k,
     )
-    blocked_hashes = blocked_organization_download_hashes(repo_root) if organization_sources else set()
+    local_exchange_hashes = {card_exchange_hash(entry.data) for entry in local_entries}
     organization_results: list[Entry] = []
     for source in organization_sources or []:
         org_root = Path(str(source.get("path") or source.get("local_path") or ""))
         organization_id = str(source.get("organization_id") or source.get("id") or "").strip()
         if not org_root.exists() or not organization_id:
             continue
-        entries = load_organization_entries(
-            org_root,
-            organization_id,
-            source_repo=str(source.get("source_repo") or source.get("repo_url") or ""),
-            source_commit=str(source.get("source_commit") or ""),
-        )
+        strict_snapshot = bool(source.get("snapshot_required") or source.get("from_settings"))
+        if strict_snapshot:
+            from local_kb.store import load_current_organization_entries
+
+            entries = load_current_organization_entries(
+                repo_root,
+                organization_id,
+                source_repo=str(source.get("source_repo") or source.get("repo_url") or ""),
+                source_commit=str(source.get("source_commit") or ""),
+            )
+        else:
+            try:
+                from local_kb.store import load_current_organization_entries
+
+                entries = load_current_organization_entries(
+                    repo_root,
+                    organization_id,
+                    source_repo=str(source.get("source_repo") or source.get("repo_url") or ""),
+                    source_commit=str(source.get("source_commit") or ""),
+                )
+            except RuntimeError:
+                # Explicit raw-mirror callers are setup/diagnostic surfaces.
+                # Settings-derived runtime sources are strict_snapshot=True.
+                entries = load_organization_entries(
+                    org_root,
+                    organization_id,
+                    source_repo=str(source.get("source_repo") or source.get("repo_url") or ""),
+                    source_commit=str(source.get("source_commit") or ""),
+                )
         # Organization candidates remain visible as explicitly untrusted input
         # for the organization adoption/validation workflow. This does not
         # relax the local active-index gate: unvalidated local candidates still
@@ -587,7 +606,10 @@ def search_multi_source_entries(
             top_k=top_k,
             allow_untrusted_candidates=True,
         ):
-            if card_exchange_hash(entry.data) in blocked_hashes:
+            # A local copy wins ordering, but a previously downloaded card is
+            # not blocked from direct use.  The snapshot remains the foreign
+            # read-only authority until local Sleep creates its own model.
+            if card_exchange_hash(entry.data) in local_exchange_hashes:
                 continue
             organization_results.append(entry)
     return [*local_results, *organization_results][:top_k]

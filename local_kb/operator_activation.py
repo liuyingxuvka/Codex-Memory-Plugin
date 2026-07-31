@@ -712,8 +712,8 @@ def activate_all_for_current_machine(
         ),
         "claim_boundary": (
             "This receipt authorizes only the user's explicit all-active, "
-            "user_paused=false override for the four scheduled automations on this "
-            "Codex home. It binds the complete five-skill inventory and keeps "
+            "user_paused=false override for the two composite scheduled automations on this "
+            "Codex home. It binds the complete five-skill inventory, keeps the "
             "khaos-brain-update manual-only. Installed currentness binds only the "
             "stable installation authority projection; history-migration diagnostics "
             "must still pass but are not receipt identity. It does not prove a future "

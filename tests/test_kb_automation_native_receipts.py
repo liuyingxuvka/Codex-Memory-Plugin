@@ -21,6 +21,7 @@ from local_kb.automation_runtime import (
     validate_native_receipt,
     write_native_receipt,
 )
+from tests.current_runtime_helpers import activate_current_kb_runtime
 from local_kb.lifecycle import run_incremental_sleep
 from scripts.run_kb_automation import native_command, run_automation
 
@@ -158,9 +159,7 @@ def _progress_saved_sleep_payload() -> dict[str, object]:
             "reason": "sleep-progress-saved",
         }
         for stage_id in (
-            "kb-dream",
-            "kb-organization-contribute",
-            "kb-organization-maintenance",
+        "organization-cycle",
         )
     }
     _refresh_sleep_batch_head(payload)
@@ -230,7 +229,7 @@ def test_sleep_progress_saved_receipt_rejects_expanded_frozen_batch() -> None:
 def test_sleep_progress_saved_receipt_rejects_downstream_stage_that_ran() -> None:
     payload = _progress_saved_sleep_payload()
     payload = copy.deepcopy(payload)
-    payload["downstream_stages"]["kb-dream"] = {
+    payload["downstream_stages"]["organization-cycle"] = {
         "status": "completed",
         "reason": "",
     }
@@ -281,9 +280,7 @@ def test_sleep_completed_with_blocks_is_a_valid_published_terminal_with_not_run_
             "reason": "sleep-completed-with-blocks",
         }
         for stage_id in (
-            "kb-dream",
-            "kb-organization-contribute",
-            "kb-organization-maintenance",
+        "organization-cycle",
         )
     }
     _refresh_sleep_batch_head(payload)
@@ -377,9 +374,7 @@ def test_sleep_hard_timeout_records_every_descendant_as_not_run() -> None:
             "reason": "sleep-native-hard-timeout",
         }
         for stage_id in (
-            "kb-dream",
-            "kb-organization-contribute",
-            "kb-organization-maintenance",
+            "organization-cycle",
         )
     }
 
@@ -387,6 +382,7 @@ def test_sleep_hard_timeout_records_every_descendant_as_not_run() -> None:
 def test_sleep_native_entrypoint_accepts_cooperative_deadline_and_emits_canonical_json() -> None:
     repo = Path(__file__).resolve().parents[1]
     with tempfile.TemporaryDirectory() as tmp:
+        activate_current_kb_runtime(Path(tmp))
         completed = subprocess.run(
             [
                 sys.executable,

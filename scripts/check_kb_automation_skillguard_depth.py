@@ -30,7 +30,7 @@ from local_kb.automation_runtime import (  # noqa: E402
     build_fixture_payload,
     build_native_receipt,
 )
-from local_kb.install import REPO_AUTOMATION_SPECS  # noqa: E402
+from local_kb.install import automation_prompt_for_skill  # noqa: E402
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -42,14 +42,7 @@ def _load_json(path: Path) -> dict[str, Any]:
 
 
 def _automation_prompt(skill_id: str) -> str:
-    return next(
-        (
-            str(row.get("prompt") or "")
-            for row in REPO_AUTOMATION_SPECS
-            if str(row.get("skill_name") or "") == skill_id
-        ),
-        "",
-    )
+    return automation_prompt_for_skill(skill_id)
 
 
 def _source_surface(skill_id: str) -> dict[str, Any]:

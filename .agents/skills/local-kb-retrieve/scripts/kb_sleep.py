@@ -14,7 +14,7 @@ if str(SCRIPT_REPO_ROOT) not in sys.path:
 
 from local_kb.cli_output import print_json, print_text
 from local_kb.i18n import DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES, localized_automation_status
-from local_kb.lifecycle import run_incremental_sleep
+from local_kb.local_cycle import run_local_maintenance_cycle
 from local_kb.store import resolve_repo_root
 
 
@@ -53,7 +53,7 @@ def main() -> int:
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
     repo_root = resolve_repo_root(args.repo_root)
-    receipt = run_incremental_sleep(
+    receipt = run_local_maintenance_cycle(
         repo_root,
         run_id=args.run_id or None,
         max_observations=max(0, int(args.max_observations)),

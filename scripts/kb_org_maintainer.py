@@ -14,6 +14,7 @@ _bootstrap_repo_imports()
 
 from local_kb.cli_output import print_json  # noqa: E402
 from local_kb.org_automation import run_organization_maintenance  # noqa: E402
+from local_kb.org_cycle import run_organization_cycle  # noqa: E402
 from local_kb.org_maintenance import build_organization_maintenance_report  # noqa: E402
 from local_kb.settings import load_desktop_settings, organization_sources_from_settings  # noqa: E402
 from local_kb.store import resolve_repo_root  # noqa: E402
@@ -29,6 +30,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Run the settings-gated organization maintenance automation entry point.",
     )
+    parser.add_argument(
+        "--cycle",
+        action="store_true",
+        help="Run the combined organization maintenance and contribution owner.",
+    )
     parser.add_argument("--no-postflight", action="store_true")
     return parser
 
@@ -37,11 +43,14 @@ def main() -> None:
     args = build_parser().parse_args()
     repo_root = resolve_repo_root(args.repo_root)
     if args.automation:
-        result = run_organization_maintenance(
-            repo_root,
-            record_postflight=not args.no_postflight,
-            run_id=args.run_id,
-        )
+        if args.cycle:
+            result = run_organization_cycle(repo_root, run_id=args.run_id)
+        else:
+            result = run_organization_maintenance(
+                repo_root,
+                record_postflight=not args.no_postflight,
+                run_id=args.run_id,
+            )
         print_json(result)
         if not result.get("ok"):
             raise SystemExit(2)

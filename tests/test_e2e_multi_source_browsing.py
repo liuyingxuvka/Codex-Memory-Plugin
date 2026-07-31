@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 from local_kb.settings import ORGANIZATION_MODE, load_desktop_settings, organization_sources_from_settings, save_desktop_settings
+from local_kb.org_snapshot import stage_organization_snapshot
 from local_kb.store import load_yaml_file, write_yaml_file
 from local_kb.ui_data import build_card_detail_payload, build_search_payload, build_source_view_payload
 from tests.current_runtime_helpers import activate_current_kb_runtime
@@ -55,6 +56,14 @@ class MultiSourceBrowsingE2ETests(unittest.TestCase):
             write_yaml_file(repo / "kb" / "public" / "local.yaml", self._card("local-card", "Shared card", same_guidance))
             write_yaml_file(org / "kb" / "main" / "org.yaml", self._card("org-card", "Shared card", same_guidance))
             sources = self._save_organization_settings(repo, org)
+            first_snapshot = stage_organization_snapshot(
+                repo,
+                org,
+                "sandbox",
+                source_repo=str(org),
+                source_commit="abc1234",
+            )
+            assert first_snapshot["ok"], first_snapshot
             activate_current_kb_runtime(repo)
 
             initial_payload = build_search_payload(repo, "shared organization", organization_sources=sources)
@@ -64,6 +73,14 @@ class MultiSourceBrowsingE2ETests(unittest.TestCase):
             changed = load_yaml_file(org / "kb" / "main" / "org.yaml")
             changed["use"]["guidance"] = "Use the updated organization guidance."
             write_yaml_file(org / "kb" / "main" / "org.yaml", changed)
+            second_snapshot = stage_organization_snapshot(
+                repo,
+                org,
+                "sandbox",
+                source_repo=str(org),
+                source_commit="def5678",
+            )
+            assert second_snapshot["ok"], second_snapshot
             changed_payload = build_search_payload(repo, "shared organization", organization_sources=sources)
             organization_summary = next(
                 item for item in changed_payload["results"] if item["source_info"]["kind"] == "organization"

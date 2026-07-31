@@ -141,9 +141,9 @@ def test_activation_gate_requires_exact_current_aggregate_and_four_scheduled_ter
         assert set(
             result["binding"]["skill_inventory"]["scheduled_skill_ids"]
         ) == {str(spec["skill_name"]) for spec in REPO_AUTOMATION_SPECS}
-        assert result["binding"]["skill_inventory"]["manual_only_skill_ids"] == [
-            "khaos-brain-update"
-        ]
+        assert result["binding"]["skill_inventory"]["manual_only_skill_ids"] == sorted(
+            MANUAL_ONLY_SKILL_IDS
+        )
 
 
 def test_current_machine_override_activates_all_and_writes_current_receipt() -> None:

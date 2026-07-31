@@ -64,3 +64,18 @@ product toolchain.
 #### Scenario: A required child is missing or stale
 - **WHEN** a child receipt is failed, stale, skipped, timed out, running, or absent
 - **THEN** the final aggregate remains blocked and reports that exact status
+
+### Requirement: Installation and scheduled projections preserve the two-owner boundary
+The installer SHALL project one local maintenance automation and one organization automation when organization mode is enabled, refresh their prompts and installed Skills transactionally, preserve pause state, and verify source/install/Git identities separately. A clean consumer projection SHALL contain no author-side SkillGuard material and no task-time organization network-fetch path.
+
+#### Scenario: Organization-enabled installation
+- **WHEN** the current source and terminal affected validation are frozen
+- **THEN** installation SHALL refresh the organization cycle (snapshot sync, organization maintenance, contribution) and local cycle (Dream/Sleep) projections, validate their native prompts, and preserve the user's existing paused/running intent
+
+#### Scenario: Peer changes are present in the source tree
+- **WHEN** unrelated or peer-authored dirty files exist during installation or validation
+- **THEN** the process SHALL preserve them, scope its own checks and commit paths explicitly, and SHALL NOT manufacture a clean tree by rollback or broad cleanup
+
+#### Scenario: Local Git parity is checked
+- **WHEN** the stable integration snapshot is ready for closure
+- **THEN** the final report SHALL identify the source revision, installed projection digest, FlowGuard adoption revision, and local Git commit separately and SHALL keep remote publication outside the claim unless explicitly requested

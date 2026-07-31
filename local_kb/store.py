@@ -224,6 +224,56 @@ def load_organization_entries(
     return entries
 
 
+def load_current_organization_entries(
+    repo_root: Path,
+    organization_id: str,
+    *,
+    source_repo: str = "",
+    source_commit: str = "",
+    allow_unmaterialized: bool = False,
+) -> list[Entry]:
+    """Read the last complete local organization snapshot.
+
+    ``allow_unmaterialized`` is retained for test/setup callers that provide a
+    raw mirror before the first maintenance pass.  Runtime settings always use
+    the strict default and therefore fail closed when no complete snapshot is
+    available.
+    """
+
+    from local_kb.org_snapshot import load_current_organization_snapshot
+
+    snapshot = load_current_organization_snapshot(Path(repo_root), organization_id)
+    if not snapshot.get("ok"):
+        if allow_unmaterialized:
+            return []
+        errors = "; ".join(str(item) for item in snapshot.get("errors") or [])
+        raise RuntimeError(
+            "Organization retrieval snapshot is unavailable; run organization maintenance first."
+            + (f" {errors}" if errors else "")
+        )
+    generation_root = Path(str(snapshot.get("generation_root") or ""))
+    manifest = snapshot.get("manifest") if isinstance(snapshot.get("manifest"), dict) else {}
+    manifest_repo = str(manifest.get("source_repo") or snapshot.get("source_repo") or source_repo or "")
+    manifest_commit = str(manifest.get("source_commit") or snapshot.get("source_commit") or source_commit or "")
+    entries = load_organization_entries(
+        generation_root,
+        organization_id,
+        source_repo=manifest_repo,
+        source_commit=manifest_commit,
+    )
+    for entry in entries:
+        entry.source.update(
+            {
+                "foreign_state": "eligible_external",
+                "snapshot_generation": str(snapshot.get("generation_id") or ""),
+                "snapshot_manifest_digest": str(snapshot.get("manifest_digest") or ""),
+                "snapshot_path": str(generation_root),
+                "mirror_path": str(source_repo or ""),
+            }
+        )
+    return entries
+
+
 def write_yaml_file(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:

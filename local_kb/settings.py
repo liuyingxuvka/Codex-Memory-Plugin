@@ -189,6 +189,8 @@ def organization_sources_from_settings(settings: dict[str, Any]) -> list[dict[st
             "organization_id": organization["organization_id"],
             "repo_url": organization["repo_url"],
             "source_commit": organization["last_sync_commit"],
+            "snapshot_required": True,
+            "from_settings": True,
         }
     ]
 

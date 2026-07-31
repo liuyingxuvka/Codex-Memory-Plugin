@@ -1,4 +1,4 @@
-"""Build four automation bindings and one explicit-manual update binding.
+"""Build the maintained Skill bindings and one explicit-manual update binding.
 
 The target obligation catalog lives in ``local_kb.automation_contracts`` and
 the executable topology lives in the declared FlowGuard child model.  This

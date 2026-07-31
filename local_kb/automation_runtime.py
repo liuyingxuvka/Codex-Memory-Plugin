@@ -98,9 +98,7 @@ SLEEP_BATCH_CHECKPOINT_FIELDS = frozenset(
     }
 )
 SLEEP_DOWNSTREAM_STAGE_IDS = (
-    "kb-dream",
-    "kb-organization-contribute",
-    "kb-organization-maintenance",
+    "organization-cycle",
 )
 
 
@@ -230,11 +228,20 @@ def _real_artifact_issues(
             recorded = _read_json_mapping(native)
             for key, value in payload.items():
                 if (
-                    key not in {"receipt_path", "_owner_timeout_policy"}
+                    key not in {"receipt_path", "_owner_timeout_policy", "local_cycle"}
                     and recorded.get(key) != value
                 ):
                     issues.append(f"sleep-native-receipt-content-mismatch:{key}")
                     break
+        cycle = _mapping(payload.get("local_cycle"))
+        if cycle:
+            cycle_path = require_file(
+                cycle.get("cycle_receipt_path"), "local-cycle-receipt"
+            )
+            if cycle_path is not None:
+                cycle_payload = _read_json_mapping(cycle_path)
+                if str(cycle_payload.get("status") or "") == "failed":
+                    issues.append("local-cycle-receipt-failed")
     elif skill_id == "kb-dream-pass":
         artifacts = _mapping(payload.get("artifact_paths"))
         report = require_file(artifacts.get("report_path"), "dream-report")
@@ -2265,8 +2272,6 @@ def _update_evidence(payload: Mapping[str, Any], exit_code: int) -> dict[str, di
     ]
     survivor_ids = {
         "kb-sleep",
-        "kb-dream",
-        "kb-org-contribute",
         "kb-org-maintenance",
     }
     return {
@@ -2317,8 +2322,13 @@ def _update_evidence(payload: Mapping[str, Any], exit_code: int) -> dict[str, di
             install_transaction.get("ok") is True
             and retired_skill_ids == {"kb-architect-pass"}
             and retired_automation_ids
-            == {"kb-architect", "khaos-brain-system-update"},
-            "The native update used a committed transaction whose retirement set contains the exact Architect and system-update automation surfaces.",
+            == {
+                "kb-architect",
+                "khaos-brain-system-update",
+                "kb-dream",
+                "kb-org-contribute",
+            },
+            "The native update used a committed transaction whose retirement set contains the exact legacy and split-owner automation surfaces.",
             "install.install_transaction",
             "install.retired_skill_ids",
             "install.retired_automation_ids",
@@ -3027,14 +3037,10 @@ def build_fixture_payload(
             "automation_state_snapshot": {
                 "states": {
                     "kb-sleep": "ACTIVE",
-                    "kb-dream": "ACTIVE",
-                    "kb-org-contribute": "ACTIVE",
                     "kb-org-maintenance": "PAUSED",
                 },
                 "user_paused": {
                     "kb-sleep": False,
-                    "kb-dream": False,
-                    "kb-org-contribute": False,
                     "kb-org-maintenance": True,
                 },
             },
@@ -3073,11 +3079,11 @@ def build_fixture_payload(
                 "retired_automation_ids": [
                     "kb-architect",
                     "khaos-brain-system-update",
+                    "kb-dream",
+                    "kb-org-contribute",
                 ],
                 "automations": [
                     {"id": "kb-sleep", "status": "ACTIVE"},
-                    {"id": "kb-dream", "status": "ACTIVE"},
-                    {"id": "kb-org-contribute", "status": "ACTIVE"},
                     {"id": "kb-org-maintenance", "status": "PAUSED"},
                 ],
             },
@@ -3103,14 +3109,10 @@ def build_fixture_payload(
                     "plan_hash": "fixture-restoration-plan",
                     "restored": {
                         "kb-sleep": "ACTIVE",
-                        "kb-dream": "ACTIVE",
-                        "kb-org-contribute": "ACTIVE",
                         "kb-org-maintenance": "PAUSED",
                     },
                     "restored_user_paused": {
                         "kb-sleep": False,
-                        "kb-dream": False,
-                        "kb-org-contribute": False,
                         "kb-org-maintenance": True,
                     },
                 },

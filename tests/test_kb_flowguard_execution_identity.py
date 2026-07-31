@@ -103,7 +103,7 @@ def test_manual_update_failure_keeps_survivors_paused() -> None:
     assert state.update_survivors_paused
 
 
-def test_operator_activation_uses_four_scheduled_and_one_manual_only_skill() -> None:
+def test_operator_activation_uses_two_composite_scheduled_owners_and_unscheduled_children() -> None:
     label, state = _advance(
         model.ConsumerState(),
         model.ConsumerInput(
@@ -115,7 +115,7 @@ def test_operator_activation_uses_four_scheduled_and_one_manual_only_skill() -> 
     )
     assert label == "scheduled_automations_activated_manual_update_unscheduled"
     assert set(state.active_scheduled_skills) == set(model.SCHEDULED_SKILL_IDS)
-    assert state.manual_only_skills == ("khaos-brain-update",)
+    assert set(state.manual_only_skills) == set(model.MANUAL_ONLY_SKILL_IDS)
     assert "khaos-brain-update" not in state.active_scheduled_skills
 
 

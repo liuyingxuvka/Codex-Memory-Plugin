@@ -62,7 +62,12 @@ UPGRADE_ATTEMPT_CURRENT_MAX_BYTES = 256 * 1024
 REASONING_EFFORT_ORDER = ("none", "minimal", "low", "medium", "high", "xhigh")
 AUTOMATION_DAILY_BYDAY = "SU,MO,TU,WE,TH,FR,SA"
 RETIRED_MAINTENANCE_SKILL_IDS = ("kb-architect-pass",)
-RETIRED_AUTOMATION_IDS = ("kb-architect", "khaos-brain-system-update")
+RETIRED_AUTOMATION_IDS = (
+    "kb-architect",
+    "khaos-brain-system-update",
+    "kb-dream",
+    "kb-org-contribute",
+)
 FLOWGUARD_VALIDATION_ROOT_ENV = "KHAOS_BRAIN_FLOWGUARD_VALIDATION_ROOT"
 FLOWGUARD_VALIDATION_DIGEST_ENV = "KHAOS_BRAIN_FLOWGUARD_VALIDATION_DIGEST"
 RESEARCHGUARD_LOGIC_VALIDATION_ROOT_ENV = (
@@ -181,7 +186,7 @@ SLEEP_AUTOMATION_PROMPT = (
     "Use $kb-sleep-maintenance for the fully automatic local Sleep pass. Read PROJECT_SPEC.md, "
     "docs/maintenance_agent_worldview.md, and .agents/skills/local-kb-retrieve/MAINTENANCE_PROMPT.md. "
     "Run only `python scripts/run_kb_automation.py --skill kb-sleep-maintenance --json`; the target-owned "
-    "runner owns lane-to-terminal orchestration, invokes the native Sleep entrypoint "
+    "runner owns lane-to-terminal orchestration, invokes the native local-cycle Sleep entrypoint "
     "`.agents/skills/local-kb-retrieve/scripts/kb_sleep.py` exactly once, and validates this "
     "run's immutable native terminal receipt. Do not run the child entrypoint directly. Resume the exact open frozen "
     "batch before later arrivals; otherwise freeze one finite batch with immutable item identities, input watermark and "
@@ -190,7 +195,7 @@ SLEEP_AUTOMATION_PROMPT = (
     "Give every settled item one explicit disposition or one named blocked owner plus executable reopen condition, persist "
     "each digest-bound item result, and reuse verified completed work instead of restarting the batch. Settle or park "
     "candidates with executable reopen conditions, apply evidence-driven promotion or downgrade review, and act as the "
-    "sole canonical model-generation publisher. Build a LogicGuard model revision for every admitted entry, preserve "
+    "sole canonical model-generation publisher. After a clean Sleep publish, run the existing Dream simulation as the second phase of this same local task. Build a LogicGuard model revision for every admitted entry, preserve "
     "explicit model gaps instead of inventing support, assemble exact revisions into a grounded ModelMesh only from "
     "qualifying provenance, consume typed Dream handoffs exactly once, and stage models, meshes, deterministic projections, "
     "the exact active index, and manifests away from the current generation. Validate the complete staged generation, "
@@ -199,9 +204,9 @@ SLEEP_AUTOMATION_PROMPT = (
     "before the outer hard timeout. Report previous_remaining, newly_eligible, opening_remaining, target_batch_size, "
     "completed_this_attempt, blocked_this_attempt, closing_remaining, net_reduction, and convergence_status under one "
     "counting rule. progress_saved or failure leaves the committed watermark and prior validated generation unchanged and "
-    "records kb-dream, kb-organization-contribute, and kb-organization-maintenance in downstream_stages as not_run. "
+    "records the organization cycle as not_run when the local cycle cannot reach a clean Sleep terminal. "
     "A named blocked item with an executable reopen condition may produce completed_with_blocks after settled siblings "
-    "publish; keep all three descendants not_run with reason sleep-completed-with-blocks. "
+    "publish; do not start the Dream phase or organization cycle with reason sleep-completed-with-blocks. "
     "The wrapper owns same-run terminalization: do not invoke kb_lane_status.py, retry the child, request human file review, "
     "start a second maintenance implementation, or resume another automation."
 )
@@ -245,14 +250,14 @@ ORG_CONTRIBUTE_AUTOMATION_PROMPT = (
 )
 
 ORG_MAINTENANCE_AUTOMATION_PROMPT = (
-    "Use $kb-organization-maintenance to run one settings-gated organization-level Sleep-like maintenance pass for this workspace. "
+    "Use $kb-organization-maintenance to run the single settings-gated organization maintenance cycle for this workspace. "
     "Treat the organization KB as a shared exchange layer rather than a central truth layer: "
     "organization maintenance may maintain organization main cards and imported card content with the same editorial "
     "posture as local Sleep, while local machines keep final adoption authority. Use PROJECT_SPEC.md, "
     "docs/maintenance_agent_worldview.md, docs/organization_mode_plan.md, "
     ".agents/skills/local-kb-retrieve/SKILL.md, and organization-review guidance when available. Start by "
     "running only `python scripts/run_kb_automation.py --skill kb-organization-maintenance --json`; the "
-    "target-owned runner invokes scripts/kb_org_maintainer.py --automation exactly once and validates its immutable native terminal "
+    "target-owned runner invokes scripts/kb_org_maintainer.py --automation --cycle exactly once and validates its immutable native terminal "
     "receipt. Do not run the child entrypoint directly. The native pass first reads "
     ".local/khaos_brain_desktop_settings.json; if the "
     "desktop settings are personal mode, missing, unvalidated, or organization maintenance participation is not "
@@ -273,7 +278,7 @@ ORG_MAINTENANCE_AUTOMATION_PROMPT = (
     "Skills. Build an organization Sleep decision set over cleanup proposals, select-for-apply or watch each action with a reason, treat organization-review as guidance rather than an apply gate, and apply only exact selected action ids. "
     "Keep privacy and executable Skill boundaries stricter than ordinary card content. It is acceptable to skip applying a change when evidence, "
     "safety, tooling, permissions, or scope is insufficient, but the inspection and recorded decision must still "
-    "happen. Run KB postflight after any non-skipped pass, record a structured observation, and report the settings "
+    "happen. After organization maintenance, run the existing contribution facade in the same task so upload and download are one serialized cycle; refresh the complete local snapshot before retrieval. Run KB postflight after any non-skipped pass, record a structured observation, and report the settings "
     "gate, participation status, preflight entries, manifest status, main status counts and import counts, content-hash "
     "duplicate decisions, organization merge checkpoint decisions, organization split checkpoint decisions, "
     "candidate approval or rejection decisions, Sleep decision counts, selected action ids, apply result, post-apply check result, maintenance branch, PR, push, and auto-merge-label result, Skill dependency decisions, Skill bundle version decisions, GitHub "
@@ -294,30 +299,6 @@ REPO_AUTOMATION_SPECS = (
         "execution_environment": "local",
     },
     {
-        "id": "kb-dream",
-        "name": "KB Dream",
-        "kind": "cron",
-        "prompt": DREAM_AUTOMATION_PROMPT,
-        "skill_name": "kb-dream-pass",
-        "status": "ACTIVE",
-        "rrule": "FREQ=WEEKLY;BYDAY=SU,MO,TU,WE,TH,FR,SA;BYHOUR=13;BYMINUTE=0",
-        "model_policy": AUTOMATION_MODEL_POLICY,
-        "reasoning_effort_policy": AUTOMATION_REASONING_EFFORT_POLICY,
-        "execution_environment": "local",
-    },
-    {
-        "id": "kb-org-contribute",
-        "name": "KB Organization Contribute",
-        "kind": "cron",
-        "prompt": ORG_CONTRIBUTE_AUTOMATION_PROMPT,
-        "skill_name": "kb-organization-contribute",
-        "status": "ACTIVE",
-        "jitter_window": ORG_CONTRIBUTE_WINDOW,
-        "model_policy": AUTOMATION_MODEL_POLICY,
-        "reasoning_effort_policy": AUTOMATION_REASONING_EFFORT_POLICY,
-        "execution_environment": "local",
-    },
-    {
         "id": "kb-org-maintenance",
         "name": "KB Organization Maintenance",
         "kind": "cron",
@@ -331,17 +312,35 @@ REPO_AUTOMATION_SPECS = (
     },
 )
 
-# These managed jobs were introduced after the original Sleep/Dream install
-# surface.  Their absence on a legacy machine has no user state to preserve;
-# it is a known new-component case, not an ambiguous deletion.  Sleep and
-# Dream remain fail-closed when missing because older installations did own
-# those states.
-POST_LEGACY_AUTOMATION_IDS = frozenset(
-    {
-        "kb-org-contribute",
-        "kb-org-maintenance",
-    }
-)
+# Dream and organization contribution remain target-owned native Skills for
+# diagnostics and for the composite owners' child phases, but they are no
+# longer scheduled automation owners. Keep their complete prompt surfaces
+# available to the author-side contract checker without reintroducing a third
+# or fourth installed schedule.
+DIAGNOSTIC_AUTOMATION_PROMPTS = {
+    "kb-dream-pass": DREAM_AUTOMATION_PROMPT,
+    "kb-organization-contribute": ORG_CONTRIBUTE_AUTOMATION_PROMPT,
+}
+
+
+def automation_prompt_for_skill(skill_id: str) -> str:
+    """Return the current prompt surface for a scheduled or diagnostic Skill."""
+
+    target = str(skill_id or "")
+    for spec in REPO_AUTOMATION_SPECS:
+        if str(spec.get("skill_name") or "") == target:
+            return str(spec.get("prompt") or "")
+    return str(DIAGNOSTIC_AUTOMATION_PROMPTS.get(target) or "")
+
+# The old split jobs are retired.  Their child Skills remain available for
+# diagnostics, but only the two composite owners are installed as schedules.
+# The composite organization owner is a new managed surface created when the
+# former contribution/maintenance split is retired.  A machine that still has
+# the old split jobs has no user pause state for this new owner, so the direct
+# upgrade policy gives it the declared active default instead of failing the
+# snapshot as ambiguous.  Existing current owners still retain their exact
+# status and pause intent.
+POST_LEGACY_AUTOMATION_IDS = frozenset({"kb-org-maintenance"})
 
 
 def default_local_appdata() -> Path:
@@ -2983,10 +2982,69 @@ def install_codex_integration(
             automation_state_snapshot=effective_snapshot,
         )
         attempt_id = str(upgrade_attempt.get("attempt_id") or "")
-        from local_kb.maintenance_migration import run_maintenance_migration
+        from local_kb.maintenance_migration import (
+            check_migration_current_authority,
+            migration_receipt_path,
+            run_maintenance_migration,
+        )
 
         try:
-            history_migration = run_maintenance_migration(root)
+            # Installation currentness is a bounded authority check.  A
+            # committed migration receipt is immutable evidence that the
+            # expensive full archive/LogicGuard scan already completed.  Do
+            # not repeat that multi-minute scan on every install; retain the
+            # full validator for explicit migration runs and for stale current
+            # authority.  This also keeps an interrupted upgrade resumable
+            # without leaving the surviving automations paused indefinitely.
+            currentness = check_migration_current_authority(root)
+            if currentness.get("ok"):
+                receipt_path = migration_receipt_path(root)
+                receipt = _load_json_object(receipt_path)
+                final_validation = dict(receipt.get("final_validation") or {})
+                logicguard_authority = dict(
+                    final_validation.get("logicguard_authority") or {}
+                )
+                history_migration = {
+                    "ok": True,
+                    "status": "current",
+                    "migration_id": str(currentness.get("migration_id") or ""),
+                    "receipt": {
+                        "status": str(receipt.get("status") or ""),
+                        "migration_id": str(receipt.get("migration_id") or ""),
+                        "receipt_digest": str(
+                            currentness.get("receipt_digest") or ""
+                        ),
+                    },
+                    "receipt_digest": str(currentness.get("receipt_digest") or ""),
+                    "validation": {
+                        "ok": bool(final_validation.get("ok")),
+                        "logicguard_authority": {
+                            "ok": bool(logicguard_authority.get("ok")),
+                            "generation_id": str(
+                                logicguard_authority.get("generation_id") or ""
+                            ),
+                            "zero_legacy_projection_residuals": bool(
+                                logicguard_authority.get(
+                                    "zero_legacy_projection_residuals"
+                                )
+                            ),
+                        },
+                        "residual_managed_file_count": int(
+                            final_validation.get("residual_managed_file_count") or 0
+                        ),
+                        "hard_debt_count": int(
+                            final_validation.get("hard_debt_count") or 0
+                        ),
+                        "claim_boundary": (
+                            "Reused the immutable committed migration receipt; "
+                            "no full archive, index, or LogicGuard scan ran during install."
+                        ),
+                    },
+                    "currentness": currentness,
+                    "idempotent_no_delta": True,
+                }
+            else:
+                history_migration = run_maintenance_migration(root)
             if not history_migration.get("ok"):
                 raise RuntimeError(
                     "Chaos Brain history migration paused failed: "
@@ -3976,7 +4034,7 @@ def build_installation_check(
                     "previous_remaining",
                     "closing_remaining",
                     "convergence_status",
-                    "downstream_stages as not_run",
+                    "organization cycle as not_run",
                     "explicit disposition",
                     "executable reopen conditions",
                     "sole canonical model-generation publisher",
@@ -3984,6 +4042,9 @@ def build_installation_check(
                     "grounded ModelMesh",
                     "explicit model gaps",
                     "typed Dream handoffs exactly once",
+                    "second phase",
+                    "local-cycle",
+                    "do not start the Dream phase",
                     "commit the watermark only after",
                     "do not invoke kb_lane_status.py",
                     "request human file review",
@@ -4016,7 +4077,8 @@ def build_installation_check(
             if expected["id"] == "kb-org-maintenance":
                 for marker in (
                     "scripts/kb_org_maintainer.py",
-                    "organization-level Sleep-like maintenance",
+                    "--cycle",
+                    "organization maintenance cycle",
                     "desktop settings",
                     "organization maintenance participation",
                     "successful no-op",
@@ -4132,9 +4194,9 @@ def build_installation_check(
         and all(item["ok"] for item in canonical_interface_checks)
     )
     kb_sleep_ok = not automation_issue_map.get("kb-sleep")
-    kb_dream_ok = not automation_issue_map.get("kb-dream")
+    kb_dream_ok = not automation_toml_path("kb-dream", home).exists()
     system_update_retired_ok = not automation_toml_path("khaos-brain-system-update", home).exists()
-    kb_org_contribute_ok = not automation_issue_map.get("kb-org-contribute")
+    kb_org_contribute_ok = not automation_toml_path("kb-org-contribute", home).exists()
     kb_org_maintenance_ok = not automation_issue_map.get("kb-org-maintenance")
     automation_check_map = {item["id"]: item for item in automation_checks}
     codex_shell_tools_ok = not shell_tools_required or (git_shim_path.exists() and rg_path.exists())
@@ -4394,7 +4456,7 @@ def build_installation_check(
         ),
         _checklist_item(
             "kb_dream_automation",
-            "KB Dream automation is installed and matches the repository spec",
+            "Retired standalone KB Dream automation is absent; Dream runs inside local Sleep",
             kb_dream_ok,
             f"path={automation_toml_path('kb-dream', home)}",
         ),
@@ -4427,7 +4489,7 @@ def build_installation_check(
         ),
         _checklist_item(
             "kb_org_contribute_automation",
-            "KB Organization Contribute automation is installed and matches the repository spec",
+            "Retired standalone organization contribution automation is absent",
             kb_org_contribute_ok,
             (
                 f"path={automation_toml_path('kb-org-contribute', home)}; "

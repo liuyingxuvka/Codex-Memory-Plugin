@@ -28,7 +28,7 @@ from tkinter import font as tkfont, ttk
 
 from PIL import Image, ImageDraw, ImageFilter, ImageTk
 
-from local_kb.adoption import adopt_organization_entry_by_source_info
+from local_kb.adoption import record_organization_use_by_source_info
 from local_kb.common import normalize_text
 from local_kb.i18n import (
     DEFAULT_LANGUAGE,
@@ -2423,44 +2423,15 @@ class KbDesktopApp(tk.Tk):
             if detail is not None:
                 self._open_detail_window({**detail, "route_reason": summary.get("route_reason")})
                 try:
-                    adoption = adopt_organization_entry_by_source_info(
+                    record_organization_use_by_source_info(
                         self.repo_root,
                         str(summary.get("id")),
                         self._active_organization_sources(),
                         source_info=summary_source,
                     )
                 except Exception:
-                    adoption = {"ok": False}
-                if adoption.get("ok"):
-                    self._refresh_after_language_change()
+                    pass
                 return
-            try:
-                adoption = adopt_organization_entry_by_source_info(
-                    self.repo_root,
-                    str(summary.get("id")),
-                    self._active_organization_sources(),
-                    source_info=summary_source,
-                )
-            except Exception:
-                adoption = {"ok": False}
-            if adoption.get("ok"):
-                adopted_path = Path(str(adoption.get("path") or ""))
-                try:
-                    source_path = adopted_path.relative_to(self.repo_root).as_posix()
-                except ValueError:
-                    source_path = str(adopted_path)
-                detail = build_card_detail_payload(
-                    self.repo_root,
-                    str(adoption.get("entry_id") or summary.get("id")),
-                    language=self.language,
-                    organization_sources=self._active_organization_sources(),
-                    source_info={"kind": "local", "path": source_path.replace("/", "\\")},
-                    local_policy_allows_skill_auto_install=self._local_policy_allows_skill_auto_install(),
-                )
-                if detail is not None:
-                    self._open_detail_window({**detail, "route_reason": summary.get("route_reason")})
-                    self._refresh_after_language_change()
-                    return
         detail = build_card_detail_payload(
             self.repo_root,
             str(summary.get("id")),

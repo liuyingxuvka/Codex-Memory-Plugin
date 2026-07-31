@@ -89,7 +89,7 @@ AUTOMATION_COMPLETION_CONTRACTS: dict[str, dict[str, Any]] = {
             "previous_remaining",
             "closing_remaining",
             "convergence_status",
-            "downstream_stages as not_run",
+            "organization cycle as not_run",
             "explicit disposition",
             "executable reopen conditions",
             "promotion or downgrade review",

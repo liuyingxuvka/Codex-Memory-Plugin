@@ -1,17 +1,18 @@
 ---
 name: kb-organization-maintenance
-description: Run the repository-managed Khaos Brain organization maintenance pass. Use only when a user or automation explicitly asks to inspect, review, or maintain a validated organization KB repository and this machine has opted into organization maintenance; this is the organization-level Sleep-like maintenance flow, not ordinary local KB Sleep.
+description: Run the repository-managed Khaos Brain organization maintenance cycle. Use only when a user or automation explicitly asks to inspect, review, or maintain a validated organization KB repository and this machine has opted into organization maintenance; this is the organization exchange cycle, not ordinary local KB Sleep.
 ---
 
 # KB Organization Maintenance
 
-Run one organization-level Sleep-like maintenance pass for this predictive KB repository.
+Run one organization maintenance cycle for this predictive KB repository: maintain the shared repository, contribute eligible local cards, and refresh a complete local snapshot for direct read-only retrieval.
 
 The organization KB is a shared exchange layer, not a central truth layer. Treat
 organization maintenance as Sleep for the shared exchange surface: it can
 maintain `main` cards and imported card content when the evidence supports
-the decision. Local machines still decide what to adopt and how strongly to rely
-on organization cards after import.
+the decision. Local machines still decide how strongly to rely on organization
+cards. Normal retrieval uses the synchronized snapshot directly; it never
+auto-adopts a card, publishes a local model, or installs a card-bound Skill.
 
 The shared card remains an exchange projection. Organization maintenance owns
 the organization repository's review state, not any machine's local LogicGuard
@@ -38,11 +39,11 @@ Current user instructions still override repository files.
 
 ## Execution Contract
 
-1. Use scripts/kb_org_maintainer.py --automation as the entry point.
+1. Use `scripts/kb_org_maintainer.py --automation --cycle` as the entry point. It serializes the existing organization maintenance and contribution facades; do not schedule either child separately.
 2. The entry point must first read .local/khaos_brain_desktop_settings.json.
 3. If organization mode is not validated or this machine has not opted into organization maintenance, exit successfully with a no-op result.
 4. Run KB preflight against system/knowledge-library/organization before inspecting organization candidates.
-5. Validate the exact current organization manifest, `kb/imports` incoming lane, `kb/main` exchange surface, absence of retired roots/keys, Skill registry, and current Git state before proposing changes.
+5. Validate the exact current organization manifest, `kb/imports` incoming lane, `kb/main` exchange surface, absence of retired roots/keys, Skill registry, and current Git state before proposing changes. After synchronization, stage an atomic complete snapshot containing every eligible active-card identity, content hash, and required Skill registry material.
 6. Read the shared maintenance-agent worldview and apply the exchange-layer Sleep model: organization `main` cards are maintainable content, not untouchable central truth.
 7. Run the organization card-surface map checkpoint. Summarize `main` trusted/candidate/rejected/deprecated counts plus import counts; low-confidence main trusted cards; duplicate/similar cards; stale rejected/deprecated cards; Skill-linked cards; retired-layout residual count; and privacy/Skill risks before applying anything. A nonzero retired-layout residual is a blocker, not a readable surface.
 8. Run the organization candidate intake checkpoint. Review new imports for reusable scenario, action, prediction, confidence, route, provenance, and public sharing value; reviewed imports can move into `main` as `candidate` or `trusted`.
@@ -60,7 +61,7 @@ Current user instructions still override repository files.
 20. Commit and push applied maintenance changes to a maintenance branch, open the PR when the repository is on GitHub, apply `org-kb:auto-merge` only for reviewed main/imports changes with audit evidence, then restore the local mirror to the organization base branch so later sync or contribution work does not continue on an old maintenance branch.
 21. Run the GitHub merge-readiness checkpoint. Confirm changed paths, low-risk import eligibility or reviewed-maintenance eligibility, required checks, rollback story, and whether the PR should be auto-merge eligible or remain review-only.
 22. Do not skip the merge, split, card-decision, Skill-safety, Skill-bundle-version, decision-apply, post-apply, maintenance-branch, or GitHub-readiness checkpoints. It is acceptable to skip applying a change when evidence, safety, tooling, permissions, or scope is insufficient, but the inspection and recorded decision must still happen.
-23. Run KB postflight after a non-skipped maintenance pass and record the result as structured history.
+23. Run the single cycle postflight after a non-skipped pass and record the result as structured history. A failed snapshot activation is a visible cycle failure; retrieval must continue using the previous complete snapshot.
 
 ## Report
 
@@ -68,6 +69,6 @@ Report the settings gate result, participation status, preflight entry ids, orga
 
 ## Native completion boundary
 
-For a scheduled run, intake, planning, or proposal-only output is incomplete. Run `python scripts/run_kb_automation.py --skill kb-organization-maintenance --json`. The target-owned wrapper invokes the native organization-maintenance owner once and accepts only its immutable terminal receipt for that exact run. A settings-gated no-op counts only when the native gate receipt proves it terminal. Fixture or capability evidence cannot replace the concrete scheduled run.
+For a scheduled run, intake, planning, or proposal-only output is incomplete. Run `python scripts/run_kb_automation.py --skill kb-organization-maintenance --json`. The target-owned wrapper invokes `scripts/kb_org_maintainer.py --automation --cycle` once and accepts only its immutable cycle receipt for that exact run. A settings-gated no-op counts only when the native gate receipt proves it terminal. Fixture or capability evidence cannot replace the concrete scheduled run.
 
 Ordinary use is self-contained and does not read an author-maintenance contract, external receipt, router, or installed maintenance tool. Author-side checks may validate organization maintenance before distribution but never participate in a scheduled maintenance run.

@@ -1650,11 +1650,7 @@ def _run_incremental_sleep_locked(
                     "status": "not_run",
                     "reason": "sleep-progress-saved",
                 }
-                for stage_id in (
-                    "kb-dream",
-                    "kb-organization-contribute",
-                    "kb-organization-maintenance",
-                )
+                for stage_id in ("organization-cycle",)
             },
             "blockers": [],
             "lane_lock": dict(lane_lock),
@@ -2023,11 +2019,7 @@ def _run_incremental_sleep_locked(
                     "status": "not_run",
                     "reason": "sleep-completed-with-blocks",
                 }
-                for stage_id in (
-                    "kb-dream",
-                    "kb-organization-contribute",
-                    "kb-organization-maintenance",
-                )
+                for stage_id in ("organization-cycle",)
             }
             if has_blocked_items
             else {}

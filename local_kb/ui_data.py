@@ -6,7 +6,7 @@ from typing import Any
 from local_kb.common import normalize_string_list, normalize_text, parse_route_segments, safe_float
 from local_kb.consolidate_events import load_history_events
 from local_kb.i18n import DEFAULT_LANGUAGE, localized_entry, localized_route_label, normalize_language
-from local_kb.adoption import blocked_organization_download_hashes, card_exchange_hash, dedupe_local_entries_by_exchange_hash
+from local_kb.adoption import card_exchange_hash, dedupe_local_entries_by_exchange_hash
 from local_kb.model_maintenance import load_current_model_entries
 from local_kb.logicguard_models import read_bound_argument_context
 from local_kb.model_projection import binding_from_projection
@@ -149,6 +149,7 @@ def _cross_route_match(data: dict[str, Any], prefix: list[str]) -> list[str] | N
 
 
 def _load_organization_entries_from_sources(
+    repo_root: Path,
     organization_sources: list[dict[str, Any]] | None,
 ) -> list[Any]:
     organization_entries: list[Any] = []
@@ -157,14 +158,34 @@ def _load_organization_entries_from_sources(
         organization_id = str(source.get("organization_id") or source.get("id") or "").strip()
         if not org_root.exists() or not organization_id:
             continue
-        organization_entries.extend(
-            load_organization_entries(
-                org_root,
+        strict_snapshot = bool(source.get("snapshot_required") or source.get("from_settings"))
+        if strict_snapshot:
+            from local_kb.store import load_current_organization_entries
+
+            entries = load_current_organization_entries(
+                repo_root,
                 organization_id,
                 source_repo=str(source.get("source_repo") or source.get("repo_url") or ""),
                 source_commit=str(source.get("source_commit") or ""),
             )
-        )
+        else:
+            try:
+                from local_kb.store import load_current_organization_entries
+
+                entries = load_current_organization_entries(
+                    repo_root,
+                    organization_id,
+                    source_repo=str(source.get("source_repo") or source.get("repo_url") or ""),
+                    source_commit=str(source.get("source_commit") or ""),
+                )
+            except RuntimeError:
+                entries = load_organization_entries(
+                    org_root,
+                    organization_id,
+                    source_repo=str(source.get("source_repo") or source.get("repo_url") or ""),
+                    source_commit=str(source.get("source_commit") or ""),
+                )
+        organization_entries.extend(entries)
     return organization_entries
 
 
@@ -172,11 +193,11 @@ def _load_entries_for_views(repo_root: Path, organization_sources: list[dict[str
     local_entries = dedupe_local_entries_by_exchange_hash(load_current_model_entries(repo_root)[0])
     if not organization_sources:
         return local_entries
-    blocked_hashes = blocked_organization_download_hashes(repo_root)
+    local_hashes = {card_exchange_hash(entry.data) for entry in local_entries}
     organization_entries = [
         entry
-        for entry in _load_organization_entries_from_sources(organization_sources)
-        if card_exchange_hash(entry.data) not in blocked_hashes
+        for entry in _load_organization_entries_from_sources(repo_root, organization_sources)
+        if card_exchange_hash(entry.data) not in local_hashes
     ]
     return [*local_entries, *organization_entries]
 
@@ -301,7 +322,7 @@ def _load_entries_for_detail(
     prefer_source_info: dict[str, Any] | None = None,
 ) -> list[Any]:
     local_entries = load_current_model_entries(repo_root)[0]
-    organization_entries = _load_organization_entries_from_sources(organization_sources)
+    organization_entries = _load_organization_entries_from_sources(repo_root, organization_sources)
     if (prefer_source_info or {}).get("kind") == "organization":
         return [*organization_entries, *local_entries]
     return [*local_entries, *organization_entries]

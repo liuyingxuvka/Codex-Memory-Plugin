@@ -18,7 +18,7 @@ from local_kb.skill_sharing import (
     install_imported_skill_bundle_version,
     resolve_skill_bundle_source_dir,
 )
-from local_kb.store import load_organization_entries, load_yaml_file
+from local_kb.store import load_organization_entries
 
 
 ADOPTION_KEY = "organization_adoption"
@@ -469,6 +469,7 @@ def adopt_organization_entry(repo_root: Path, entry: Entry) -> dict[str, Any]:
         reason="organization-adoption-created",
         card_upserts={target_path.relative_to(repo_root).as_posix(): payload},
     )
+
     if not publication.get("ok"):
         return {
             "ok": False,
@@ -514,6 +515,65 @@ def adopt_organization_entry_by_source_info(
     if entry is None:
         return {"ok": False, "error": "organization entry not found"}
     return adopt_organization_entry(repo_root, entry)
+
+
+def record_organization_use_observation(
+    repo_root: Path,
+    entry: Entry,
+    *,
+    task_summary: str = "Used an organization card directly from the local snapshot",
+) -> dict[str, Any]:
+    """Record foreign-card use without creating a local card or installing a Skill."""
+
+    if entry.source.get("kind") != "organization":
+        return {"ok": False, "status": "not-organization-entry"}
+    data = entry.data if isinstance(entry.data, dict) else {}
+    route = data.get("domain_path") if isinstance(data.get("domain_path"), list) else []
+    entry_id = str(data.get("id") or entry.path.stem)
+    event = build_observation(
+        task_summary=task_summary,
+        route_hint="/".join(str(item) for item in route),
+        entry_ids=entry_id,
+        hit_quality="trusted" if str(data.get("status") or "").lower() == "trusted" else "candidate",
+        outcome="foreign_card_used_directly",
+        comment="Organization card was used from the complete local snapshot; no local adoption or model write was performed.",
+        suggested_action="none",
+        scenario="A task matched a synchronized organization card.",
+        action_taken="Read the organization card from the local immutable snapshot.",
+        observed_result="The card remained foreign, read-only, and directly usable.",
+        operational_use="Sleep may consolidate this usage observation later; it is not a local card authority.",
+        reuse_judgment="Reusable only when the same organization card is repeatedly useful on this machine.",
+        source_kind="organization",
+        agent_name="khaos-brain-organization-retrieval",
+        workspace_root=str(repo_root),
+    )
+    try:
+        history_path = record_observation(repo_root, event)
+    except Exception as exc:
+        return {"ok": False, "status": "observation-write-failed", "error": f"{type(exc).__name__}: {exc}"}
+    exchange_hash = card_exchange_hash(data)
+    record_exchange_hash(
+        repo_root,
+        exchange_hash,
+        direction="used",
+        organization_id=str(entry.source.get("organization_id") or ""),
+        source_repo=str(entry.source.get("source_repo") or ""),
+        source_path=str(entry.source.get("path") or ""),
+        entry_id=entry_id,
+    )
+    return {"ok": True, "event_id": str(event.get("event_id") or ""), "history_path": str(history_path)}
+
+
+def record_organization_use_by_source_info(
+    repo_root: Path,
+    entry_id: str,
+    organization_sources: list[dict[str, Any]],
+    source_info: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    entry = find_organization_entry(entry_id, organization_sources, source_info=source_info)
+    if entry is None:
+        return {"ok": False, "status": "organization-entry-not-found"}
+    return record_organization_use_observation(repo_root, entry)
 
 
 def _organization_root_for_entry(entry: Entry) -> Path:

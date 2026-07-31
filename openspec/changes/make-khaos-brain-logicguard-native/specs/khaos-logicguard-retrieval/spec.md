@@ -54,3 +54,18 @@ The system SHALL define and verify budgets for active-index load, exact binding 
 #### Scenario: Multiple exact nodes are read from one generation
 - **WHEN** a process reads different model-bound cards from the same authority generation and privacy scope
 - **THEN** it MAY reuse one pinned read-only model/mesh store session keyed by the exact authority pointer digest, and a changed digest SHALL open a new session before another context is returned
+
+### Requirement: Ordinary retrieval uses the local organization snapshot without network side effects
+Routine task retrieval SHALL search the current local canonical authority and the current validated organization snapshot as separate sources. It SHALL NOT fetch a card, bundle, or mirror content over the network on a cache miss, and every organization result SHALL remain explicitly foreign and read-only.
+
+#### Scenario: Relevant organization card is already synchronized
+- **WHEN** a task query matches an applicable active card in the current local organization snapshot
+- **THEN** retrieval SHALL return it automatically with its organization generation, card revision, LogicGuard binding, freshness status, and source label, without a user adoption action
+
+#### Scenario: No current organization snapshot exists
+- **WHEN** a task requests organization context but no complete validated snapshot has ever been activated
+- **THEN** retrieval SHALL keep working for local knowledge and SHALL return organization context as unavailable rather than attempting a lazy download
+
+#### Scenario: Local and foreign cards conflict
+- **WHEN** a foreign organization card conflicts with a current local canonical card for the same task boundary
+- **THEN** retrieval SHALL preserve the local canonical authority, expose the foreign card only as a bounded alternative or conflict warning, and SHALL record no silent overwrite

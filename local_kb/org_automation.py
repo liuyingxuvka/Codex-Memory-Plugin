@@ -224,6 +224,7 @@ def _sync_first_organization_source(
     settings: dict[str, Any],
     *,
     base_branch: str = "main",
+    require_snapshot: bool = True,
 ) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any], dict[str, Any]]:
     sources = organization_sources_from_settings(settings)
     if not sources:
@@ -275,6 +276,23 @@ def _sync_first_organization_source(
         settings = load_desktop_settings(repo_root)
         sources = organization_sources_from_settings(settings)
         source = sources[0] if sources else source
+        from local_kb.org_snapshot import stage_organization_snapshot
+
+        snapshot = stage_organization_snapshot(
+            repo_root,
+            org_root,
+            str(source.get("organization_id") or validation.get("organization_id") or ""),
+            source_repo=str(source.get("repo_url") or repo_url or ""),
+            source_commit=str(validation.get("commit") or sync_result.get("commit") or ""),
+        )
+        sync_result["snapshot"] = snapshot
+        if snapshot.get("ok") is not True:
+            sync_result["snapshot_blocked"] = True
+            if require_snapshot:
+                sync_result["ok"] = False
+            sync_result.setdefault("errors", []).extend(
+                str(item) for item in snapshot.get("errors") or ["organization snapshot activation failed"]
+            )
     return source, sources, settings, sync_result
 
 
@@ -597,7 +615,11 @@ def run_organization_contribution(
     lock_released = False
     try:
         write_lane_status(repo_root, "kb-org-contribute", "running", run_id=resolved_run_id)
-        source, sources, settings, sync_result = _sync_first_organization_source(repo_root, settings, base_branch=base_branch)
+        source, sources, settings, sync_result = _sync_first_organization_source(
+            repo_root,
+            settings,
+            base_branch=base_branch,
+        )
         if not sync_result.get("ok"):
             write_lane_status(repo_root, "kb-org-contribute", "failed", run_id=resolved_run_id, note="organization source sync failed")
             result = {
@@ -848,7 +870,12 @@ def run_organization_maintenance(
     lock_released = False
     try:
         write_lane_status(repo_root, "kb-org-maintenance", "running", run_id=resolved_run_id)
-        source, sources, settings, sync_result = _sync_first_organization_source(repo_root, settings, base_branch=base_branch)
+        source, sources, settings, sync_result = _sync_first_organization_source(
+            repo_root,
+            settings,
+            base_branch=base_branch,
+            require_snapshot=False,
+        )
         if not sync_result.get("ok"):
             write_lane_status(repo_root, "kb-org-maintenance", "failed", run_id=resolved_run_id, note="organization source sync failed")
             result = {
@@ -928,7 +955,29 @@ def run_organization_maintenance(
         post_apply_ok = True
         if post_apply_check:
             post_apply_ok = bool(post_apply_check.get("ok"))
+        from local_kb.org_snapshot import stage_organization_snapshot
+
+        post_snapshot = stage_organization_snapshot(
+            repo_root,
+            Path(str(source.get("path") or "")),
+            organization_id,
+            source_repo=str(source.get("repo_url") or ""),
+            source_commit=str(
+                (report.get("validation") or {}).get("commit")
+                or sync_result.get("commit")
+                or source.get("source_commit")
+                or ""
+            ),
+        )
+        sync_result["post_maintenance_snapshot"] = post_snapshot
+        if post_snapshot.get("ok") is True:
+            sync_result["snapshot"] = post_snapshot
+            sync_result.pop("snapshot_blocked", None)
+        else:
+            sync_result["snapshot_blocked"] = True
+        snapshot_ok = post_snapshot.get("ok") is True
         final_ok = bool(report.get("ok")) and apply_ok and post_apply_ok and bool(maintenance_branch.get("ok", True))
+        final_ok = final_ok and snapshot_ok
         exact_apply = cleanup.get("exact_selected_apply") if isinstance(cleanup.get("exact_selected_apply"), dict) else {}
         skill_safety = cleanup.get("skill_safety_checkpoint") if isinstance(cleanup.get("skill_safety_checkpoint"), dict) else {}
         final_ok = (

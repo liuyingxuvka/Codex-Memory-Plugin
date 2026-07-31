@@ -88,6 +88,7 @@ def native_command(skill_id: str, *, repo_root: Path, run_id: str) -> list[str]:
             "--repo-root",
             str(repo_root),
             "--automation",
+            "--cycle",
             "--run-id",
             run_id,
         ],
@@ -147,11 +148,7 @@ def run_automation(
                         "status": "not_run",
                         "reason": "sleep-native-hard-timeout",
                     }
-                    for stage_id in (
-                        "kb-dream",
-                        "kb-organization-contribute",
-                        "kb-organization-maintenance",
-                    )
+                    for stage_id in ("organization-cycle",)
                 },
             }
         )

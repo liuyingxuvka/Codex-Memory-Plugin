@@ -28,10 +28,17 @@ AUTOMATION_TARGET_OBLIGATIONS = {
     for skill_id in AUTOMATION_COMPLETION_CONTRACTS
 }
 AUTOMATION_TARGET_IDS = tuple(AUTOMATION_TARGET_OBLIGATIONS)
-SCHEDULED_SKILL_IDS = tuple(
-    skill_id for skill_id in AUTOMATION_TARGET_IDS if skill_id != UPDATE_SKILL_ID
+# Only the two composite owners are scheduled. Dream and organization
+# contribution remain maintained child/diagnostic Skills, while the update
+# Skill remains explicit-user-only; all three are therefore unscheduled in the
+# consumer inventory rather than silently receiving their own timer.
+SCHEDULED_SKILL_IDS = (
+    "kb-sleep-maintenance",
+    "kb-organization-maintenance",
 )
-MANUAL_ONLY_SKILL_IDS = (UPDATE_SKILL_ID,)
+MANUAL_ONLY_SKILL_IDS = tuple(
+    skill_id for skill_id in AUTOMATION_TARGET_IDS if skill_id not in SCHEDULED_SKILL_IDS
+)
 AUTOMATION_CHECK_KINDS = (
     "intake-runtime",
     "native-runtime",

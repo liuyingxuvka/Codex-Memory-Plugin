@@ -18,7 +18,7 @@ from local_kb.automation_contracts import (
     obligation_id,
     validate_completion_surface,
 )
-from local_kb.install import REPO_AUTOMATION_SPECS
+from local_kb.install import automation_prompt_for_skill
 from scripts.build_kb_automation_skillguard_contracts import build_contract_source
 from scripts.check_kb_automation_skillguard_depth import build_report
 
@@ -37,14 +37,7 @@ def _control(skill_id: str, name: str) -> dict:
 
 
 def _automation_prompt(skill_id: str) -> str:
-    return next(
-        (
-            str(row["prompt"])
-            for row in REPO_AUTOMATION_SPECS
-            if row["skill_name"] == skill_id
-        ),
-        "",
-    )
+    return automation_prompt_for_skill(skill_id)
 
 
 class AutomationSkillGuardContractGenerationTests(unittest.TestCase):

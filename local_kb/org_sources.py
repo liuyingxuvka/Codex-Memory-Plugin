@@ -225,12 +225,30 @@ def connect_organization_source(
         "last_sync_commit": commit if validation_ok else "",
         "last_sync_at": now if validation_ok else "",
     }
+    snapshot: dict[str, Any] = {}
+    if validation_ok:
+        from local_kb.org_snapshot import stage_organization_snapshot
+
+        snapshot = stage_organization_snapshot(
+            Path(repo_root),
+            mirror_path,
+            str(settings.get("organization_id") or ""),
+            source_repo=repo_url,
+            source_commit=commit,
+        )
+        if snapshot.get("ok") is not True:
+            settings["validated"] = False
+            settings["validation_status"] = "snapshot_blocked"
+            settings["validation_message"] = "; ".join(
+                str(item) for item in snapshot.get("errors") or ["organization snapshot activation failed"]
+            )
     return {
-        "ok": validation_ok,
+        "ok": bool(validation_ok and snapshot.get("ok", False)),
         "settings": settings,
         "clone": clone_result,
         "migration": migration,
         "validation": validation,
+        "snapshot": snapshot,
     }
 
 

@@ -217,3 +217,79 @@ Rollback before final commit restores the prior YAML/index/lifecycle generation 
 ## Open Questions
 
 No product-direction question remains open. Thresholds such as maximum retrieval hops/nodes, Sleep batch size, and Dream experiment count will be calibrated from current performance fixtures and recorded as explicit configuration constants with fail-closed hard caps.
+
+### 11. Organization cards are a complete local foreign snapshot
+
+The organization mirror remains the remote Git/source input, but ordinary task
+retrieval MUST NOT read a mutable mirror or perform a lazy network fetch. The
+organization cycle materializes one immutable local snapshot per pinned
+organization generation under the ignored runtime root. A snapshot contains the
+catalog's exact active card identity set, every active card projection, every
+card's exact LogicGuard model/bundle binding, source commit/generation metadata,
+and lifecycle/tombstone summaries needed to exclude retired cards.
+
+The sync has two levels of completeness: the logical result is the entire
+active set, while the physical transfer may reuse content-addressed blobs whose
+hashes already exist locally. New material is staged first, checked against the
+exact expected identity/revision/hash set, sealed, and activated by changing one
+current pointer last. A missing card, bundle, digest, or identity mismatch never
+partially replaces the previous complete snapshot. A prior snapshot may remain
+available with an explicit stale status; a first-ever failed sync exposes an
+organization-unavailable result.
+
+The local search facade reads the local canonical index and the current
+organization snapshot as separate sources. An organization result is marked
+`foreign/organization`, read-only, and trial-eligible when its applicability,
+scope, lifecycle, and LogicGuard binding pass. It may participate in the current
+task without a user adoption action, but synchronization MUST NOT create a
+local model, adopted overlay, or executable Skill installation. The real task
+outcome is recorded as an `organization_use` observation; the next Sleep cycle
+may localize, strengthen, weaken, suppress, or leave the foreign card alone.
+Local canonical knowledge remains the default authority when an organization
+card conflicts with it.
+
+This replaces the prior `downloaded`/`adopt_requested` meaning. Cached content
+must not enter exchange-hash blocking solely because it was synchronized, and
+rejected, deprecated, tombstoned, or malformed cards are never searchable from
+the current snapshot.
+
+### 12. Two scheduled owners with phase-isolated internals
+
+The public scheduler exposes exactly one local maintenance task and one
+organization task. The local task owns one non-overlapping cycle lease and
+contains two permission-separated phases:
+
+1. `fresh_cycle`: pin the current local generation, run the existing Sleep
+   transaction, and only after a clean Sleep terminal run bounded read-only
+   Dream as the second phase of the same task.
+2. `resume_sleep`: when an open frozen Sleep batch exists, resume that batch and
+   mark the Dream phase deferred for this trigger. Dream handoffs are sealed
+   for the next eligible Sleep batch; they never publish a model directly.
+
+Dream remains read-only and Sleep remains the sole canonical model/generation
+publisher. A cycle receipt binds the mode, phase order, pinned generations,
+Dream subreceipt/handoff digest, Sleep subreceipt, output generation, timeout
+cleanup, and terminal status. A handoff is visible to Sleep only after the Dream
+subreceipt is sealed. A process cleanup uncertainty, corrupt authority, or open
+writer lease blocks unsafe descendants; an ordinary bounded Dream experiment
+failure does not discard independent Sleep work.
+
+The organization task owns a separate non-overlapping organization lease. Its
+first phase syncs and atomically activates the complete foreign snapshot; later
+phases reuse the existing organization maintenance and contribution owners,
+with their current PR/import/main authority boundaries. The task never consumes
+its own unmerged contribution in the same run. Personal mode activates only the
+local task; organization mode activates both tasks without sharing their locks
+or canonical generation pointers.
+
+### 13. Installation and source/Git parity are separate claims
+
+After implementation, affected FlowGuard models, current tests, OpenSpec
+validation, and the final readiness owner are terminal and current, the
+installer refreshes the consumer Skills and both task projections transactionally
+while preserving user pause state. The install check compares source, installed
+projection, package/toolchain, FlowGuard adoption record, and local Git revision
+as separate identities. It must not turn a repository-only change or a peer's
+unrelated dirty file into a false clean tree. A local commit may include only
+this task's claimed paths; publication or remote release remains a separate
+explicit claim.

@@ -73,7 +73,7 @@ def test_legacy_snapshot_treats_later_managed_jobs_as_new_not_ambiguous() -> Non
         snapshot = capture_repo_automation_state_snapshot(codex_home)
 
         assert snapshot["ok"], snapshot
-        for automation_id in ("kb-org-contribute", "kb-org-maintenance"):
+        for automation_id in ("kb-org-maintenance",):
             assert snapshot["states"][automation_id] == "ACTIVE"
             assert snapshot["user_paused"][automation_id] is False
             assert snapshot["sources"][automation_id] == "new-automation-policy"
@@ -83,10 +83,10 @@ def test_legacy_snapshot_treats_later_managed_jobs_as_new_not_ambiguous() -> Non
 def test_legacy_snapshot_still_blocks_when_an_owned_sleep_state_is_missing() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         codex_home = Path(tmp) / ".codex"
-        dream = codex_home / "automations" / "kb-dream" / "automation.toml"
-        dream.parent.mkdir(parents=True, exist_ok=True)
-        dream.write_text(
-            'id = "kb-dream"\nstatus = "ACTIVE"\nuser_paused = false\n',
+        organization = codex_home / "automations" / "kb-org-maintenance" / "automation.toml"
+        organization.parent.mkdir(parents=True, exist_ok=True)
+        organization.write_text(
+            'id = "kb-org-maintenance"\nstatus = "ACTIVE"\nuser_paused = false\n',
             encoding="utf-8",
         )
 
