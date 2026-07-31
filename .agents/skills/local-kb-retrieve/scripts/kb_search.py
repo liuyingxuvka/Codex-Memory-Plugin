@@ -13,7 +13,13 @@ if str(SCRIPT_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(SCRIPT_REPO_ROOT))
 
 from local_kb.cli_output import print_json, print_text
-from local_kb.search import format_search_output, render_search_payload, search_with_receipt
+from local_kb.search import (
+    format_search_output,
+    render_search_payload,
+    search_multi_source_result,
+    search_with_receipt,
+)
+from local_kb.settings import load_desktop_settings, organization_sources_from_settings
 from local_kb.store import resolve_repo_root
 
 
@@ -32,13 +38,33 @@ def main() -> None:
     args = parser.parse_args()
 
     repo_root = resolve_repo_root(args.repo_root)
-    entries, receipt = search_with_receipt(
-        repo_root,
-        query=args.query,
-        path_hint=args.route_hint,
-        top_k=args.top_k,
-        record_receipt=True,
-    )
+    settings = load_desktop_settings(repo_root)
+    organization_sources = organization_sources_from_settings(settings)
+    if organization_sources:
+        multi = search_multi_source_result(
+            repo_root,
+            query=args.query,
+            path_hint=args.route_hint,
+            top_k=args.top_k,
+            organization_sources=organization_sources,
+        )
+        entries = multi["results"]
+        _local_entries, receipt = search_with_receipt(
+            repo_root,
+            query=args.query,
+            path_hint=args.route_hint,
+            top_k=args.top_k,
+            record_receipt=True,
+        )
+        receipt["organization_status"] = multi.get("organization_status", [])
+    else:
+        entries, receipt = search_with_receipt(
+            repo_root,
+            query=args.query,
+            path_hint=args.route_hint,
+            top_k=args.top_k,
+            record_receipt=True,
+        )
     payload = render_search_payload(entries, repo_root)
 
     if args.json:

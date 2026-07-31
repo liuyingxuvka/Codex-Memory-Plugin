@@ -23,7 +23,7 @@ from khaos_brain_logicguard_model_test_alignment import BINDINGS
 
 
 PARENT_SUITE_ID = "suite:khaos-logicguard-native:parent"
-INVENTORY_REVISION = "khaos-logicguard-native-inventory-v4-resumable-sleep-pointer-safety"
+INVENTORY_REVISION = "khaos-logicguard-native-inventory-v5-organization-snapshot-cycles"
 RECEIPT_ROOT = ".local/verification/khaos-logicguard-native"
 FINAL_COMMAND = "python scripts/check_khaos_logicguard_native_readiness.py --json"
 RESUMABLE_SLEEP_OBLIGATION_IDS = (
@@ -99,6 +99,24 @@ SUITE_SPECS = (
         ("retrieval_ui_performance_test_receipt",),
     ),
     (
+        "suite:organization-snapshot-cycles",
+        "python -m pytest -q tests/test_org_snapshot.py tests/test_multi_source_search.py tests/test_organization_adoption.py tests/test_e2e_multi_source_browsing.py tests/test_cli_output_contract.py tests/test_local_maintenance_cycle.py tests/test_organization_cycle.py",
+        (
+            "req.organization.snapshot-bundle",
+            "req.organization.legacy-upgrade",
+            "req.organization.foreign-reader",
+            "req.organization.snapshot-retrieval",
+            "req.organization.feedback-token",
+            "req.organization.ui-detail",
+            "req.organization.cli-surface",
+            "req.maintenance.local-cycle",
+            "req.maintenance.organization-cycle",
+        ),
+        1800,
+        ("organization_snapshot_cycle_test_state",),
+        ("organization_snapshot_cycle_test_receipt",),
+    ),
+    (
         "suite:migration-installer",
         "python -m pytest -q tests/test_khaos_logicguard_migration.py tests/test_kb_history_migration.py tests/test_codex_install.py",
         (
@@ -150,6 +168,7 @@ DEPENDENCIES = {
     "suite:model-authority-projection": ("suite:flowguard-assurance",),
     "suite:sleep-dream": ("suite:model-authority-projection",),
     "suite:retrieval-ui-performance": ("suite:model-authority-projection",),
+    "suite:organization-snapshot-cycles": ("suite:model-authority-projection", "suite:retrieval-ui-performance"),
     "suite:migration-installer": ("suite:model-authority-projection", "suite:sleep-dream", "suite:retrieval-ui-performance"),
     "suite:surface-skillguard": ("suite:model-authority-projection", "suite:sleep-dream", "suite:retrieval-ui-performance", "suite:migration-installer"),
     "suite:existing-khaos-regressions": ("suite:model-authority-projection", "suite:sleep-dream", "suite:retrieval-ui-performance", "suite:migration-installer"),
@@ -159,6 +178,7 @@ DEPENDENCIES = {
         "suite:model-authority-projection",
         "suite:sleep-dream",
         "suite:retrieval-ui-performance",
+        "suite:organization-snapshot-cycles",
         "suite:migration-installer",
         "suite:surface-skillguard",
         "suite:existing-khaos-regressions",

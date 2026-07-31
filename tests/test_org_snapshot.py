@@ -49,9 +49,53 @@ class OrganizationSnapshotTests(unittest.TestCase):
             snapshot = load_current_organization_snapshot(root, "sandbox")
             self.assertTrue(snapshot["ok"], snapshot)
             entries = load_current_organization_entries(root, "sandbox")
+            row = snapshot["manifest"]["cards"][0]
 
         self.assertEqual([entry.data["id"] for entry in entries], ["a", "candidate"])
         self.assertTrue(all(entry.source["foreign_state"] == "eligible_external" for entry in entries))
+        self.assertEqual(snapshot["schema_version"], 2)
+        self.assertTrue(row["bundle_digest"])
+        self.assertTrue(row["binding"]["logicguard_model_id"])
+        self.assertEqual(entries[0].data["projection_schema_version"], "khaos-brain.card-projection.v1")
+        self.assertTrue(entries[0].source["logicguard_bundle"]["model_path"])
+
+    def test_legacy_card_is_structurally_upgraded_without_fabricating_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            org = root / "org"
+            write_yaml_file(
+                org / "kb" / "main" / "legacy.yaml",
+                {"id": "legacy", "title": "Legacy", "status": "trusted", "action": "use carefully"},
+            )
+            result = stage_organization_snapshot(root, org, "sandbox")
+            self.assertTrue(result["ok"], result)
+            entries = load_current_organization_entries(root, "sandbox")
+
+        upgraded = entries[0].data
+        self.assertEqual(upgraded["id"], "legacy")
+        self.assertIn("expected_result", upgraded["predict"])
+        self.assertTrue(upgraded["legacy_upgrade"]["structural_defaults_applied"])
+        self.assertFalse(upgraded["legacy_upgrade"]["evidence_fabricated"])
+        self.assertIn("evidence", upgraded["logicguard_open_role_gaps"])
+
+    def test_duplicate_ids_receive_deterministic_legacy_ids_and_both_survive(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            org = root / "org"
+            self._card(org / "kb" / "main" / "a.yaml", "same")
+            self._card(org / "kb" / "main" / "b.yaml", "same")
+            result = stage_organization_snapshot(root, org, "sandbox")
+            self.assertTrue(result["ok"], result)
+            entries = load_current_organization_entries(root, "sandbox")
+            snapshot = load_current_organization_snapshot(root, "sandbox")
+
+            self.assertEqual(len(entries), 2)
+            self.assertEqual(entries[0].data["id"], "same")
+            self.assertTrue(entries[1].data["id"].startswith("same-legacy-"))
+            self.assertEqual(entries[1].data["legacy_upgrade"]["duplicate_of"], "same")
+            duplicate_row = next(row for row in snapshot["manifest"]["cards"] if row.get("duplicate_of"))
+            self.assertEqual(entries[1].data["id"], duplicate_row["entry_id"])
+            self.assertEqual(entries[1].data["id"], entries[1].source["logicguard_bundle"]["entry_id"])
 
     def test_malformed_active_card_does_not_replace_previous_complete_snapshot(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

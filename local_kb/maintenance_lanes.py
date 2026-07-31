@@ -13,10 +13,14 @@ from local_kb.common import utc_now_iso
 LANE_STATUS_DIR = Path("kb") / "history" / "lane-status"
 LANE_LOCK_DIR = LANE_STATUS_DIR / "locks"
 CORE_MAINTENANCE_LANES = ("kb-sleep", "kb-dream")
+LOCAL_CYCLE_LANES = ("kb-local-maintenance-cycle",)
 ORGANIZATION_MAINTENANCE_LANES = ("kb-org-contribute", "kb-org-maintenance")
+ORGANIZATION_CYCLE_LANES = ("kb-organization-cycle",)
 MAINTENANCE_LOCK_GROUPS: dict[str, tuple[str, ...]] = {
     "local-maintenance": CORE_MAINTENANCE_LANES,
+    "local-cycle": LOCAL_CYCLE_LANES,
     "organization-maintenance": ORGANIZATION_MAINTENANCE_LANES,
+    "organization-cycle": ORGANIZATION_CYCLE_LANES,
 }
 DEFAULT_LOCK_POLL_SECONDS = 300
 DEFAULT_STALE_AFTER_SECONDS = 12 * 60 * 60

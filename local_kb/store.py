@@ -261,7 +261,13 @@ def load_current_organization_entries(
         source_repo=manifest_repo,
         source_commit=manifest_commit,
     )
+    manifest_rows = {
+        str(row.get("entry_id") or ""): row
+        for row in (manifest.get("cards") or [])
+        if isinstance(row, dict) and str(row.get("entry_id") or "")
+    }
     for entry in entries:
+        row = manifest_rows.get(str(entry.data.get("id") or ""), {})
         entry.source.update(
             {
                 "foreign_state": "eligible_external",
@@ -269,6 +275,20 @@ def load_current_organization_entries(
                 "snapshot_manifest_digest": str(snapshot.get("manifest_digest") or ""),
                 "snapshot_path": str(generation_root),
                 "mirror_path": str(source_repo or ""),
+                "snapshot_card_sha256": str(row.get("sha256") or row.get("projection_sha256") or ""),
+                "snapshot_source_sha256": str(row.get("source_sha256") or ""),
+                "logicguard_bundle": {
+                    "schema_version": "khaos-brain.organization-logicguard-bundle.v1",
+                    "entry_id": str(row.get("entry_id") or ""),
+                    "model_path": str(row.get("model_path") or ""),
+                    "mesh_path": str(row.get("mesh_path") or ""),
+                    "projection_path": str(row.get("projection_path") or ""),
+                    "model_digest": str(row.get("model_digest") or ""),
+                    "mesh_digest": str(row.get("mesh_digest") or ""),
+                    "projection_digest": str(row.get("projection_digest") or ""),
+                    "bundle_digest": str(row.get("bundle_digest") or ""),
+                    "binding": dict(row.get("binding") or {}),
+                },
             }
         )
     return entries

@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 from local_kb.search import render_search_payload, search_multi_source_entries
+from local_kb.org_snapshot import stage_organization_snapshot
 from local_kb.store import write_yaml_file
 from local_kb.ui_data import (
     build_card_detail_payload,
@@ -55,6 +56,7 @@ class MultiSourceSearchTests(unittest.TestCase):
             self._write_card(root / "kb" / "public" / "local.yaml", "local-card", "Local shared card", ["shared"])
             self._write_card(org / "kb" / "main" / "org.yaml", "org-card", "Organization shared card", ["shared"])
             activate_current_kb_runtime(root)
+            self.assertTrue(stage_organization_snapshot(root, org, "sandbox")["ok"])
 
             results = search_multi_source_entries(
                 root,
@@ -80,6 +82,7 @@ class MultiSourceSearchTests(unittest.TestCase):
             org = root / "org"
             self._write_card(org / "kb" / "main" / "org.yaml", "org-card", "Organization shared card", ["shared"])
             activate_current_kb_runtime(root)
+            self.assertTrue(stage_organization_snapshot(root, org, "sandbox")["ok"])
 
             payload = build_search_payload(
                 root,
@@ -108,15 +111,15 @@ class MultiSourceSearchTests(unittest.TestCase):
                 ["shared"],
             )
             activate_current_kb_runtime(root)
-
-            with self.assertRaisesRegex(RuntimeError, "obsolete runtime roots"):
-                build_search_payload(
-                    root,
-                    query="organization card",
-                    organization_sources=[
-                        {"path": str(org), "organization_id": "sandbox"}
-                    ],
-                )
+            snapshot = stage_organization_snapshot(root, org, "sandbox")
+            self.assertFalse(snapshot["ok"])
+            payload = build_search_payload(
+                root,
+                query="organization card",
+                organization_sources=[{"path": str(org), "organization_id": "sandbox"}],
+            )
+            self.assertEqual(payload["results"], [])
+            self.assertEqual(payload["organization_status"][0]["status"], "unavailable")
 
     def test_organization_reads_only_main_active_statuses_by_default(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -149,6 +152,7 @@ class MultiSourceSearchTests(unittest.TestCase):
             write_yaml_file(org / "kb" / "main" / "rejected.yaml", rejected)
             self._write_card(org / "kb" / "imports" / "import.yaml", "import-card", "Organization import card", ["shared"])
             activate_current_kb_runtime(root)
+            self.assertTrue(stage_organization_snapshot(root, org, "sandbox")["ok"])
 
             payload = build_search_payload(
                 root,
@@ -184,6 +188,7 @@ class MultiSourceSearchTests(unittest.TestCase):
                 retrieval_eligible=False,
             )
             activate_current_kb_runtime(root)
+            self.assertTrue(stage_organization_snapshot(root, org, "sandbox")["ok"])
 
             payload = render_search_payload(
                 search_multi_source_entries(
@@ -210,6 +215,7 @@ class MultiSourceSearchTests(unittest.TestCase):
             self._write_card(org / "kb" / "main" / "org.yaml", "org-card", "Organization shared card", ["shared"])
             sources = [{"path": str(org), "organization_id": "sandbox"}]
             activate_current_kb_runtime(root)
+            self.assertTrue(stage_organization_snapshot(root, org, "sandbox")["ok"])
 
             route_payload = build_route_view_payload(root, route="shared", organization_sources=sources)
             local_payload = build_source_view_payload(root, "local", organization_sources=sources)
@@ -225,6 +231,7 @@ class MultiSourceSearchTests(unittest.TestCase):
             org = root / "org"
             self._write_card(org / "kb" / "main" / "org.yaml", "org-card", "Organization shared card", ["shared"])
             activate_current_kb_runtime(root)
+            self.assertTrue(stage_organization_snapshot(root, org, "sandbox")["ok"])
             search_payload = build_search_payload(
                 root,
                 query="shared organization",
@@ -253,6 +260,7 @@ class MultiSourceSearchTests(unittest.TestCase):
             self._write_card(root / "kb" / "candidates" / "adopted" / "sandbox" / "org-card.yaml", "org-card", "Local adopted copy", ["shared"])
             self._write_card(org / "kb" / "main" / "org.yaml", "org-card", "Organization shared card", ["shared"])
             activate_current_kb_runtime(root)
+            self.assertTrue(stage_organization_snapshot(root, org, "sandbox")["ok"])
             search_payload = build_search_payload(
                 root,
                 query="shared organization",
@@ -298,6 +306,7 @@ class MultiSourceSearchTests(unittest.TestCase):
             )
             sources = [{"path": str(org), "organization_id": "sandbox"}]
             activate_current_kb_runtime(root)
+            self.assertTrue(stage_organization_snapshot(root, org, "sandbox")["ok"])
 
             detail = build_card_detail_payload(
                 root,

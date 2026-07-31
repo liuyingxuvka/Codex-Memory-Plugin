@@ -13,6 +13,7 @@ from local_kb.adoption import (
 )
 from local_kb.skill_sharing import skill_directory_content_hash
 from local_kb.model_maintenance import publish_sleep_model_generation
+from local_kb.org_snapshot import stage_organization_snapshot
 from local_kb.search import render_search_payload, search_multi_source_entries
 from local_kb.store import load_yaml_file, write_yaml_file
 from local_kb.ui_data import build_search_payload
@@ -48,6 +49,7 @@ class OrganizationAdoptionTests(unittest.TestCase):
             self._write_org_card(org)
             sources = [{"path": str(org), "organization_id": "sandbox", "repo_url": "https://example.invalid/org.git"}]
             activate_current_kb_runtime(root)
+            self.assertTrue(stage_organization_snapshot(root, org, "sandbox")["ok"])
             search_payload = build_search_payload(root, "shared organization", organization_sources=sources)
 
             result = adopt_organization_entry_by_source_info(
@@ -78,6 +80,7 @@ class OrganizationAdoptionTests(unittest.TestCase):
             write_yaml_file(root / "kb" / "public" / "local.yaml", local_payload)
             sources = [{"path": str(org), "organization_id": "sandbox"}]
             activate_current_kb_runtime(root)
+            self.assertTrue(stage_organization_snapshot(root, org, "sandbox")["ok"])
 
             result = adopt_organization_entry_by_source_info(
                 root,
@@ -104,6 +107,7 @@ class OrganizationAdoptionTests(unittest.TestCase):
             self._write_org_card(org)
             sources = [{"path": str(org), "organization_id": "sandbox"}]
             activate_current_kb_runtime(root)
+            self.assertTrue(stage_organization_snapshot(root, org, "sandbox")["ok"])
             initial = build_search_payload(root, "shared organization", organization_sources=sources)
             adopt_organization_entry_by_source_info(
                 root,
@@ -128,6 +132,7 @@ class OrganizationAdoptionTests(unittest.TestCase):
             self._write_org_card(org)
             sources = [{"path": str(org), "organization_id": "sandbox"}]
             activate_current_kb_runtime(root)
+            self.assertTrue(stage_organization_snapshot(root, org, "sandbox")["ok"])
             initial = build_search_payload(root, "shared organization", organization_sources=sources)
             result = adopt_organization_entry_by_source_info(
                 root,
@@ -184,6 +189,7 @@ class OrganizationAdoptionTests(unittest.TestCase):
             write_yaml_file(org / "kb" / "main" / "org-card.yaml", card)
             sources = [{"path": str(org), "organization_id": "sandbox"}]
             activate_current_kb_runtime(root)
+            self.assertTrue(stage_organization_snapshot(root, org, "sandbox")["ok"])
             initial = build_search_payload(root, "shared organization", organization_sources=sources)
 
             result = adopt_organization_entry_by_source_info(
@@ -207,6 +213,7 @@ class OrganizationAdoptionTests(unittest.TestCase):
             self._write_org_card(org)
             sources = [{"path": str(org), "organization_id": "sandbox"}]
             activate_current_kb_runtime(root)
+            self.assertTrue(stage_organization_snapshot(root, org, "sandbox")["ok"])
             initial = build_search_payload(root, "shared organization", organization_sources=sources)
             adopt_organization_entry_by_source_info(
                 root,
@@ -217,6 +224,7 @@ class OrganizationAdoptionTests(unittest.TestCase):
             changed = load_yaml_file(org / "kb" / "main" / "org-card.yaml")
             changed["use"]["guidance"] = "Organization published a new content version."
             write_yaml_file(org / "kb" / "main" / "org-card.yaml", changed)
+            self.assertTrue(stage_organization_snapshot(root, org, "sandbox")["ok"])
 
             payload = render_search_payload(
                 search_multi_source_entries(root, "shared organization", organization_sources=sources, top_k=5),
@@ -234,6 +242,7 @@ class OrganizationAdoptionTests(unittest.TestCase):
             self._write_org_card(org)
             sources = [{"path": str(org), "organization_id": "sandbox"}]
             activate_current_kb_runtime(root)
+            self.assertTrue(stage_organization_snapshot(root, org, "sandbox")["ok"])
             initial = build_search_payload(root, "shared organization", organization_sources=sources)
             first = adopt_organization_entry_by_source_info(
                 root,
@@ -263,6 +272,7 @@ class OrganizationAdoptionTests(unittest.TestCase):
             self._write_org_card(org)
             sources = [{"path": str(org), "organization_id": "sandbox"}]
             activate_current_kb_runtime(root)
+            self.assertTrue(stage_organization_snapshot(root, org, "sandbox")["ok"])
             initial = build_search_payload(root, "shared organization", organization_sources=sources)
             result = adopt_organization_entry_by_source_info(
                 root,

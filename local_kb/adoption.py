@@ -48,6 +48,7 @@ EXCHANGE_HASH_IGNORED_KEYS = {
     "created_at",
     "i18n",
     "related_cards",
+    "legacy_upgrade",
     *MODEL_PROJECTION_METADATA_KEYS,
 }
 EXCHANGE_HASH_ORDER_INSENSITIVE_KEYS = {
@@ -322,19 +323,34 @@ def find_organization_entry(
     entry_id: str,
     organization_sources: list[dict[str, Any]],
     source_info: dict[str, Any] | None = None,
+    *,
+    repo_root: Path | None = None,
 ) -> Entry | None:
     source_info = source_info if isinstance(source_info, dict) else {}
     for source in organization_sources:
         org_root = Path(str(source.get("path") or source.get("local_path") or ""))
         organization_id = str(source.get("organization_id") or source.get("id") or "").strip()
-        if not org_root.exists() or not organization_id:
+        if not organization_id:
             continue
-        entries = load_organization_entries(
-            org_root,
-            organization_id,
-            source_repo=str(source.get("source_repo") or source.get("repo_url") or ""),
-            source_commit=str(source.get("source_commit") or ""),
-        )
+        if repo_root is not None:
+            from local_kb.store import load_current_organization_entries
+            try:
+                entries = load_current_organization_entries(
+                    repo_root,
+                    organization_id,
+                    source_repo=str(source.get("source_repo") or source.get("repo_url") or ""),
+                    source_commit=str(source.get("source_commit") or ""),
+                )
+            except RuntimeError:
+                continue
+        else:
+            # Callers without repo_root are setup/diagnostic surfaces only.
+            entries = load_organization_entries(
+                org_root,
+                organization_id,
+                source_repo=str(source.get("source_repo") or source.get("repo_url") or ""),
+                source_commit=str(source.get("source_commit") or ""),
+            )
         for entry in entries:
             if str(entry.data.get("id") or "").strip() != str(entry_id or "").strip():
                 continue
@@ -344,6 +360,17 @@ def find_organization_entry(
                     continue
                 expected_org = str(source_info.get("organization_id") or "").strip()
                 if expected_org and str(entry.source.get("organization_id") or "").strip() != expected_org:
+                    continue
+                expected_generation = str(source_info.get("snapshot_generation") or "").strip()
+                if expected_generation and str(entry.source.get("snapshot_generation") or "") != expected_generation:
+                    continue
+                expected_manifest = str(source_info.get("snapshot_manifest_digest") or "").strip()
+                if expected_manifest and str(entry.source.get("snapshot_manifest_digest") or "") != expected_manifest:
+                    continue
+                expected_bundle = source_info.get("logicguard_bundle") if isinstance(source_info.get("logicguard_bundle"), dict) else {}
+                actual_bundle = entry.source.get("logicguard_bundle") if isinstance(entry.source.get("logicguard_bundle"), dict) else {}
+                expected_bundle_digest = str(expected_bundle.get("bundle_digest") or "").strip()
+                if expected_bundle_digest and str(actual_bundle.get("bundle_digest") or "") != expected_bundle_digest:
                     continue
             return entry
     return None
@@ -511,7 +538,7 @@ def adopt_organization_entry_by_source_info(
     organization_sources: list[dict[str, Any]],
     source_info: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    entry = find_organization_entry(entry_id, organization_sources, source_info=source_info)
+    entry = find_organization_entry(entry_id, organization_sources, source_info=source_info, repo_root=repo_root)
     if entry is None:
         return {"ok": False, "error": "organization entry not found"}
     return adopt_organization_entry(repo_root, entry)
@@ -570,7 +597,7 @@ def record_organization_use_by_source_info(
     organization_sources: list[dict[str, Any]],
     source_info: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    entry = find_organization_entry(entry_id, organization_sources, source_info=source_info)
+    entry = find_organization_entry(entry_id, organization_sources, source_info=source_info, repo_root=repo_root)
     if entry is None:
         return {"ok": False, "status": "organization-entry-not-found"}
     return record_organization_use_observation(repo_root, entry)

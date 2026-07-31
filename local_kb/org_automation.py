@@ -225,7 +225,15 @@ def _sync_first_organization_source(
     *,
     base_branch: str = "main",
     require_snapshot: bool = True,
+    reuse_sync: dict[str, Any] | None = None,
 ) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any], dict[str, Any]]:
+    if isinstance(reuse_sync, dict) and reuse_sync.get("source"):
+        return (
+            dict(reuse_sync.get("source") or {}),
+            [dict(item) for item in (reuse_sync.get("sources") or []) if isinstance(item, dict)],
+            dict(reuse_sync.get("settings") or settings),
+            dict(reuse_sync.get("sync") or {}),
+        )
     sources = organization_sources_from_settings(settings)
     if not sources:
         return {}, [], settings, {"attempted": False, "ok": False, "reason": "no validated organization source"}
@@ -580,6 +588,7 @@ def run_organization_contribution(
     base_branch: str = "main",
     record_postflight: bool = True,
     run_id: str = "",
+    sync_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     repo_root = Path(repo_root)
     resolved_run_id = str(run_id or f"org-contribute-{utc_timestamp()}")
@@ -619,6 +628,7 @@ def run_organization_contribution(
             repo_root,
             settings,
             base_branch=base_branch,
+            reuse_sync=sync_context,
         )
         if not sync_result.get("ok"):
             write_lane_status(repo_root, "kb-org-contribute", "failed", run_id=resolved_run_id, note="organization source sync failed")
@@ -826,6 +836,7 @@ def run_organization_maintenance(
     base_branch: str = "main",
     record_postflight: bool = True,
     run_id: str = "",
+    sync_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     repo_root = Path(repo_root)
     resolved_run_id = str(run_id or f"org-maintenance-{utc_timestamp()}")
@@ -875,6 +886,7 @@ def run_organization_maintenance(
             settings,
             base_branch=base_branch,
             require_snapshot=False,
+            reuse_sync=sync_context,
         )
         if not sync_result.get("ok"):
             write_lane_status(repo_root, "kb-org-maintenance", "failed", run_id=resolved_run_id, note="organization source sync failed")

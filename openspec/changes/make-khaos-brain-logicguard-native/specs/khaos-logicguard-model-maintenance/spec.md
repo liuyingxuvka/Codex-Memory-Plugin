@@ -56,7 +56,7 @@ Dream SHALL derive a stable fingerprint from the exact mesh revision, selected r
 - **THEN** Dream MAY reopen the opportunity under a new fingerprint while preserving the prior immutable closure
 
 ### Requirement: One local maintenance task composes Dream and Sleep phases
-The scheduler SHALL expose one local maintenance owner with permission-separated Dream and Sleep phases. A fresh cycle SHALL run bounded Dream before Sleep; a cycle with an open frozen Sleep batch SHALL resume Sleep and explicitly defer Dream for that trigger. Dream SHALL never become a second canonical publisher.
+The scheduler SHALL expose one local maintenance owner with permission-separated Sleep and Dream phases. A fresh cycle SHALL run the existing Sleep publisher first and then run bounded Dream only after Sleep reaches a clean terminal; a cycle with an open frozen Sleep batch SHALL resume Sleep and explicitly defer Dream for that trigger. Dream SHALL never become a second canonical publisher.
 
 #### Scenario: Fresh local cycle
 - **WHEN** no open frozen Sleep batch exists and the local maintenance lease is acquired

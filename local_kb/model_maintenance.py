@@ -111,7 +111,110 @@ def _snapshot_active_authority(repo_root: Path, operation_id: str) -> dict[str, 
                 "existed": existed,
             }
         )
-    return {"operation_id": operation_id, "transaction_root": tx_root.relative_to(root).as_posix(), "rows": rows}
+    snapshot = {
+        "schema_version": "khaos-brain.model-generation-rollback-snapshot.v1",
+        "operation_id": operation_id,
+        "transaction_root": tx_root.relative_to(root).as_posix(),
+        "rows": rows,
+        "authority_pointer": _read_json_file(authority_generation_pointer_path(root)),
+        "active_index_pointer": _read_json_file(root / "kb" / "indexes" / "active.json"),
+    }
+    _atomic_json(tx_root / "snapshot.json", snapshot)
+    return snapshot
+
+
+def _read_json_file(path: Path) -> dict[str, Any]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return {}
+    return dict(payload) if isinstance(payload, Mapping) else {}
+
+
+def recover_interrupted_model_generations(repo_root: Path) -> dict[str, Any]:
+    """Recover a Sleep transaction left between the authority/index pointers.
+
+    A process can be interrupted after one immutable pointer is switched but
+    before the second one is committed.  The rollback snapshot is durable, so
+    the next Sleep owner restores the last complete pair instead of allowing a
+    stale index or projection set to answer a query.
+    """
+
+    root = Path(repo_root).resolve()
+    tx_root = root / ".local" / "kbtx"
+    recovered: list[dict[str, Any]] = []
+    issues: list[str] = []
+    if not tx_root.is_dir():
+        return {"ok": True, "status": "none", "recovered": recovered, "issues": issues}
+    for snapshot_path in sorted(tx_root.glob("*/snapshot.json")):
+        snapshot = _read_json_file(snapshot_path)
+        operation_id = str(snapshot.get("operation_id") or snapshot_path.parent.name)
+        if not snapshot.get("rows"):
+            # Old transactions created before durable rollback metadata are not
+            # safe to infer.  Keep them visible for the versioned migration
+            # owner instead of silently treating them as a current authority.
+            issues.append(f"rollback snapshot is incomplete: {snapshot_path}")
+            continue
+        previous_authority = snapshot.get("authority_pointer") if isinstance(snapshot.get("authority_pointer"), Mapping) else {}
+        previous_index = snapshot.get("active_index_pointer") if isinstance(snapshot.get("active_index_pointer"), Mapping) else {}
+        current_authority = _read_json_file(authority_generation_pointer_path(root))
+        current_index = _read_json_file(root / "kb" / "indexes" / "active.json")
+        previous_pair = (
+            str(previous_authority.get("generation_id") or ""),
+            str(previous_authority.get("pointer_digest") or ""),
+            str(previous_index.get("authority_generation_id") or ""),
+            str(previous_index.get("authority_generation_digest") or ""),
+        )
+        current_pair = (
+            str(current_authority.get("generation_id") or ""),
+            str(current_authority.get("pointer_digest") or ""),
+            str(current_index.get("authority_generation_id") or ""),
+            str(current_index.get("authority_generation_digest") or ""),
+        )
+        if current_pair == previous_pair:
+            _cleanup_snapshot(root, snapshot)
+            recovered.append({"operation_id": operation_id, "status": "stale-snapshot-cleaned"})
+            continue
+        pair_is_complete = bool(
+            current_pair[0]
+            and current_pair[1]
+            and current_pair[2]
+            and current_pair[3]
+            and current_pair[0] == current_pair[2]
+            and current_pair[1] == current_pair[3]
+        )
+        if pair_is_complete:
+            _cleanup_snapshot(root, snapshot)
+            recovered.append({"operation_id": operation_id, "status": "committed-pair-cleaned"})
+            continue
+        try:
+            rollback = _restore_active_authority(root, snapshot)
+            if rollback.get("ok") is not True:
+                raise RuntimeError("rollback did not report success")
+            recovery = {
+                "schema_version": MODEL_GENERATION_RECEIPT_SCHEMA,
+                "status": "interrupted-recovered",
+                "operation_id": operation_id,
+                "recovered_at": utc_now_iso(),
+                "rollback": rollback,
+                "previous_authority_generation_id": previous_pair[0],
+                "previous_active_index_generation": previous_index.get("generation"),
+            }
+            recovery["receipt_digest"] = "sha256:" + canonical_digest(recovery)
+            _atomic_json(
+                root / "kb" / "history" / "model-generations" / f"{operation_id}-interrupted-recovery.json",
+                recovery,
+            )
+            _cleanup_snapshot(root, snapshot)
+            recovered.append({"operation_id": operation_id, "status": "interrupted-recovered", "receipt": recovery})
+        except Exception as exc:
+            issues.append(f"{operation_id}: {type(exc).__name__}: {exc}")
+    return {
+        "ok": not issues,
+        "status": "recovered" if recovered else "none",
+        "recovered": recovered,
+        "issues": issues,
+    }
 
 
 def _restore_active_authority(repo_root: Path, snapshot: Mapping[str, Any]) -> dict[str, Any]:
@@ -514,6 +617,12 @@ def publish_sleep_model_generation(
     if actor != SLEEP_AUTHORITY_WRITER:
         raise PermissionError("Only the Sleep authority owner may publish a normal-runtime model generation")
     root = Path(repo_root).resolve()
+    transaction_recovery = recover_interrupted_model_generations(root)
+    if not transaction_recovery.get("ok"):
+        raise RuntimeError(
+            "Sleep model transaction recovery failed: "
+            + "; ".join(transaction_recovery.get("issues", []))
+        )
     authority_recovery = recover_authority_scopes(root)
     if not authority_recovery.get("ok"):
         raise RuntimeError(
@@ -582,6 +691,7 @@ def publish_sleep_model_generation(
             "index_receipt": index_receipt,
             "index_validation": validation,
             "model_diagnostics": _gap_summary(current_rows.values()),
+            "transaction_recovery": transaction_recovery,
             "authority_recovery": authority_recovery,
         }
         if include_runtime_catalog:
@@ -796,6 +906,7 @@ def publish_sleep_model_generation(
             "index_receipt": index_receipt,
             "index_validation": index_validation,
             "model_diagnostics": _gap_summary(projected_rows),
+            "transaction_recovery": transaction_recovery,
             "authority_recovery": authority_recovery,
             "unresolved_relationship_count": sum(len(items) for items in unresolved_by_scope.values()),
             "claim_boundary": "Sleep published current model structure; it did not establish factual truth.",
@@ -826,6 +937,7 @@ def publish_sleep_model_generation(
             "failed_at": utc_now_iso(),
             "error": f"{type(exc).__name__}: {exc}",
             "rollback": rollback,
+            "transaction_recovery": transaction_recovery,
         }
         failure["receipt_digest"] = "sha256:" + canonical_digest(failure)
         _atomic_json(

@@ -10,14 +10,13 @@ from local_kb.adoption import card_exchange_hash, dedupe_local_entries_by_exchan
 from local_kb.model_maintenance import load_current_model_entries
 from local_kb.logicguard_models import read_bound_argument_context
 from local_kb.model_projection import binding_from_projection
-from local_kb.search import get_guidance, get_predicted_result, search_entries, search_multi_source_entries
+from local_kb.search import get_guidance, get_predicted_result, search_entries
 from local_kb.skill_sharing import (
     annotate_dependencies_with_registry_status,
     extract_skill_dependencies,
     load_organization_skill_registry,
 )
 from local_kb.source_labels import card_source_summary
-from local_kb.store import load_organization_entries
 from local_kb.taxonomy import build_taxonomy_gap_report, build_taxonomy_view
 
 
@@ -154,37 +153,21 @@ def _load_organization_entries_from_sources(
 ) -> list[Any]:
     organization_entries: list[Any] = []
     for source in organization_sources or []:
-        org_root = Path(str(source.get("path") or source.get("local_path") or ""))
         organization_id = str(source.get("organization_id") or source.get("id") or "").strip()
-        if not org_root.exists() or not organization_id:
+        if not organization_id:
             continue
-        strict_snapshot = bool(source.get("snapshot_required") or source.get("from_settings"))
-        if strict_snapshot:
-            from local_kb.store import load_current_organization_entries
-
+        from local_kb.store import load_current_organization_entries
+        try:
             entries = load_current_organization_entries(
                 repo_root,
                 organization_id,
                 source_repo=str(source.get("source_repo") or source.get("repo_url") or ""),
                 source_commit=str(source.get("source_commit") or ""),
             )
-        else:
-            try:
-                from local_kb.store import load_current_organization_entries
-
-                entries = load_current_organization_entries(
-                    repo_root,
-                    organization_id,
-                    source_repo=str(source.get("source_repo") or source.get("repo_url") or ""),
-                    source_commit=str(source.get("source_commit") or ""),
-                )
-            except RuntimeError:
-                entries = load_organization_entries(
-                    org_root,
-                    organization_id,
-                    source_repo=str(source.get("source_repo") or source.get("repo_url") or ""),
-                    source_commit=str(source.get("source_commit") or ""),
-                )
+        except RuntimeError:
+            # Organization sources are snapshot-only.  A missing snapshot is
+            # visible in search status and never falls back to a mutable mirror.
+            continue
         organization_entries.extend(entries)
     return organization_entries
 
@@ -406,8 +389,8 @@ def build_card_detail_payload(
         data = localized_entry(entry.data, normalized_language)
         summary = summarize_entry(entry, repo_root, language=normalized_language)
         is_local_entry = summary.get("source_info", {}).get("kind") != "organization"
-        logicguard_context = (
-            read_bound_argument_context(
+        if is_local_entry:
+            logicguard_context = read_bound_argument_context(
                 repo_root,
                 binding_from_projection(raw_data),
                 hop_limit=1,
@@ -415,9 +398,24 @@ def build_card_detail_payload(
                 edge_limit=160,
                 model_limit=12,
             )
-            if is_local_entry
-            else None
-        )
+        else:
+            try:
+                from local_kb.logicguard_models import read_foreign_argument_context
+                from local_kb.search import _foreign_bundle_for_entry
+
+                bundle = _foreign_bundle_for_entry(entry)
+                logicguard_context = read_foreign_argument_context(
+                    bundle,
+                    expected_binding=(entry.source.get("logicguard_bundle") or {}).get("binding")
+                    if isinstance(entry.source.get("logicguard_bundle"), dict)
+                    else None,
+                )
+            except Exception as exc:
+                logicguard_context = {
+                    "status": "unavailable",
+                    "error": f"{type(exc).__name__}: {exc}",
+                    "claim_boundary": "Foreign organization context is visible only when its immutable snapshot bundle validates.",
+                }
         dependencies = extract_skill_dependencies(raw_data)
         registry = _merged_skill_registry(organization_sources)
         return {
@@ -477,6 +475,15 @@ def build_search_payload(
     language: str = DEFAULT_LANGUAGE,
     organization_sources: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
+    from local_kb.search import search_multi_source_result
+
+    search_result = search_multi_source_result(
+        repo_root,
+        query=query,
+        path_hint=route_hint,
+        top_k=top_k,
+        organization_sources=organization_sources,
+    )
     results = [
         summarize_entry(
             entry,
@@ -485,16 +492,11 @@ def build_search_payload(
             match_route=parse_route_segments(entry.data.get("domain_path", [])),
             language=language,
         )
-        for entry in search_multi_source_entries(
-            repo_root,
-            query=query,
-            path_hint=route_hint,
-            top_k=top_k,
-            organization_sources=organization_sources,
-        )
+        for entry in search_result["results"]
     ]
     return {
         "query": query,
         "route_hint": parse_route_segments(route_hint),
         "results": results,
+        "organization_status": search_result.get("organization_status", []),
     }

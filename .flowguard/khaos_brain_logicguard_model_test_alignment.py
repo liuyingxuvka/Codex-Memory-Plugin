@@ -50,6 +50,15 @@ BINDINGS = (
     ("req.assurance.execution-owner", "contract.readiness.single-final-owner", "scripts/check_khaos_logicguard_native_readiness.py", "main", "tests/test_khaos_logicguard_readiness.py"),
     ("req.assurance.surface-parity", "contract.readiness.surface-parity", "scripts/check_kb_skillguard.py", "main", "tests/test_kb_automation_skillguard.py"),
     ("req.assurance.release-gates", "contract.readiness.release-gates", "scripts/check_khaos_logicguard_native_readiness.py", "build_report", "tests/test_khaos_logicguard_readiness.py"),
+    ("req.organization.snapshot-bundle", "contract.organization.stage-complete-logicguard-snapshot", "local_kb/org_snapshot.py", "stage_organization_snapshot", "tests/test_org_snapshot.py"),
+    ("req.organization.legacy-upgrade", "contract.organization.upgrade-legacy-card", "local_kb/org_snapshot.py", "_upgrade_legacy_card", "tests/test_org_snapshot.py"),
+    ("req.organization.foreign-reader", "contract.organization.read-foreign-bundle", "local_kb/logicguard_models.py", "read_foreign_argument_context", "tests/test_multi_source_search.py"),
+    ("req.organization.snapshot-retrieval", "contract.organization.snapshot-only-retrieval", "local_kb/search.py", "search_multi_source_result", "tests/test_multi_source_search.py"),
+    ("req.organization.feedback-token", "contract.organization.resolve-pinned-feedback", "local_kb/adoption.py", "find_organization_entry", "tests/test_organization_adoption.py"),
+    ("req.organization.ui-detail", "contract.organization.render-foreign-detail", "local_kb/ui_data.py", "build_card_detail_payload", "tests/test_e2e_multi_source_browsing.py"),
+    ("req.organization.cli-surface", "contract.organization.cli-snapshot-source", ".agents/skills/local-kb-retrieve/scripts/kb_search.py", "main", "tests/test_cli_output_contract.py"),
+    ("req.maintenance.local-cycle", "contract.cycle.local-sleep-dream-receipt", "local_kb/local_cycle.py", "run_local_maintenance_cycle", "tests/test_local_maintenance_cycle.py"),
+    ("req.maintenance.organization-cycle", "contract.cycle.organization-pinned-sync", "local_kb/org_cycle.py", "run_organization_cycle", "tests/test_organization_cycle.py"),
 )
 
 KNOWN_BAD_TARGET_IDS = (

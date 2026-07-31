@@ -268,8 +268,7 @@ ORG_MAINTENANCE_AUTOMATION_PROMPT = (
     "similar-card merge checkpoint, mandatory organization overloaded-card split checkpoint, candidate decision "
     "checkpoint, Skill safety checkpoint, Skill bundle version checkpoint, decision-apply checkpoint, post-apply organization check, and GitHub merge-readiness checkpoint. Inspect organization trusted cards, candidates, "
     "main cards, imports, Skill registry entries, card-and-Skill bundles, privacy boundaries, and GitHub auto-merge readiness "
-    "using the organization maintenance worldview and organization-review guidance when available. Treat duplicate content hashes as maintenance signals and duplicate entry ids as "
-    "non-blocking handles. Trusted/shared card content maintenance is allowed when the evidence supports a "
+    "using the organization maintenance worldview and organization-review guidance when available. Treat duplicate content hashes as maintenance signals; duplicate entry ids remain visible and the snapshot upgrader assigns deterministic legacy ids so both cards survive. Every active card must be staged as a complete validated LogicGuard model, ModelMesh, and projection bundle before the snapshot pointer can move. Trusted/shared card content maintenance is allowed when the evidence supports a "
     "Sleep-style keep, reject, watch, merge, split, rewrite, promote, demote, deprecate, or cross-link decision. "
     "For card-bound Skill bundles, group by bundle_id, approve only original-author updates "
     "on the same bundle, require sha256 content_hash and version_time, treat non-author changes as forks, and select "
@@ -278,7 +277,7 @@ ORG_MAINTENANCE_AUTOMATION_PROMPT = (
     "Skills. Build an organization Sleep decision set over cleanup proposals, select-for-apply or watch each action with a reason, treat organization-review as guidance rather than an apply gate, and apply only exact selected action ids. "
     "Keep privacy and executable Skill boundaries stricter than ordinary card content. It is acceptable to skip applying a change when evidence, "
     "safety, tooling, permissions, or scope is insufficient, but the inspection and recorded decision must still "
-    "happen. After organization maintenance, run the existing contribution facade in the same task so upload and download are one serialized cycle; refresh the complete local snapshot before retrieval. Run KB postflight after any non-skipped pass, record a structured observation, and report the settings "
+    "happen. After organization maintenance, run the existing contribution facade in the same task through one pinned sync context so upload and download are one serialized cycle; ordinary retrieval uses only the immutable local snapshot and never lazily downloads or adopts a card. Refresh the complete validated LogicGuard snapshot before retrieval. Run KB postflight after any non-skipped pass, record a structured observation, and report the settings "
     "gate, participation status, preflight entries, manifest status, main status counts and import counts, content-hash "
     "duplicate decisions, organization merge checkpoint decisions, organization split checkpoint decisions, "
     "candidate approval or rejection decisions, Sleep decision counts, selected action ids, apply result, post-apply check result, maintenance branch, PR, push, and auto-merge-label result, Skill dependency decisions, Skill bundle version decisions, GitHub "
@@ -4097,6 +4096,9 @@ def build_installation_check(
                     "Skill registry",
                     "duplicate content hashes",
                     "duplicate entry ids",
+                    "deterministic legacy ids",
+                    "complete validated LogicGuard model",
+                    "ordinary retrieval uses only the immutable local snapshot",
                     "bundle_id",
                     "original-author updates",
                     "latest approved version by version_time",

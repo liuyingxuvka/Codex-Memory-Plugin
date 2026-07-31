@@ -69,6 +69,8 @@ NATIVE_IMPLEMENTATION_PATHS = {
     "kb-organization-maintenance": (
         "local_kb/org_automation.py",
         "local_kb/org_maintenance.py",
+        "local_kb/org_cycle.py",
+        "local_kb/org_snapshot.py",
     ),
     "khaos-brain-update": (
         "local_kb/software_update.py",

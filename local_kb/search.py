@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 import re
@@ -14,10 +15,9 @@ from local_kb.common import (
 )
 from local_kb.adoption import card_exchange_hash, dedupe_local_entries_by_exchange_hash
 from local_kb.models import Entry
-from local_kb.logicguard_models import read_bound_argument_context
+from local_kb.logicguard_models import ExactBindingError, read_bound_argument_context, read_foreign_argument_context
 from local_kb.model_projection import binding_from_projection
 from local_kb.source_labels import card_source_summary
-from local_kb.store import load_organization_entries
 
 
 TERMINAL_RETRIEVAL_STATUSES = {
@@ -448,6 +448,84 @@ def search_model_bound_entries(
     return ranked
 
 
+def _foreign_bundle_for_entry(entry: Entry) -> dict[str, Any]:
+    metadata = entry.source.get("logicguard_bundle") if isinstance(entry.source.get("logicguard_bundle"), dict) else {}
+    snapshot_root = Path(str(entry.source.get("snapshot_path") or ""))
+    if not snapshot_root:
+        raise ExactBindingError("Organization entry has no immutable snapshot root")
+    def read(relative: str) -> dict[str, Any]:
+        path = snapshot_root / str(relative or "")
+        if not path.is_file():
+            raise ExactBindingError(f"Organization LogicGuard bundle file is missing: {relative}")
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise ExactBindingError(f"Organization LogicGuard bundle file is invalid: {relative}") from exc
+        if not isinstance(payload, dict):
+            raise ExactBindingError(f"Organization LogicGuard bundle file is not an object: {relative}")
+        return payload
+    model = read(str(metadata.get("model_path") or ""))
+    mesh = read(str(metadata.get("mesh_path") or ""))
+    projection = read(str(metadata.get("projection_path") or ""))
+    binding = dict(metadata.get("binding") or {})
+    return {
+        "schema_version": "khaos-brain.organization-logicguard-bundle.v1",
+        "organization_id": str(entry.source.get("organization_id") or ""),
+        "entry_id": str(entry.data.get("id") or ""),
+        "generation_id": str(entry.source.get("snapshot_generation") or ""),
+        "binding": binding,
+        "model": model,
+        "mesh": mesh,
+        "projection": projection,
+        "model_digest": str(metadata.get("model_digest") or ""),
+        "mesh_digest": str(metadata.get("mesh_digest") or ""),
+        "projection_digest": str(metadata.get("projection_digest") or ""),
+        "bundle_digest": str(metadata.get("bundle_digest") or ""),
+    }
+
+
+def search_foreign_model_bound_entries(
+    entries: list[Entry],
+    *,
+    query: str,
+    path_hint: str = "",
+    top_k: int = 5,
+) -> list[Entry]:
+    """Rank organization entries only after exact portable-bundle validation."""
+
+    lexical = search_loaded_entries(
+        entries,
+        query=query,
+        path_hint=path_hint,
+        top_k=max(1, top_k),
+        allow_untrusted_candidates=True,
+    )
+    selected: list[Entry] = []
+    for entry in lexical:
+        try:
+            bundle = _foreign_bundle_for_entry(entry)
+            context = read_foreign_argument_context(
+                bundle,
+                expected_binding=(entry.source.get("logicguard_bundle") or {}).get("binding")
+                if isinstance(entry.source.get("logicguard_bundle"), dict)
+                else None,
+            )
+        except (ExactBindingError, KeyError, ValueError, TypeError) as exc:
+            entry.source["logicguard_error"] = f"{type(exc).__name__}: {exc}"
+            continue
+        entry.source["logicguard"] = context
+        entry.source["logicguard_discovery"] = "foreign-snapshot-model-entry"
+        entry.source["logicguard_ranking"] = _model_ranking_signals(
+            context,
+            discovery="foreign-snapshot-model-entry",
+            base_score=entry.score,
+            distance=0,
+        )
+        entry.score = float(entry.source["logicguard_ranking"]["final_score"])
+        selected.append(entry)
+    return sorted(selected, key=lambda item: (-item.score, str(item.data.get("id") or "")))[:top_k]
+
+
 def search_entries(
     repo_root: Path,
     query: str,
@@ -542,6 +620,28 @@ def search_multi_source_entries(
     top_k: int = 5,
     organization_sources: list[dict[str, Any]] | None = None,
 ) -> list[Entry]:
+    return search_multi_source_result(
+        repo_root,
+        query=query,
+        path_hint=path_hint,
+        top_k=top_k,
+        organization_sources=organization_sources,
+    )["results"]
+
+
+def search_multi_source_result(
+    repo_root: Path,
+    query: str,
+    path_hint: str = "",
+    top_k: int = 5,
+    organization_sources: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Return local and organization results plus explicit source status.
+
+    Organization retrieval is snapshot-only.  A missing or invalid snapshot
+    never downgrades to a mutable mirror; local results remain usable and the
+    source status explains why foreign cards were not returned.
+    """
     from local_kb.active_index import load_active_entries
     from local_kb.maintenance_standard import maintenance_standard_is_active
 
@@ -561,50 +661,42 @@ def search_multi_source_entries(
     )
     local_exchange_hashes = {card_exchange_hash(entry.data) for entry in local_entries}
     organization_results: list[Entry] = []
+    organization_status: list[dict[str, Any]] = []
     for source in organization_sources or []:
         org_root = Path(str(source.get("path") or source.get("local_path") or ""))
         organization_id = str(source.get("organization_id") or source.get("id") or "").strip()
-        if not org_root.exists() or not organization_id:
+        if not organization_id:
             continue
-        strict_snapshot = bool(source.get("snapshot_required") or source.get("from_settings"))
-        if strict_snapshot:
-            from local_kb.store import load_current_organization_entries
-
+        from local_kb.store import load_current_organization_entries
+        status_row = {
+            "organization_id": organization_id,
+            "source_repo": str(source.get("source_repo") or source.get("repo_url") or ""),
+            "status": "unavailable",
+            "snapshot_generation": "",
+            "snapshot_manifest_digest": "",
+            "returned_count": 0,
+        }
+        try:
             entries = load_current_organization_entries(
                 repo_root,
                 organization_id,
                 source_repo=str(source.get("source_repo") or source.get("repo_url") or ""),
                 source_commit=str(source.get("source_commit") or ""),
             )
-        else:
-            try:
-                from local_kb.store import load_current_organization_entries
-
-                entries = load_current_organization_entries(
-                    repo_root,
-                    organization_id,
-                    source_repo=str(source.get("source_repo") or source.get("repo_url") or ""),
-                    source_commit=str(source.get("source_commit") or ""),
-                )
-            except RuntimeError:
-                # Explicit raw-mirror callers are setup/diagnostic surfaces.
-                # Settings-derived runtime sources are strict_snapshot=True.
-                entries = load_organization_entries(
-                    org_root,
-                    organization_id,
-                    source_repo=str(source.get("source_repo") or source.get("repo_url") or ""),
-                    source_commit=str(source.get("source_commit") or ""),
-                )
-        # Organization candidates remain visible as explicitly untrusted input
-        # for the organization adoption/validation workflow. This does not
-        # relax the local active-index gate: unvalidated local candidates still
-        # cannot enter predictive retrieval.
-        for entry in search_loaded_entries(
+        except RuntimeError as exc:
+            status_row["reason"] = str(exc)
+            organization_status.append(status_row)
+            continue
+        status_row.update({
+            "status": "current",
+            "snapshot_generation": str(entries[0].source.get("snapshot_generation") or "") if entries else "",
+            "snapshot_manifest_digest": str(entries[0].source.get("snapshot_manifest_digest") or "") if entries else "",
+        })
+        for entry in search_foreign_model_bound_entries(
             entries,
             query=query,
             path_hint=path_hint,
             top_k=top_k,
-            allow_untrusted_candidates=True,
         ):
             # A local copy wins ordering, but a previously downloaded card is
             # not blocked from direct use.  The snapshot remains the foreign
@@ -612,7 +704,12 @@ def search_multi_source_entries(
             if card_exchange_hash(entry.data) in local_exchange_hashes:
                 continue
             organization_results.append(entry)
-    return [*local_results, *organization_results][:top_k]
+            status_row["returned_count"] = int(status_row.get("returned_count") or 0) + 1
+        organization_status.append(status_row)
+    return {
+        "results": [*local_results, *organization_results][:top_k],
+        "organization_status": organization_status,
+    }
 
 
 def _display_path(entry: Entry, repo_root: Path) -> str:
