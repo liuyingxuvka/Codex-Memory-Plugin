@@ -10,6 +10,7 @@ Required behavior:
 - Pin the exact authority generation, model revision, root node and ArgumentBlock, and ModelMesh revision. Missing exact authority is a visible failure; never fall back to YAML or a floating head.
 - Load compact prior closures before broad experiment work.
 - Reuse `no_delta_closed` for unchanged evidence without a new experiment, central history write, candidate, observation, or handoff.
+- Evaluate the full exact opportunity inventory, but persist at most 64 representative opportunity rows with the exact total, digest, and omitted count; never write the full expanded opportunity ocean.
 - Select only a bounded route-deduplicated set that clears the value and executability gates. A no-op is success.
 - Plan a bounded suite for evidence-removal, assumption-removal, rebuttal-strengthening/counterexample, boundary-pressure, cross-edge-removal, and neighbor-pin-replacement; execute every applicable path separately against the pinned immutable model.
 - Record design, safety tier, allowed writes, rollback, validation plan, and explicit result criteria before execution.

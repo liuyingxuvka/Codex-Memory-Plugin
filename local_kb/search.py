@@ -39,6 +39,7 @@ MODEL_IMPORTANCE_SCORE_WEIGHT = 1.5
 MODEL_RELATION_SCORE_WEIGHT = 0.75
 MODEL_MEMBERSHIP_SCORE_WEIGHT = 0.5
 MODEL_ROOT_ROLE_SCORE = 0.5
+SEARCH_RESULT_SCHEMA_VERSION = "khaos-brain.search-result.v1"
 
 
 def _stable_ref(prefix: str, payload: Any) -> str:
@@ -939,18 +940,48 @@ def render_search_payload(entries: list[Entry], repo_root: Path) -> list[dict[st
     return [render_entry(entry, repo_root) for entry in entries]
 
 
-def format_search_output(payload: list[dict[str, Any]], path_hint: str = "") -> str:
+def render_search_envelope(
+    multi_source_result: dict[str, Any],
+    repo_root: Path,
+) -> dict[str, Any]:
+    results = render_search_payload(
+        list(multi_source_result.get("results") or []),
+        repo_root,
+    )
+    return {
+        "schema_version": SEARCH_RESULT_SCHEMA_VERSION,
+        "results": results,
+        "organization_status": [
+            dict(item)
+            for item in multi_source_result.get("organization_status") or []
+            if isinstance(item, dict)
+        ],
+        "retrieval_receipt": dict(
+            multi_source_result.get("retrieval_receipt") or {}
+        ),
+        "no_card": not bool(results),
+    }
+
+
+def format_search_output(
+    payload: list[dict[str, Any]],
+    path_hint: str = "",
+    *,
+    organization_status: list[dict[str, Any]] | None = None,
+) -> str:
     lines: list[str] = []
     path_hint_segments = parse_route_segments(path_hint)
-    if not payload:
-        return "No relevant predictive KB entries found."
 
     if path_hint_segments:
         lines.append(f"Path hint: {' / '.join(path_hint_segments)}")
         lines.append("")
 
-    lines.append("Top predictive KB entries across current sources:")
-    lines.append("")
+    if payload:
+        lines.append("Top predictive KB entries across current sources:")
+        lines.append("")
+    else:
+        lines.append("No relevant predictive KB entries found.")
+        lines.append("")
     for index, item in enumerate(payload, start=1):
         lines.append(f"{index}. [{item['id']}] {item['title']}")
         lines.append(
@@ -987,5 +1018,16 @@ def format_search_output(payload: list[dict[str, Any]], path_hint: str = "") -> 
             f"source={item.get('source_kind', '-')}:{item.get('source_id', '-')} "
             f"result_ref={item.get('result_ref', '-')}"
         )
+        lines.append("")
+
+    for source in organization_status or []:
+        source_id = str(
+            source.get("organization_id") or source.get("source_id") or "-"
+        )
+        status = str(source.get("status") or "unavailable")
+        reason = str(source.get("reason") or "").strip()
+        lines.append(f"Organization source {source_id}: {status}")
+        if reason:
+            lines.append(f"  reason={reason}")
         lines.append("")
     return "\n".join(lines).rstrip()

@@ -30,6 +30,9 @@ from local_kb.logicguard_models import (
     recover_authority_scopes,
 )
 from local_kb.model_projection import (
+    CARD_PROJECTION_SCHEMA_VERSION,
+    PROJECTION_BINDING_FIELDS,
+    ProjectionValidationError,
     binding_from_projection,
     project_cards,
     projection_digest,
@@ -376,6 +379,91 @@ def load_current_model_entries(repo_root: Path) -> tuple[list[Entry], dict[str, 
         )
     ]
     return entries, generation
+
+
+def discover_sleep_raw_candidate_upserts(
+    repo_root: Path,
+) -> dict[str, dict[str, Any]]:
+    """Freeze exact raw candidate inputs that only Sleep may replace.
+
+    This is an upgrade intake, not a runtime compatibility reader.  Only a
+    schema-less, unbound candidate under ``kb/candidates`` is admitted.  A
+    partial current binding or an explicitly unsupported schema remains a
+    visible error instead of being guessed into a current projection.
+    """
+
+    root = Path(repo_root).resolve()
+    candidate_root = root / "kb" / "candidates"
+    if not candidate_root.is_dir():
+        return {}
+    upserts: dict[str, dict[str, Any]] = {}
+    for path in sorted(candidate_root.rglob("*.yaml")):
+        payload = load_yaml_file(path)
+        schema = str(payload.get("projection_schema_version") or "").strip()
+        if schema == CARD_PROJECTION_SCHEMA_VERSION:
+            continue
+        if schema:
+            raise ProjectionValidationError(
+                f"Raw candidate upgrade does not accept unsupported projection schema {schema!r}: {path}"
+            )
+        partial_binding_fields = sorted(
+            field
+            for field in (*PROJECTION_BINDING_FIELDS, "projection_digest")
+            if str(payload.get(field) or "").strip()
+        )
+        if partial_binding_fields:
+            raise ProjectionValidationError(
+                "Schema-less candidate carries partial current authority fields: "
+                + ", ".join(partial_binding_fields)
+            )
+        if str(payload.get("status") or "").strip().lower() != "candidate":
+            raise ProjectionValidationError(
+                f"Schema-less candidate input must declare status=candidate: {path}"
+            )
+        if not str(payload.get("id") or "").strip():
+            raise ProjectionValidationError(
+                f"Schema-less candidate input has no stable id: {path}"
+            )
+        relative = path.relative_to(root).as_posix()
+        upserts[relative] = _json_safe(payload)
+    return upserts
+
+
+def load_current_model_entries_for_sleep_repair(
+    repo_root: Path,
+    *,
+    replacing_paths: Sequence[str],
+) -> tuple[list[Entry], dict[str, Any]]:
+    """Load current projections while excluding exact Sleep-owned replacements."""
+
+    root = Path(repo_root).resolve()
+    generation, rows = _current_projection_rows(
+        root,
+        replacing_paths=replacing_paths,
+    )
+    manifest_rows = [
+        {
+            "scope": str(row["scope"]),
+            "path": str(row["path"]),
+            "card_id": str(row["card_id"]),
+            "projection_digest": str(row["projection"].get("projection_digest") or ""),
+            **row["binding"].to_dict(),
+        }
+        for row in rows.values()
+    ]
+    manifest_rows.sort(
+        key=lambda item: (item["scope"], item["path"], item["card_id"])
+    )
+    manifest_digest = "sha256:" + canonical_digest(manifest_rows)
+    if manifest_digest != str(generation.get("projection_manifest_digest") or ""):
+        raise RuntimeError(
+            "Current model catalog differs from its generation while preparing exact Sleep repairs"
+        )
+    if len(manifest_rows) != int(generation.get("projection_count") or 0):
+        raise RuntimeError(
+            "Current model catalog count differs from its generation while preparing exact Sleep repairs"
+        )
+    return _entries_from_projection_rows(root, rows.values()), generation
 
 
 def _entries_from_projection_rows(

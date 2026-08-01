@@ -218,6 +218,9 @@ REQUIRED_BY_FILE: dict[str, tuple[str, ...]] = {
     "templates/github/org_kb_check.py": (
         "kb.main_path must be exactly kb/main",
         "obsolete organization roots are forbidden",
+        "CURRENT_SOURCE_SCHEMA_VERSION = 2",
+        'BUNDLE_ROOT = "kb/logicguard/bundles"',
+        "check_catalog",
     ),
     "templates/predictive-kb-preflight/kb_launch.py": (
         'parser.add_argument("command"',

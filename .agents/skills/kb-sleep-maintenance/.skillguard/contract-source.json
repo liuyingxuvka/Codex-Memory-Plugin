@@ -82,6 +82,7 @@
     "local_kb/maintenance.py",
     "local_kb/maintenance_lanes.py",
     "tests/test_kb_automation_native_receipts.py",
+    "tests/test_process_control.py",
     "tests/test_sleep_batch.py",
     "tests/test_kb_lifecycle_sleep_batch_integration.py",
     "tests/test_kb_active_index_generation.py",
@@ -234,7 +235,8 @@
         "obligation:kb-sleep-maintenance:index-watermark-commit",
         "obligation:kb-sleep-maintenance:remaining-reconciliation",
         "obligation:kb-sleep-maintenance:downstream-not-run",
-        "obligation:kb-sleep-maintenance:failure-fail-closed"
+        "obligation:kb-sleep-maintenance:failure-fail-closed",
+        "obligation:kb-sleep-maintenance:timeout-tree-cleanup"
       ],
       "timeout_seconds": 120,
       "execution_owner_id": "owner:kb-sleep-maintenance:terminal-runtime",
@@ -349,7 +351,8 @@
         "obligation:kb-sleep-maintenance:index-watermark-commit",
         "obligation:kb-sleep-maintenance:remaining-reconciliation",
         "obligation:kb-sleep-maintenance:downstream-not-run",
-        "obligation:kb-sleep-maintenance:failure-fail-closed"
+        "obligation:kb-sleep-maintenance:failure-fail-closed",
+        "obligation:kb-sleep-maintenance:timeout-tree-cleanup"
       ],
       "claim_boundary": "This witness binds the immutable target-owned native receipt to its exact run, checks, and non-calibration native obligations."
     }
@@ -372,6 +375,7 @@
         "obligation:kb-sleep-maintenance:remaining-reconciliation",
         "obligation:kb-sleep-maintenance:downstream-not-run",
         "obligation:kb-sleep-maintenance:failure-fail-closed",
+        "obligation:kb-sleep-maintenance:timeout-tree-cleanup",
         "obligation:kb-sleep-maintenance:depth-calibration"
       ]
     }

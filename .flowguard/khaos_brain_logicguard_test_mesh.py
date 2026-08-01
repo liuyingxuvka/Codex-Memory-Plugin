@@ -24,7 +24,7 @@ from khaos_brain_logicguard_model_test_alignment import BINDINGS
 
 
 PARENT_SUITE_ID = "suite:khaos-logicguard-native:parent"
-INVENTORY_REVISION = "khaos-logicguard-native-inventory-v6-terminal-evidence"
+INVENTORY_REVISION = "khaos-logicguard-native-inventory-v10-dream-bounded-timeout"
 RECEIPT_ROOT = ".local/verification/khaos-logicguard-native"
 TERMINAL_CONSUMER_COMMAND = "python scripts/check_kb_model_test_alignment.py --evidence-manifest <frozen-manifest> --json"
 RESUMABLE_SLEEP_OBLIGATION_IDS = (
@@ -63,10 +63,11 @@ SUITE_SPECS = (
     ),
     (
         "suite:sleep-dream",
-        "python -m pytest -q tests/test_sleep_batch.py tests/test_khaos_sleep_model_maintenance.py tests/test_kb_sleep_convergence.py tests/test_kb_lifecycle.py tests/test_kb_dream.py",
+        "python -m pytest -q tests/test_sleep_batch.py tests/test_khaos_sleep_model_maintenance.py tests/test_kb_sleep_convergence.py tests/test_kb_lifecycle.py tests/test_kb_lifecycle_sleep_batch_integration.py tests/test_kb_dream.py",
         (
             "req.maintenance.sleep-owner",
             "req.maintenance.lifecycle-batch",
+            "req.maintenance.raw-candidate-upgrade",
             "req.maintenance.resumable-batch",
             "req.maintenance.item-checkpoint",
             "req.maintenance.remainder-movement",
@@ -75,6 +76,8 @@ SUITE_SPECS = (
             "req.maintenance.gap-review",
             "req.maintenance.dream-read-only",
             "req.maintenance.dream-convergence",
+            "req.maintenance.dream-bounded-artifact",
+            "req.maintenance.local-cycle-timeout-budget",
         ),
         1200,
         ("sleep_dream_test_state",),
@@ -101,19 +104,26 @@ SUITE_SPECS = (
     ),
     (
         "suite:organization-snapshot-cycles",
-        "python -m pytest -q tests/test_org_sources.py tests/test_org_snapshot.py tests/test_org_maintenance.py tests/test_org_cleanup.py tests/test_org_outbox.py tests/test_multi_source_search.py tests/test_organization_adoption.py tests/test_e2e_multi_source_browsing.py tests/test_cli_output_contract.py tests/test_kb_retrieval_calibration.py tests/test_maintenance_lanes.py tests/test_current_automation_runtime.py tests/test_local_maintenance_cycle.py tests/test_organization_cycle.py tests/test_kb_operator_activation.py",
+        "python -m pytest -q tests/test_org_sources.py tests/test_org_snapshot.py tests/test_org_maintenance.py tests/test_org_cleanup.py tests/test_org_automation.py tests/test_org_github_automation.py tests/test_github_repo_config.py tests/test_org_outbox.py tests/test_multi_source_search.py tests/test_organization_adoption.py tests/test_e2e_multi_source_browsing.py tests/test_cli_output_contract.py tests/test_kb_preflight_entry_compat.py tests/test_kb_retrieval_calibration.py tests/test_maintenance_lanes.py tests/test_current_automation_runtime.py tests/test_local_maintenance_cycle.py tests/test_organization_cycle.py tests/test_kb_operator_activation.py",
         (
             "req.organization.snapshot-bundle",
             "req.organization.legacy-upgrade",
             "req.organization.foreign-reader",
             "req.organization.snapshot-retrieval",
             "req.organization.current-source",
+            "req.organization.remote-gate-parity",
+            "req.organization.automatic-review-policy",
             "req.organization.interaction",
             "req.organization.feedback-token",
             "req.organization.sleep-calibration",
             "req.organization.merge-split",
+            "req.organization.nonoverlap-packet-selection",
+            "req.organization.materialized-change-inventory",
+            "req.card.foreground-observation-only",
             "req.organization.ui-detail",
             "req.organization.cli-surface",
+            "req.organization.default-source-status",
+            "req.organization.snapshot-schema-cutover",
             "req.maintenance.local-cycle",
             "req.maintenance.organization-cycle",
             "req.maintenance.global-writer",

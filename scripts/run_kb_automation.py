@@ -17,10 +17,12 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from local_kb.automation_contracts import (  # noqa: E402
+    AGGREGATE_ASSURANCE_TIMEOUT_SECONDS,
     AUTOMATION_COMPLETION_CONTRACTS,
+    PRE_RESTORE_ASSURANCE_TIMEOUT_SECONDS,
     SLEEP_NATIVE_SOFT_DEADLINE_SECONDS,
-    STANDARD_OWNER_TIMEOUT_SECONDS,
-    STANDARD_NATIVE_TIMEOUT_SECONDS,
+    native_timeout_seconds,
+    owner_timeout_seconds,
 )
 from local_kb.automation_runtime import (  # noqa: E402
     RUNTIME_WRAPPER_SCHEMA,
@@ -115,6 +117,8 @@ def run_automation(
     run_id = _run_id(skill_id)
     run_root = automation_run_root(repo_root, skill_id, run_id)
     command = native_command(skill_id, repo_root=repo_root, run_id=run_id)
+    native_timeout = native_timeout_seconds(skill_id)
+    owner_timeout = owner_timeout_seconds(skill_id)
     started_at = _utc_now()
     cleanup: dict[str, object] = {}
     try:
@@ -126,7 +130,7 @@ def run_automation(
             encoding="utf-8",
             errors="replace",
             check=False,
-            timeout=STANDARD_NATIVE_TIMEOUT_SECONDS,
+            timeout=native_timeout,
         )
         exit_code = completed.returncode
         stdout = completed.stdout
@@ -158,10 +162,10 @@ def run_automation(
             if skill_id == "kb-sleep-maintenance"
             else 0
         ),
-        "native_timeout_seconds": STANDARD_NATIVE_TIMEOUT_SECONDS,
-        "owner_timeout_seconds": STANDARD_OWNER_TIMEOUT_SECONDS,
-        "aggregate_timeout_seconds": STANDARD_OWNER_TIMEOUT_SECONDS,
-        "installer_timeout_seconds": 0,
+        "native_timeout_seconds": native_timeout,
+        "owner_timeout_seconds": owner_timeout,
+        "aggregate_timeout_seconds": AGGREGATE_ASSURANCE_TIMEOUT_SECONDS,
+        "installer_timeout_seconds": PRE_RESTORE_ASSURANCE_TIMEOUT_SECONDS,
         "timed_out": exit_code == 124,
         "cleanup_confirmed": (
             cleanup.get("cleanup_confirmed") is True if exit_code == 124 else True

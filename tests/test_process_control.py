@@ -8,6 +8,8 @@ import sys
 from local_kb.automation_contracts import (
     AGGREGATE_ASSURANCE_TIMEOUT_SECONDS,
     PRE_RESTORE_ASSURANCE_TIMEOUT_SECONDS,
+    SLEEP_CYCLE_NATIVE_TIMEOUT_SECONDS,
+    SLEEP_CYCLE_OWNER_TIMEOUT_SECONDS,
     STANDARD_NATIVE_TIMEOUT_SECONDS,
     STANDARD_OWNER_TIMEOUT_SECONDS,
     UPDATE_NATIVE_TIMEOUT_SECONDS,
@@ -16,12 +18,34 @@ from local_kb.automation_contracts import (
 from local_kb.process_control import run_with_timeout_cleanup
 
 
-def test_timeout_hierarchy_preserves_cleanup_margin() -> None:
+def _assert_timeout_hierarchy() -> None:
     assert STANDARD_NATIVE_TIMEOUT_SECONDS < STANDARD_OWNER_TIMEOUT_SECONDS
+    assert SLEEP_CYCLE_NATIVE_TIMEOUT_SECONDS < SLEEP_CYCLE_OWNER_TIMEOUT_SECONDS
     assert UPDATE_NATIVE_TIMEOUT_SECONDS < UPDATE_OWNER_TIMEOUT_SECONDS
     assert STANDARD_OWNER_TIMEOUT_SECONDS < AGGREGATE_ASSURANCE_TIMEOUT_SECONDS
+    assert SLEEP_CYCLE_OWNER_TIMEOUT_SECONDS < AGGREGATE_ASSURANCE_TIMEOUT_SECONDS
     assert UPDATE_OWNER_TIMEOUT_SECONDS < AGGREGATE_ASSURANCE_TIMEOUT_SECONDS
     assert AGGREGATE_ASSURANCE_TIMEOUT_SECONDS < PRE_RESTORE_ASSURANCE_TIMEOUT_SECONDS
+
+
+def test_sleep_timeout_hierarchy_preserves_cleanup_margin() -> None:
+    _assert_timeout_hierarchy()
+
+
+def test_dream_timeout_hierarchy_preserves_cleanup_margin() -> None:
+    _assert_timeout_hierarchy()
+
+
+def test_org_contribution_timeout_hierarchy_preserves_cleanup_margin() -> None:
+    _assert_timeout_hierarchy()
+
+
+def test_org_maintenance_timeout_hierarchy_preserves_cleanup_margin() -> None:
+    _assert_timeout_hierarchy()
+
+
+def test_update_timeout_hierarchy_preserves_cleanup_margin() -> None:
+    _assert_timeout_hierarchy()
 
 
 def test_timeout_terminates_the_complete_descendant_tree(tmp_path: Path) -> None:

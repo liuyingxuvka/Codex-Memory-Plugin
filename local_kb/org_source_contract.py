@@ -31,7 +31,8 @@ ORG_SOURCE_CATALOG_SCHEMA = "khaos-brain.organization-card-catalog.v1"
 ORG_SOURCE_BUNDLE_SCHEMA = "khaos-brain.organization-logicguard-bundle.v1"
 ORG_SOURCE_BUILDER = {
     "name": "khaos-brain.organization-source-builder",
-    "version": 1,
+    "version": 2,
+    "text_digest_policy": "utf8-lf-v1",
     "card_projection_schema": CARD_PROJECTION_SCHEMA_VERSION,
     "bundle_schema": ORG_SOURCE_BUNDLE_SCHEMA,
 }
@@ -73,11 +74,11 @@ def canonical_digest(value: Any, *, prefix: bool = False) -> str:
 
 
 def file_sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with Path(path).open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+    """Hash generated text with one portable UTF-8/LF byte representation."""
+
+    text = Path(path).read_bytes().decode("utf-8")
+    portable = text.replace("\r\n", "\n").replace("\r", "\n").encode("utf-8")
+    return hashlib.sha256(portable).hexdigest()
 
 
 def _safe_segment(value: Any, fallback: str = "card") -> str:

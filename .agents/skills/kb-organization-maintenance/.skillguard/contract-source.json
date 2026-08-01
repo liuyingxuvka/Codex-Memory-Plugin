@@ -76,6 +76,7 @@
     "local_kb/org_cycle.py",
     "local_kb/org_snapshot.py",
     "tests/test_org_automation.py",
+    "tests/test_process_control.py",
     "tests/test_org_maintenance.py",
     "tests/test_org_cleanup.py",
     "tests/test_skill_sharing.py",
@@ -218,7 +219,8 @@
       "evidence_class": "hard",
       "covers_obligation_ids": [
         "obligation:kb-organization-maintenance:postapply-merge-readiness",
-        "obligation:kb-organization-maintenance:postflight-terminal"
+        "obligation:kb-organization-maintenance:postflight-terminal",
+        "obligation:kb-organization-maintenance:timeout-tree-cleanup"
       ],
       "timeout_seconds": 120,
       "execution_owner_id": "owner:kb-organization-maintenance:terminal-runtime",
@@ -328,7 +330,8 @@
         "obligation:kb-organization-maintenance:skill-safety-version",
         "obligation:kb-organization-maintenance:exact-selected-apply",
         "obligation:kb-organization-maintenance:postapply-merge-readiness",
-        "obligation:kb-organization-maintenance:postflight-terminal"
+        "obligation:kb-organization-maintenance:postflight-terminal",
+        "obligation:kb-organization-maintenance:timeout-tree-cleanup"
       ],
       "claim_boundary": "This witness binds the immutable target-owned native receipt to its exact run, checks, and non-calibration native obligations."
     }
@@ -346,6 +349,7 @@
         "obligation:kb-organization-maintenance:exact-selected-apply",
         "obligation:kb-organization-maintenance:postapply-merge-readiness",
         "obligation:kb-organization-maintenance:postflight-terminal",
+        "obligation:kb-organization-maintenance:timeout-tree-cleanup",
         "obligation:kb-organization-maintenance:depth-calibration"
       ]
     }

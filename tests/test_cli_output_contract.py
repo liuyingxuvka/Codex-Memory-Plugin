@@ -69,7 +69,15 @@ class CliOutputContractTests(unittest.TestCase):
                 ],
                 encoding=encoding,
             )
-            self.assertIsInstance(payload, list)
+            self.assertIsInstance(payload, dict)
+            self.assertEqual(
+                payload["schema_version"],
+                "khaos-brain.search-result.v1",
+            )
+            self.assertIsInstance(payload["results"], list)
+            self.assertIsInstance(payload["organization_status"], list)
+            self.assertIsInstance(payload["retrieval_receipt"], dict)
+            self.assertEqual(payload["no_card"], not bool(payload["results"]))
 
     def test_desktop_check_keeps_zh_cn_display_but_console_output_is_safe(self) -> None:
         payload = self.run_json(

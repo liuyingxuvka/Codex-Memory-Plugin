@@ -75,6 +75,32 @@ class OrganizationMaintenanceTests(unittest.TestCase):
         self.assertEqual(set(exact["selected_action_ids"]), set(exact["applied_action_ids"]))
         self.assertTrue(report["cleanup"]["post_apply_validation"]["ok"])
 
+    def test_review_selects_only_non_overlapping_merge_packets_per_generation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cards: list[tuple[str, dict]] = []
+            for entry_id, title in (("left", "Same route"), ("middle", "Same route!"), ("right", "Same route?")):
+                card = base_card(entry_id, title, "Use the same route.", status="candidate", confidence=0.7)
+                card["evidence"] = ["shared-evidence"]
+                cards.append((f"kb/main/{entry_id}.yaml", card))
+            self._source(root, cards)
+
+            report = build_organization_maintenance_report(root, apply_reviewed_cleanup=True)
+            merge_decisions = [
+                row
+                for row in report["cleanup"]["review"]["decisions"]
+                if row["action_type"] == "merge-cards"
+            ]
+            exact = report["cleanup"]["exact_selected_apply"]
+
+        selected = [row for row in merge_decisions if row["decision"] == "selected-for-apply"]
+        deferred = [row for row in merge_decisions if row["decision"] == "blocked_evidence"]
+        self.assertEqual(len(selected), 1, merge_decisions)
+        self.assertEqual(len(deferred), 2, merge_decisions)
+        self.assertTrue(all("next source generation" in row["reason"] for row in deferred), deferred)
+        self.assertTrue(exact["exact"], exact)
+        self.assertEqual(exact["selected_action_ids"], exact["applied_action_ids"])
+
 
 if __name__ == "__main__":
     unittest.main()

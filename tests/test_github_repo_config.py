@@ -27,6 +27,8 @@ class GitHubRepoConfigTests(unittest.TestCase):
 
         self.assertEqual(payload["required_status_checks"]["contexts"], ["organization-kb-checks"])
         self.assertTrue(payload["required_status_checks"]["strict"])
+        self.assertIsNone(payload["required_pull_request_reviews"])
+        self.assertFalse(payload["enforce_admins"])
         self.assertFalse(payload["allow_force_pushes"])
         self.assertFalse(payload["allow_deletions"])
 

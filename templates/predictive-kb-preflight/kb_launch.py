@@ -24,7 +24,6 @@ SCRIPT_MAP = {
     "taxonomy": "kb_taxonomy.py",
     "nav": "kb_nav.py",
     "feedback": "kb_feedback.py",
-    "capture-candidate": "kb_capture_candidate.py",
     "consolidate": "kb_consolidate.py",
     "proposals": "kb_proposals.py",
     "rollback": "kb_rollback.py",

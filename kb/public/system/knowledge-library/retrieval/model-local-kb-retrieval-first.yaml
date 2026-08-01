@@ -1,12 +1,12 @@
 projection_schema_version: khaos-brain.card-projection.v1
-authority_generation_id: generation-3d1c05b3daa6394ea7b1363ccda5cbac
+authority_generation_id: generation-7fe30a3f588afbce80729616c843f07e
 authority_scope: public
 logicguard_model_id: khaos-card-model-004-9cc02e5d21bc
 logicguard_node_id: claim-root
 logicguard_block_id: card-argument
 logicguard_revision_id: rev-629da415b11084a46d6cf8cdb27eff7fb40006eec473d0e6b9890d9f8bd46176
 logicguard_mesh_id: khaos-brain-public
-logicguard_mesh_revision_id: mesh-rev-939780b9283b6c836b139f2e00cf381b5b986a08bfec66dc2ac6f64758aa060b
+logicguard_mesh_revision_id: mesh-rev-9bf623049e11d38437d99f74602d5ec093db956cbbf71f42a7e59ed23c1fe86a
 id: model-004
 title: Repository tasks surface more prior models when the local KB is scanned first
 type: model
@@ -84,4 +84,4 @@ i18n:
     title: 仓库任务前先扫描本地 KB 更容易浮现既有模型
     use:
       guidance: 仓库任务开始时先进行一次轻量的 local-kb-retrieve 扫描；把“没有相关条目”也视为有用信息，而不是提前跳过检索的理由。发布和同步任务不覆盖这个默认动作。
-projection_digest: sha256:b50cc6c65c4e7103a4ce903cb7b8e83ac8138c7e03230104656f3769d751fd9f
+projection_digest: sha256:41efa923eb883085d71414385b947e1ed1962cb3c3d857243b8a2494885b0371

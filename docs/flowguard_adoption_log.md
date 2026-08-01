@@ -2796,3 +2796,177 @@ This entry proves the current model/test/install/runtime recovery and automation
 
 ### Next Actions
 - Run the new-source final readiness owner, KB postflight, then publish v0.8.0.
+
+
+## flowguard-project-upgrade - FlowGuard project upgrade record update
+
+- Project: Knowledge_20260419
+- Trigger reason: target project requires current semantic adoption and version records
+- Status: completed
+- Skill decision: used_flowguard
+- Started: 2026-08-01T08:10:55+00:00
+- Ended: 2026-08-01T08:10:55+00:00
+- Duration seconds: 0.000
+- Commands OK: True
+
+### Model Files
+- none recorded
+
+### Commands
+- OK (0.000s): `managed adoption rule-set preflight` - generated block contains every required stable rule
+- OK (0.000s): `package-authority/global-consumer validation` - pass
+- OK (0.000s): `post-write project adoption audit` - semantic and version parity after write
+
+### Findings
+- model_authority_coverage_gaps: The current model-system authority is valid but retains explicit coverage gaps.
+- adoption_record_written: FlowGuard project AGENTS block and manifest were written or refreshed.
+
+### Counterexamples
+- none recorded
+
+### Friction Points
+- none recorded
+
+### Skipped Steps
+- Project adoption does not replace executable model checks, tests, replay, or closure evidence.
+
+### Risk Evidence Summary
+- none recorded
+
+### Next Actions
+- python -m flowguard project-audit --root . --json
+- Rerun affected FlowGuard model checks and focused tests before broad confidence.
+
+
+## flowguard-project-upgrade - FlowGuard project upgrade record update
+
+- Project: Knowledge_20260419
+- Trigger reason: target project requires current semantic adoption and version records
+- Status: completed
+- Skill decision: used_flowguard
+- Started: 2026-08-01T08:39:41+00:00
+- Ended: 2026-08-01T08:39:41+00:00
+- Duration seconds: 0.000
+- Commands OK: True
+
+### Model Files
+- none recorded
+
+### Commands
+- OK (0.000s): `managed adoption rule-set preflight` - generated block contains every required stable rule
+- OK (0.000s): `package-authority/global-consumer validation` - pass
+- OK (0.000s): `post-write project adoption audit` - semantic and version parity after write
+
+### Findings
+- model_authority_coverage_gaps: The current model-system authority is valid but retains explicit coverage gaps.
+- adoption_record_written: FlowGuard project AGENTS block and manifest were written or refreshed.
+
+### Counterexamples
+- none recorded
+
+### Friction Points
+- none recorded
+
+### Skipped Steps
+- Project adoption does not replace executable model checks, tests, replay, or closure evidence.
+
+### Risk Evidence Summary
+- none recorded
+
+### Next Actions
+- python -m flowguard project-audit --root . --json
+- Rerun affected FlowGuard model checks and focused tests before broad confidence.
+
+
+## task:khaos-search-envelope-v3 - Canonical search envelope and organization snapshot v3 cutover
+
+- Project: Knowledge_20260419
+- Trigger reason: A real organization run exposed Windows rollback failure, and default retrieval hid the unavailable organization source while a retired v2 snapshot remained on disk.
+- Status: in_progress
+- Skill decision: used_flowguard
+- Started: 2026-08-01T08:43:35+00:00
+- Ended: 2026-08-01T08:43:35+00:00
+- Duration seconds: 0.000
+- Commands OK: True
+
+### Model Files
+- .flowguard/khaos_brain_two_maintenance_cycle_flow.py
+- .flowguard/khaos_brain_logicguard_model_mesh.py
+- .flowguard/khaos_brain_logicguard_model_test_alignment.py
+- .flowguard/khaos_brain_logicguard_runtime_model_miss.py
+
+### Commands
+- OK (0.000s): `FlowGuard generation 8 activated`
+- OK (0.000s): `52 focused tests plus repaired assurance subtests passed`
+- OK (0.000s): `OpenSpec strict validation passed`
+
+### Findings
+- Default retrieval now preserves organization source status even when local results exist.
+- Retired organization snapshot schema v2 is rejected by runtime and replaced only by organization maintenance.
+
+### Counterexamples
+- Local results can conceal an unavailable organization source if the default CLI drops the multi-source status envelope.
+
+### Friction Points
+- A concurrent FlowGuard template update required one current project-rule refresh.
+
+### Skipped Steps
+- none recorded
+
+### Risk Evidence Summary
+- Unit and model evidence are not a substitute for the pending real local and organization cycle receipts.
+
+### Next Actions
+- Install the frozen source projection and run local then organization maintenance sequentially.
+
+
+## task:khaos-organization-remote-gate-convergence - Close Chaos Bring organization card exchange, automatic merge, convergence, and retrieval/write authority
+
+- Project: Knowledge_20260419
+- Trigger reason: Real organization maintenance exposed remote schema drift, platform-specific digests, and a human-review policy incompatible with the fully automatic lane.
+- Status: completed
+- Skill decision: used_flowguard
+- Started: 2026-08-01T13:05:00+00:00
+- Ended: 2026-08-01T14:03:13+00:00
+- Commands OK: True
+
+### Model Files
+- .flowguard/khaos_brain_two_maintenance_cycle_flow.py
+- .flowguard/khaos_brain_logicguard_field_lifecycle.py
+- .flowguard/khaos_brain_logicguard_model_mesh.py
+- .flowguard/khaos_brain_logicguard_model_test_alignment.py
+- .flowguard/khaos_brain_logicguard_test_mesh.py
+- .flowguard/khaos_brain_logicguard_runtime_model_miss.py
+- .flowguard/behavior_commitment_ledger/model.py
+
+### Commands
+- OK: Behavior Commitment Ledger current check (fingerprint `729e9f9f`).
+- OK: Full registered FlowGuard regression, 2 of 2 models passed (parent `sha256:0eb405b6`).
+- OK: FlowGuard generation 13 activated (snapshot `sha256:2f50a51d`).
+- OK: FlowGuard integration suite passed (receipt `flowguard-suite:7d96056e`).
+- OK: 523 repository tests passed in 941.065 seconds.
+- OK: OpenSpec strict validation and all five SkillGuard source units passed.
+- OK: Clean consumer installation and its independent currentness check passed with zero issues and zero warnings.
+
+### Findings
+- Remote adoption now requires the current schema-2 LogicGuard packet, portable UTF-8/LF digests, the required status check, zero human approvals, no administrator bypass, a merged main commit, and a later convergence generation.
+- PRs 23 and 24 passed and merged automatically; the third generation reviewed the current organization library and emitted zero actions.
+- Installed retrieval returned both a local model and organization-only cards with exact LogicGuard bindings. Foreground postflight changed history only and left candidate, model, and index authority unchanged.
+- The installed consumer projection and exactly two retained scheduled composites are current.
+
+### Counterexamples
+- A locally green organization wrapper can still fail remotely when the installed checker is stale.
+- Raw checkout-byte hashes differ between Windows CRLF and GitHub LF.
+- A required human approval blocks an otherwise fully automatic GitHub Actions owner.
+- An administrator merge would conceal rather than close the review-policy defect.
+
+### Friction Points
+- The first remote repair exposed a second cross-platform digest miss; the first successful content check then exposed stale branch-protection review policy.
+- The parent ModelMesh rejected an initially unconsumed remote-gate output, which was corrected to a state/invariant boundary before activation.
+
+### Risk Evidence Summary
+- Remote GitHub checks and merged-main identities are distinct from local wrapper success.
+- Current model authority retains declared bounded coverage gaps; final readiness remains a separate terminal claim.
+
+### Next Actions
+- Consume this frozen adoption record in the single final readiness owner and terminal evidence consumers.

@@ -79,6 +79,8 @@ DREAM_PREFLIGHT_SEARCHES = (
 DREAM_MIN_VALUABLE_OPPORTUNITY_SCORE = 18
 DREAM_MIN_VALUABLE_EXECUTABILITY_SCORE = 3
 DREAM_MAX_SELECTED_EXPERIMENTS = 4
+DREAM_MAX_RECORDED_OPPORTUNITIES = 64
+DREAM_MAX_EVIDENCE_SAMPLES = 8
 DREAM_MODEL_PERTURBATION_KINDS = (
     "evidence-removal",
     "assumption-removal",
@@ -364,7 +366,7 @@ def _opportunity_evidence_payload(opportunity: dict[str, Any]) -> dict[str, Any]
     if not isinstance(source_action, dict):
         source_action = {}
     return {
-        "fingerprint_schema_version": 2,
+        "fingerprint_schema_version": 3,
         "authority_pin": dict(opportunity.get("authority_pin") or {}),
         "source_logicguard_binding": dict(
             opportunity.get("source_logicguard_binding") or {}
@@ -389,11 +391,13 @@ def _opportunity_evidence_payload(opportunity: dict[str, Any]) -> dict[str, Any]
         },
         "source_action": {
             "action_key": str(source_action.get("action_key", "") or ""),
-            "event_ids": sorted(str(item) for item in source_action.get("event_ids", []) if str(item)),
+            "event_count": int(source_action.get("event_count", 0) or 0),
+            "event_ids_digest": str(source_action.get("event_ids_digest", "") or ""),
             "target": source_action.get("target", {}),
             "candidate_scaffold_preview": source_action.get("candidate_scaffold_preview", {}),
         },
-        "task_summaries": sorted(str(item) for item in opportunity.get("task_summaries", []) if str(item)),
+        "task_summary_count": int(opportunity.get("task_summary_count", 0) or 0),
+        "task_summaries_digest": str(opportunity.get("task_summaries_digest", "") or ""),
         "exact_route_entry_count": int(opportunity.get("exact_route_entry_count", 0) or 0),
         "sibling_routes": sorted(str(item) for item in opportunity.get("sibling_routes", []) if str(item)),
         "sibling_status_counts": opportunity.get("sibling_status_counts", {}),
@@ -402,6 +406,65 @@ def _opportunity_evidence_payload(opportunity: dict[str, Any]) -> dict[str, Any]
 
 def _evidence_fingerprint(opportunity: dict[str, Any]) -> str:
     return content_fingerprint(_opportunity_evidence_payload(opportunity))
+
+
+def _bounded_text_evidence(values: Any) -> dict[str, Any]:
+    normalized = sorted(
+        {
+            str(item).strip()
+            for item in (values if isinstance(values, list) else [])
+            if str(item).strip()
+        }
+    )
+    return {
+        "count": len(normalized),
+        "digest": content_fingerprint(normalized),
+        "sample": normalized[:DREAM_MAX_EVIDENCE_SAMPLES],
+    }
+
+
+def _compact_source_action(action: dict[str, Any]) -> dict[str, Any]:
+    event_ids = _bounded_text_evidence(action.get("event_ids", []))
+    return {
+        "action_key": str(action.get("action_key", "") or ""),
+        "event_count": int(action.get("event_count", event_ids["count"]) or 0),
+        "event_ids_digest": event_ids["digest"],
+        "event_id_sample": event_ids["sample"],
+        "target": dict(action.get("target") or {}),
+        "candidate_scaffold_preview": dict(
+            action.get("candidate_scaffold_preview") or {}
+        ),
+        "apply_eligibility": dict(action.get("apply_eligibility") or {}),
+    }
+
+
+def _bounded_opportunity_projection(
+    opportunities: list[dict[str, Any]],
+    *,
+    selected: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Persist a useful sample without turning Dream history into an ocean."""
+
+    recorded: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    ordered = [
+        *selected,
+        *[
+            item
+            for item in opportunities
+            if item.get("selection_status") == "no_delta_closed"
+        ],
+        *opportunities,
+    ]
+    for item in ordered:
+        identity = str(item.get("evidence_fingerprint") or "")
+        if not identity or identity in seen:
+            continue
+        seen.add(identity)
+        recorded.append(item)
+        if len(recorded) >= DREAM_MAX_RECORDED_OPPORTUNITIES:
+            break
+    return recorded
 
 
 def build_dream_guard(repo_root: Path) -> dict[str, Any]:
@@ -576,7 +639,8 @@ def build_route_candidate_opportunities(
         sibling_trusted_count = int(sibling_status_counts.get("trusted", 0) or 0)
         predictive_preview = _predictive_preview_available(action)
         event_count = int(action.get("event_count", 0) or 0)
-        task_summaries = list(action.get("task_summaries", []))
+        task_summary_evidence = _bounded_text_evidence(action.get("task_summaries", []))
+        task_summaries = list(task_summary_evidence["sample"])
         apply_eligibility = action.get("apply_eligibility", {})
         if not isinstance(apply_eligibility, dict):
             apply_eligibility = {}
@@ -609,8 +673,10 @@ def build_route_candidate_opportunities(
                 "route": route,
                 "route_ref": route_ref,
                 "route_title": _route_title(route),
-                "source_action": action,
+                "source_action": _compact_source_action(action),
                 "task_summaries": task_summaries,
+                "task_summary_count": task_summary_evidence["count"],
+                "task_summaries_digest": task_summary_evidence["digest"],
                 "exact_route_entry_count": exact_route_entry_count,
                 "sibling_routes": sibling_routes,
                 "sibling_route_count": len(sibling_routes),
@@ -653,7 +719,10 @@ def build_taxonomy_gap_opportunities(
         exact_route_entry_count = len(_exact_route_entries(entries, route))
         sibling_routes = _sibling_route_labels(entries, route)
         observed_subtree_count = int(gap.get("observed_subtree_count", 0) or 0)
-        example_routes = list(gap.get("example_observed_routes", []))
+        example_route_evidence = _bounded_text_evidence(
+            gap.get("example_observed_routes", [])
+        )
+        example_routes = list(example_route_evidence["sample"])
 
         repeated_signal = min(3, max(1, observed_subtree_count))
         boundedness = min(3, len(route))
@@ -675,6 +744,8 @@ def build_taxonomy_gap_opportunities(
                 "route_ref": "/".join(route),
                 "route_title": _route_title(route),
                 "task_summaries": example_routes,
+                "task_summary_count": example_route_evidence["count"],
+                "task_summaries_digest": example_route_evidence["digest"],
                 "exact_route_entry_count": exact_route_entry_count,
                 "sibling_routes": sibling_routes,
                 "sibling_route_count": len(sibling_routes),
@@ -758,6 +829,8 @@ def build_entry_validation_opportunities(repo_root: Path, entries: list[Any]) ->
                 "entry_confidence": confidence,
                 "validation_query": query,
                 "task_summaries": [query],
+                "task_summary_count": 1 if query else 0,
+                "task_summaries_digest": content_fingerprint([query] if query else []),
                 "exact_route_entry_count": len(_exact_route_entries(entries, route)),
                 "sibling_routes": _sibling_route_labels(entries, route),
                 "sibling_route_count": len(_sibling_route_labels(entries, route)),
@@ -874,7 +947,7 @@ def _prepare_opportunities(
             DREAM_MODEL_PERTURBATION_KINDS
         )
         enriched["evidence_fingerprint"] = _evidence_fingerprint(enriched)
-        enriched["fingerprint_schema_version"] = 2
+        enriched["fingerprint_schema_version"] = 3
         prepared.append(enriched)
     return prepared
 
@@ -1848,18 +1921,6 @@ def run_dream_maintenance(
                 item["route_ref"],
             ),
         )
-        write_json_file(
-            run_dir / OPPORTUNITIES_FILENAME,
-            {
-                "schema_version": DREAM_SCHEMA_VERSION,
-                "kind": "local-kb-dream-opportunities",
-                "run_id": resolved_run_id,
-                "generated_at": generated_at,
-                "opportunity_count": len(opportunities),
-                "opportunities": opportunities,
-            },
-        )
-
         executable_opportunities = [item for item in opportunities if item.get("is_executable", False)]
         selected = _select_valuable_experiments(
             opportunities,
@@ -1870,6 +1931,19 @@ def run_dream_maintenance(
             for item in opportunities
             if item.get("selection_status") == "no_delta_closed"
         )
+        recorded_opportunities = _bounded_opportunity_projection(
+            opportunities,
+            selected=selected,
+        )
+        opportunity_fingerprints = [
+            str(item.get("evidence_fingerprint") or "")
+            for item in opportunities
+            if str(item.get("evidence_fingerprint") or "")
+        ]
+        opportunity_kind_counts: dict[str, int] = {}
+        for item in opportunities:
+            kind = str(item.get("kind") or "unknown")
+            opportunity_kind_counts[kind] = opportunity_kind_counts.get(kind, 0) + 1
         write_json_file(
             run_dir / OPPORTUNITIES_FILENAME,
             {
@@ -1878,9 +1952,17 @@ def run_dream_maintenance(
                 "run_id": resolved_run_id,
                 "generated_at": generated_at,
                 "opportunity_count": len(opportunities),
+                "recorded_opportunity_count": len(recorded_opportunities),
+                "omitted_opportunity_count": len(opportunities)
+                - len(recorded_opportunities),
+                "max_recorded_opportunities": DREAM_MAX_RECORDED_OPPORTUNITIES,
+                "opportunity_inventory_digest": content_fingerprint(
+                    opportunity_fingerprints
+                ),
+                "opportunity_kind_counts": dict(sorted(opportunity_kind_counts.items())),
                 "prior_fingerprint_closure_count": len(prior_successful_sandbox_keys),
                 "no_delta_closed_count": skipped_prior_success_count,
-                "opportunities": opportunities,
+                "opportunities": recorded_opportunities,
             },
         )
         planned_experiments = [
@@ -2239,11 +2321,14 @@ def run_dream_maintenance(
             "opportunity_count": len(opportunities),
             "executable_opportunity_count": len(executable_opportunities),
             "valuable_opportunity_count": len(selected),
-            "evaluated_fingerprints": [
-                str(item.get("evidence_fingerprint") or "")
-                for item in opportunities
-                if str(item.get("evidence_fingerprint") or "")
-            ],
+            "evaluated_fingerprints": opportunity_fingerprints,
+            "opportunity_inventory_digest": content_fingerprint(
+                opportunity_fingerprints
+            ),
+            "recorded_opportunity_count": len(recorded_opportunities),
+            "omitted_opportunity_count": len(opportunities)
+            - len(recorded_opportunities),
+            "max_recorded_opportunities": DREAM_MAX_RECORDED_OPPORTUNITIES,
             "evidence_deltas": [
                 str(item.get("evidence_fingerprint") or "")
                 for item in selected
@@ -2251,13 +2336,21 @@ def run_dream_maintenance(
             ],
             "suppressed_duplicate_count": skipped_prior_success_count,
             "no_delta_closed_count": skipped_prior_success_count,
+            "cooldown_decision_count": skipped_prior_success_count,
+            "cooldown_decision_digest": content_fingerprint(
+                [
+                    str(item.get("evidence_fingerprint") or "")
+                    for item in opportunities
+                    if item.get("selection_status") == "no_delta_closed"
+                ]
+            ),
             "cooldown_decisions": [
                 {
                     "evidence_fingerprint": str(item.get("evidence_fingerprint") or ""),
                     "decision": "closed-without-delta",
                     "prior_closure": item.get("prior_closure", {}),
                 }
-                for item in opportunities
+                for item in recorded_opportunities
                 if item.get("selection_status") == "no_delta_closed"
             ],
             "selected_experiment_count": len(selected),
@@ -2273,12 +2366,7 @@ def run_dream_maintenance(
             "blockers": [],
             "final_run_state": "no_delta" if not selected else "completed",
             "policy_version": DREAM_SCHEMA_VERSION,
-            "input_digest": content_fingerprint(
-                [
-                    str(item.get("evidence_fingerprint") or "")
-                    for item in opportunities
-                ]
-            ),
+            "input_digest": content_fingerprint(opportunity_fingerprints),
             "experiments": experiment_results,
             "artifact_paths": {
                 "run_dir": relative_repo_path(repo_root, run_dir),

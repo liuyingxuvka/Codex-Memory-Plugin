@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 from pathlib import Path, PurePosixPath
@@ -9,8 +10,26 @@ from typing import Any
 import yaml
 
 
+CURRENT_SOURCE_SCHEMA_VERSION = 2
+CURRENT_CATALOG_SCHEMA = "khaos-brain.organization-card-catalog.v1"
+CURRENT_BUNDLE_SCHEMA = "khaos-brain.organization-logicguard-bundle.v1"
+CURRENT_PROJECTION_SCHEMA = "khaos-brain.card-projection.v1"
+CURRENT_SOURCE_BUILDER = {
+    "name": "khaos-brain.organization-source-builder",
+    "version": 2,
+    "text_digest_policy": "utf8-lf-v1",
+    "card_projection_schema": CURRENT_PROJECTION_SCHEMA,
+    "bundle_schema": CURRENT_BUNDLE_SCHEMA,
+}
+CATALOG_PATH = "kb/organization_catalog.json"
+BUNDLE_ROOT = "kb/logicguard/bundles"
 LOW_RISK_PREFIXES = ("kb/imports/", "skills/candidates/")
-MAINTENANCE_MAIN_PREFIXES = ("kb/main/",)
+MAINTENANCE_PREFIXES = ("kb/main/", f"{BUNDLE_ROOT}/")
+MAINTENANCE_EXACT_PATHS = {
+    "maintenance/cleanup_audit.jsonl",
+    CATALOG_PATH,
+    "khaos_org_kb.yaml",
+}
 SKILL_REVIEW_STATES = {"candidate", "approved", "rejected"}
 SECRET_PATTERNS = (
     re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
@@ -51,6 +70,32 @@ def load_yaml(path: Path) -> dict[str, Any]:
     return payload if isinstance(payload, dict) else {}
 
 
+def load_json(path: Path) -> dict[str, Any]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def canonical_digest(payload: dict[str, Any], *, excluded_key: str) -> str:
+    body = {key: value for key, value in payload.items() if key != excluded_key}
+    encoded = json.dumps(
+        body,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str,
+    ).encode("utf-8")
+    return "sha256:" + hashlib.sha256(encoded).hexdigest()
+
+
+def file_sha256(path: Path) -> str:
+    text = path.read_bytes().decode("utf-8")
+    portable = text.replace("\r\n", "\n").replace("\r", "\n").encode("utf-8")
+    return hashlib.sha256(portable).hexdigest()
+
+
 def append_machine_key_errors(payload: Any, errors: list[str], path_label: str, key_path: str = "") -> None:
     if isinstance(payload, dict):
         for key, value in payload.items():
@@ -71,8 +116,8 @@ def check_manifest(root: Path) -> list[str]:
     manifest = load_yaml(manifest_path)
     if manifest.get("kind") != "khaos-organization-kb":
         errors.append("manifest kind must be khaos-organization-kb")
-    if manifest.get("schema_version") != 1:
-        errors.append("schema_version must be 1")
+    if manifest.get("schema_version") != CURRENT_SOURCE_SCHEMA_VERSION:
+        errors.append(f"schema_version must be {CURRENT_SOURCE_SCHEMA_VERSION}")
     if not str(manifest.get("organization_id") or "").strip():
         errors.append("organization_id is required")
     kb = manifest.get("kb") if isinstance(manifest.get("kb"), dict) else {}
@@ -82,6 +127,15 @@ def check_manifest(root: Path) -> list[str]:
         errors.append("kb.main_path must be exactly kb/main")
     if imports_path != "kb/imports":
         errors.append("kb.imports_path must be exactly kb/imports")
+    expected_kb = {
+        "catalog_path": CATALOG_PATH,
+        "bundle_root": BUNDLE_ROOT,
+        "projection_schema": CURRENT_PROJECTION_SCHEMA,
+        "bundle_schema": CURRENT_BUNDLE_SCHEMA,
+    }
+    for field, expected in expected_kb.items():
+        if kb.get(field) != expected:
+            errors.append(f"kb.{field} must be exactly {expected}")
     obsolete_roots = [
         relative
         for relative in ("kb/trusted", "kb/candidates")
@@ -102,6 +156,93 @@ def check_manifest(root: Path) -> list[str]:
     return errors
 
 
+def check_catalog(root: Path, manifest: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    catalog = load_json(root / CATALOG_PATH)
+    organization_id = str(manifest.get("organization_id") or "")
+    if catalog.get("schema_version") != CURRENT_CATALOG_SCHEMA:
+        return ["organization card catalog schema is missing or unsupported"]
+    if str(catalog.get("organization_id") or "") != organization_id:
+        errors.append("organization card catalog organization_id mismatch")
+    if str(catalog.get("catalog_digest") or "") != canonical_digest(
+        catalog, excluded_key="catalog_digest"
+    ):
+        errors.append("organization card catalog digest mismatch")
+    if catalog.get("builder_identity") != CURRENT_SOURCE_BUILDER:
+        errors.append("organization card catalog builder identity is unsupported")
+    rows = catalog.get("cards") if isinstance(catalog.get("cards"), list) else []
+    seen_ids: set[str] = set()
+    seen_paths: set[str] = set()
+    source_generation_id = str(catalog.get("source_generation_id") or "")
+    for row in rows:
+        if not isinstance(row, dict):
+            errors.append("organization catalog card row must be an object")
+            continue
+        entry_id = str(row.get("entry_id") or "").strip()
+        source_path = normalize_changed_file(str(row.get("source_path") or ""))
+        if not entry_id or entry_id in seen_ids:
+            errors.append(f"organization catalog card id is missing or duplicated: {entry_id or '?'}")
+        if not source_path.startswith("kb/main/") or source_path in seen_paths:
+            errors.append(f"organization catalog source path is invalid or duplicated: {source_path or '?'}")
+        seen_ids.add(entry_id)
+        seen_paths.add(source_path)
+        source_file = root / source_path
+        if not source_file.is_file():
+            errors.append(f"organization catalog card source is missing: {source_path}")
+            continue
+        if file_sha256(source_file) != str(row.get("source_sha256") or ""):
+            errors.append(f"organization catalog card source digest mismatch: {source_path}")
+        source_projection = load_yaml(source_file)
+        if str(source_projection.get("id") or "") != entry_id:
+            errors.append(f"organization card identity differs from catalog: {source_path}")
+        if str(source_projection.get("projection_schema_version") or "") != CURRENT_PROJECTION_SCHEMA:
+            errors.append(f"organization card is not a current projection: {source_path}")
+        artifacts: dict[str, Path] = {}
+        for field in ("model_path", "mesh_path", "projection_path", "bundle_path"):
+            relative = normalize_changed_file(str(row.get(field) or ""))
+            path = root / relative
+            artifacts[field] = path
+            if not relative.startswith(f"{BUNDLE_ROOT}/") or not path.is_file():
+                errors.append(f"organization card {entry_id or '?'} has missing or unsafe {field}")
+        if not all(path.is_file() for path in artifacts.values()):
+            continue
+        packaged_projection = load_json(artifacts["projection_path"])
+        bundle = load_json(artifacts["bundle_path"])
+        if bundle.get("schema_version") != CURRENT_BUNDLE_SCHEMA:
+            errors.append(f"organization card {entry_id or '?'} bundle schema is unsupported")
+        if bundle.get("builder_identity") != CURRENT_SOURCE_BUILDER:
+            errors.append(f"organization card {entry_id or '?'} bundle builder identity is unsupported")
+        if str(bundle.get("organization_id") or "") != organization_id:
+            errors.append(f"organization card {entry_id or '?'} bundle organization_id mismatch")
+        if str(bundle.get("entry_id") or "") != entry_id:
+            errors.append(f"organization card {entry_id or '?'} bundle entry_id mismatch")
+        if str(bundle.get("generation_id") or "") != source_generation_id:
+            errors.append(f"organization card {entry_id or '?'} bundle generation differs from catalog")
+        if str(bundle.get("bundle_digest") or "") != canonical_digest(
+            bundle, excluded_key="bundle_digest"
+        ):
+            errors.append(f"organization card {entry_id or '?'} bundle digest mismatch")
+        if bundle.get("projection") != packaged_projection or packaged_projection != source_projection:
+            errors.append(f"organization card {entry_id or '?'} projection copies differ")
+        for field in ("bundle_digest", "model_digest", "mesh_digest", "projection_digest"):
+            if str(bundle.get(field) or "") != str(row.get(field) or ""):
+                errors.append(f"organization card {entry_id or '?'} {field} differs from catalog")
+        if bundle.get("binding") != row.get("binding"):
+            errors.append(f"organization card {entry_id or '?'} binding differs from catalog")
+    actual_paths = {
+        path.relative_to(root).as_posix()
+        for suffix in ("*.yaml", "*.yml")
+        for path in (root / "kb" / "main").rglob(suffix)
+        if path.is_file()
+    } if (root / "kb" / "main").is_dir() else set()
+    if seen_paths != actual_paths:
+        errors.append(
+            "organization catalog identity set differs from kb/main: "
+            f"missing={sorted(actual_paths - seen_paths)} extra={sorted(seen_paths - actual_paths)}"
+        )
+    return errors
+
+
 def check_paths(changed_files: list[str], enforce_low_risk: bool, *, allow_maintenance_main: bool = False) -> tuple[list[str], list[str]]:
     errors: list[str] = []
     blockers: list[str] = []
@@ -110,9 +251,9 @@ def check_paths(changed_files: list[str], enforce_low_risk: bool, *, allow_maint
     for path in changed_files:
         if path.startswith(LOW_RISK_PREFIXES):
             continue
-        if allow_maintenance_main and has_maintenance_audit and path.startswith(MAINTENANCE_MAIN_PREFIXES):
+        if allow_maintenance_main and has_maintenance_audit and path.startswith(MAINTENANCE_PREFIXES):
             continue
-        if allow_maintenance_main and has_maintenance_audit and path == "maintenance/cleanup_audit.jsonl":
+        if allow_maintenance_main and has_maintenance_audit and path in MAINTENANCE_EXACT_PATHS:
             continue
         outside.append(path)
     if outside:
@@ -193,6 +334,8 @@ def main() -> None:
             for path in (normalize_changed_file(line) for line in Path(args.changed_files_file).read_text(encoding="utf-8").splitlines())
             if path
         ]
+    manifest_path = root / "khaos_org_kb.yaml"
+    manifest = load_yaml(manifest_path) if manifest_path.exists() else {}
     path_errors, blockers = check_paths(
         changed_files,
         args.enforce_low_risk,
@@ -200,6 +343,7 @@ def main() -> None:
     )
     errors = [
         *check_manifest(root),
+        *check_catalog(root, manifest),
         *path_errors,
         *scan_content(root, changed_files),
         *check_skill_registry(root),

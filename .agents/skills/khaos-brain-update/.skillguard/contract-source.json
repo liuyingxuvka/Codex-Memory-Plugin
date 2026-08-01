@@ -84,6 +84,7 @@
     "local_kb/org_migration.py",
     "tests/test_software_update.py",
     "tests/test_kb_automation_native_receipts.py",
+    "tests/test_process_control.py",
     "tests/test_codex_install.py",
     "tests/test_khaos_logicguard_migration.py",
     "tests/test_kb_upgrade_migration.py",
@@ -225,7 +226,8 @@
         "obligation:khaos-brain-update:zero-retired-authority",
         "obligation:khaos-brain-update:aggregate-hard-gates",
         "obligation:khaos-brain-update:restore-or-stay-paused",
-        "obligation:khaos-brain-update:final-machine-receipt"
+        "obligation:khaos-brain-update:final-machine-receipt",
+        "obligation:khaos-brain-update:timeout-tree-cleanup"
       ],
       "timeout_seconds": 120,
       "execution_owner_id": "owner:khaos-brain-update:terminal-runtime",
@@ -336,7 +338,8 @@
         "obligation:khaos-brain-update:zero-retired-authority",
         "obligation:khaos-brain-update:aggregate-hard-gates",
         "obligation:khaos-brain-update:restore-or-stay-paused",
-        "obligation:khaos-brain-update:final-machine-receipt"
+        "obligation:khaos-brain-update:final-machine-receipt",
+        "obligation:khaos-brain-update:timeout-tree-cleanup"
       ],
       "claim_boundary": "This witness binds the immutable target-owned native receipt to its exact run, checks, and non-calibration native obligations."
     }
@@ -355,6 +358,7 @@
         "obligation:khaos-brain-update:aggregate-hard-gates",
         "obligation:khaos-brain-update:restore-or-stay-paused",
         "obligation:khaos-brain-update:final-machine-receipt",
+        "obligation:khaos-brain-update:timeout-tree-cleanup",
         "obligation:khaos-brain-update:depth-calibration"
       ]
     }

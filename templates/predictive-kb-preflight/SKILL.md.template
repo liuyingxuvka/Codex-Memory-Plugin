@@ -46,6 +46,10 @@ Preferred operating pattern:
 - For this KB, normal runtime has zero compatibility and zero fallback. Exact retired managed formats belong only to the versioned direct-migration owner, which removes old authority and proves zero residuals. An incompatible residual is an unfinished upgrade-AI work item: derive one evidence-bound direct-to-current disposition and retry inside the rollbackable upgrade instead of adding a product reader. Missing current authority must fail visibly rather than selecting an alias, alternate launcher/model, or downgrade path.
 - The launcher is subcommand-based: `python "{{LAUNCHER_PATH}}" <command> ...`. The normal preflight entry is `search`.
 - The launcher accepts only explicit subcommands. Search uses the canonical `search --route-hint ...` grammar; removed implicit calls and argument aliases are rejected instead of reinterpreted.
+- JSON search has one canonical `khaos-brain.search-result.v1` envelope with
+  `results`, `organization_status`, `retrieval_receipt`, and `no_card`. Inspect
+  `organization_status` on every call; non-empty local results do not prove the
+  organization snapshot is current, and no optional receipt flag is required.
 
 ## Workflow
 
@@ -73,6 +77,9 @@ Preferred operating pattern:
 
 5. If the task is a long mixed plan, mark phase-change KB checkpoints in the plan. Re-run search when the next phase needs a different route or operating model; skip extra searches for repeated same-type work where the first hit set still applies.
 6. Treat the returned exact LogicGuard model nodes as bounded context. Respect declared assumptions, rebuttals, limitations, and open gaps; never infer support from the readable projection alone. Follow current user instructions over stored models if they conflict.
+   Also keep source health separate: use the envelope's `organization_status`
+   to distinguish current, unavailable, stale, and malformed organization
+   context instead of treating a local hit as organization success.
 7. Finish the main task.
 8. Before finalizing any non-trivial task, run one explicit KB postflight check. First ask whether Codex exposed mistake-first evidence: its own mistake, weak path, missed instruction, failed validation, tool or skill misuse, user correction, or later correction episode. Treat that as the highest-priority observation evidence. Then check whether the task exposed a reusable lesson, a skill/plugin usage lesson, a subagent/delegation usage lesson, a miss, a route gap, a card weakness, or a KB-process failure.
 9. If the postflight check found a meaningful signal, append one structured observation:

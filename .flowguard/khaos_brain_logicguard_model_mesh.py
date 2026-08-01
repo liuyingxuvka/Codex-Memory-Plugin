@@ -46,11 +46,13 @@ def children() -> tuple[ChildModelEvidence, ...]:
                 "next Sleep resume",
                 "exact retrieval impact",
                 "Dream handoff acknowledgement",
+                "exact residual raw-candidate upgrade input",
             ),
             outputs_emitted=(
                 "lifecycle_delta_selected",
                 "retrieval_eligibility_snapshot",
                 "sleep_batch_progress_saved",
+                "raw_candidate_upgrade_frozen",
                 "exact_entry_deny_published",
                 "exact_current_corruption_blocked",
                 "sleep_watermark_committed",
@@ -62,6 +64,7 @@ def children() -> tuple[ChildModelEvidence, ...]:
                 "sleep_batch_plan",
                 "sleep_batch_checkpoint",
                 "sleep_batch_item_results",
+                "sleep_raw_candidate_upgrade_inventory",
                 "sleep_remainder_movement",
                 "sleep_watermark",
                 "active_index_pointer",
@@ -70,6 +73,7 @@ def children() -> tuple[ChildModelEvidence, ...]:
             ),
             side_effects_owned=(
                 "sleep_batch_checkpoint_commit",
+                "sleep_raw_candidate_repair_receipt_commit",
                 "lifecycle_event_commit",
                 "exact_entry_deny_publication",
                 "exact_current_corruption_marking",
@@ -86,6 +90,7 @@ def children() -> tuple[ChildModelEvidence, ...]:
             invariants_owned=(
                 "eligible_status_only",
                 "frozen_batch_accounting_exact",
+                "raw_candidate_repair_precedes_catalog_read",
                 "unfinished_batch_preserves_previous_generation",
                 "watermark_after_complete_pointer_commit",
                 "authorized_index_publisher",
@@ -99,6 +104,7 @@ def children() -> tuple[ChildModelEvidence, ...]:
                 "watermark_partial_commit",
                 "native_timeout_after_partial_progress",
                 "retired_global_marker_residual",
+                "raw_candidate_repair_inventory_omission",
             ),
             validation_evidence=(
                 "model_check:lifecycle-convergence-v3:focused",
@@ -128,15 +134,16 @@ def children() -> tuple[ChildModelEvidence, ...]:
             model_id=AUTHORITY,
             evidence_id="abstract:khaos-logicguard-authority-cutover:20260714-current",
             risk_boundary="exact model/mesh authority, projection binding, model-native retrieval, Dream read-only, and atomic cutover",
-            inputs_accepted=("Sleep model change decision", "versioned legacy card input", "retrieval query", "Dream experiment request"),
+            inputs_accepted=("Sleep model change decision", "exact frozen raw-candidate upgrade", "versioned legacy card input", "retrieval query", "Dream experiment request"),
             outputs_emitted=(
                 "model_generation_committed",
                 "model_binding_validated",
+                "raw_candidate_current_projection_published",
                 "model_native_retrieval_result",
                 "dream_simulation_handoff",
                 "rollback_safe",
             ),
-            state_owned=("model_revision_heads", "mesh_revision_heads", "projection_generation_stage", "authority_generation_pointer"),
+            state_owned=("model_revision_heads", "mesh_revision_heads", "projection_generation_stage", "raw_candidate_replacement_set", "authority_generation_pointer"),
             side_effects_owned=("model_mesh_cas_commit", "projection_staging", "migration_generation_cutover"),
             functional_areas=("logicguard_authority_cutover",),
             contracts_in=("contract:governance.sleep_decision", "contract:lifecycle.selected_delta"),
@@ -152,6 +159,7 @@ def children() -> tuple[ChildModelEvidence, ...]:
                 "BindCardModelBlock",
                 "ValidateCardBindingBlock",
                 "PlanSleepModelChangeBlock",
+                "FreezeRawCandidateUpgradeBlock",
                 "CommitSleepModelChangeBlock",
                 "ValidateDreamMeshBlock",
                 "RetrieveModelNeighborhoodBlock",
@@ -160,13 +168,14 @@ def children() -> tuple[ChildModelEvidence, ...]:
             invariants_owned=(
                 "exact_current_authority",
                 "model_first_publication",
+                "raw_candidate_direct_to_current_only",
                 "sole_owner_boundaries",
                 "dream_exact_read_only",
                 "retrieval_model_native",
                 "privacy_scope_closed",
                 "migration_atomic_or_blocked",
             ),
-            risk_classes=("dual_authority", "partial_generation", "flat_fallback", "privacy_scope_leak"),
+            risk_classes=("dual_authority", "partial_generation", "flat_fallback", "raw_candidate_compatibility_read", "privacy_scope_leak"),
             validation_evidence=(
                 "correct:4/4 pass",
                 "known_bad:14/14 rejected",
@@ -232,19 +241,30 @@ def children() -> tuple[ChildModelEvidence, ...]:
             evidence_id="executable:khaos-two-maintenance-cycles:current",
             risk_boundary=(
                 "two independent scheduled task leases, one global mutation lease, delegated child writes, "
-                "strict cycle terminal states, receipt-v3 identity, and viewed/selected/used/outcome separation"
+                "strict cycle terminal states, receipt-v3 identity, bounded Dream opportunity persistence, "
+                "local timeout headroom, and viewed/selected/used/outcome separation"
             ),
             inputs_accepted=(
                 "local_scheduled_trigger",
                 "organization_scheduled_trigger",
                 "current_organization_snapshot",
+                "retired_organization_snapshot_pointer",
                 "retrieval_interaction",
+                "foreground_observation",
             ),
             outputs_emitted=(
                 "local_cycle_receipt_v3",
                 "organization_cycle_receipt_v3",
                 "global_writer_serialized",
                 "foreign_use_outcome_handoff",
+                "canonical_search_source_status_envelope",
+                "schema_v3_snapshot_activation",
+                "organization_nonoverlap_packet_set",
+                "organization_complete_change_inventory",
+                "organization_clean_base_restore",
+                "foreground_history_observation",
+                "dream_bounded_opportunity_projection",
+                "local_cycle_timeout_tree",
             ),
             state_owned=(
                 "local_task_lease",
@@ -253,12 +273,28 @@ def children() -> tuple[ChildModelEvidence, ...]:
                 "delegated_child_write_token",
                 "cycle_receipt_identity",
                 "retrieval_interaction_stage",
+                "organization_snapshot_schema_state",
+                "organization_source_status",
+                "organization_packet_path_reservations",
+                "organization_pre_post_materialized_paths",
+                "organization_remote_gate_contract",
+                "organization_repository_review_policy",
+                "foreground_intake_mode",
+                "dream_opportunity_inventory_digest",
+                "dream_recorded_opportunity_count",
+                "local_cycle_timeout_policy",
             ),
             side_effects_owned=(
                 "global_writer_lease_delegation",
                 "local_cycle_receipt_commit",
                 "organization_cycle_receipt_commit",
                 "retrieval_interaction_commit",
+                "organization_deleted_path_commit",
+                "organization_base_branch_restore",
+                "organization_remote_content_check",
+                "organization_gated_automatic_merge",
+                "foreground_history_append",
+                "dream_bounded_opportunity_artifact_commit",
             ),
             functional_areas=("maintenance_cycle_composition",),
             contracts_in=("contract:authority.model_retrieval", "contract:lifecycle.current_index"),
@@ -266,6 +302,10 @@ def children() -> tuple[ChildModelEvidence, ...]:
                 "contract:cycles.local_terminal_receipt",
                 "contract:cycles.organization_terminal_receipt",
                 "contract:cycles.foreign_outcome_handoff",
+                "contract:cycles.foreground_observation_only",
+                "contract:cycles.dream_bounded_opportunities",
+                "contract:cycles.local_timeout_headroom",
+                "contract:cycles.organization_remote_gate",
             ),
             depends_on=(LIFECYCLE, AUTHORITY),
             evidence_tier="hazard_green",
@@ -277,6 +317,14 @@ def children() -> tuple[ChildModelEvidence, ...]:
                 "cycle_receipt_matches_frozen_inputs",
                 "view_is_not_use",
                 "dream_never_publishes_authority",
+                "retired_snapshot_reader_is_forbidden",
+                "local_results_do_not_hide_organization_failure",
+                "organization_packet_set_is_nonoverlapping",
+                "organization_change_inventory_includes_deletions",
+                "organization_mirror_restores_cleanly",
+                "organization_remote_gate_matches_current_source",
+                "foreground_intake_is_history_only",
+                "dream_inventory_is_bounded_and_budgeted",
             ),
             risk_classes=(
                 "cross_task_cancellation",
@@ -284,6 +332,18 @@ def children() -> tuple[ChildModelEvidence, ...]:
                 "stale_cycle_receipt_reuse",
                 "partial_result_promotion",
                 "view_counted_as_use",
+                "retired_snapshot_runtime_fallback",
+                "hidden_organization_source_failure",
+                "same_generation_packet_overlap",
+                "omitted_materialized_deletion",
+                "dirty_organization_base_restore",
+                "stale_organization_remote_checker",
+                "checkout_specific_organization_digest",
+                "organization_human_approval_blocker",
+                "organization_admin_merge_bypass",
+                "foreground_direct_candidate_write",
+                "dream_opportunity_ocean",
+                "local_composite_timeout_underbudgeted",
             ),
             validation_evidence=(
                 "accepted:independent-two-task-flow",
@@ -323,6 +383,10 @@ def coverage_items() -> tuple[HierarchyCoverageItem, ...]:
         ("item:delegated-child-write-token", "state", CYCLES),
         ("item:cycle-receipt-v3", "side_effect", CYCLES),
         ("item:retrieval-interaction-stages", "function", CYCLES),
+        ("item:foreground-observation-only-intake", "function", CYCLES),
+        ("item:dream-bounded-opportunity-projection", "state", CYCLES),
+        ("item:local-cycle-timeout-headroom", "invariant", CYCLES),
+        ("item:organization-remote-content-and-review-gate", "invariant", CYCLES),
     )
     return tuple(
         HierarchyCoverageItem(
@@ -361,9 +425,69 @@ def closure_model(models: tuple[ChildModelEvidence, ...]) -> MeshClosureModel:
             "local_scheduled_trigger",
             "organization_scheduled_trigger",
             "current_organization_snapshot",
+            "retired_organization_snapshot_pointer",
             "retrieval_interaction",
+            "foreground_observation",
+            "residual_raw_candidate_upgrade_input",
         ),
         transitions=(
+            MeshClosureTransition(
+                "cycles_record_foreground_observation_only",
+                consumes=("foreground_observation",),
+                emits=("foreground_history_observation", "observation_or_versioned_legacy_input"),
+                consumer_model_id=CYCLES,
+                code_contract_id="contract:cycles.foreground_observation_only",
+                rationale=(
+                    "Foreground feedback appends one history observation and cannot create a candidate or "
+                    "change model, mesh, projection, or index authority before the next Sleep."
+                ),
+            ),
+            MeshClosureTransition(
+                "cycles_upgrade_retired_snapshot_to_current_schema",
+                consumes=(
+                    "organization_scheduled_trigger",
+                    "retired_organization_snapshot_pointer",
+                ),
+                emits=("schema_v3_snapshot_activation",),
+                consumer_model_id=CYCLES,
+                code_contract_id="contract:cycles.organization_terminal_receipt",
+                rationale=(
+                    "The organization maintenance owner directly replaces a retired v2 pointer with one "
+                    "validated schema-v3 snapshot; normal retrieval never opens the retired schema."
+                ),
+            ),
+            MeshClosureTransition(
+                "cycles_render_visible_default_source_status",
+                consumes=(
+                    "retrieval_interaction",
+                    "schema_v3_snapshot_activation",
+                ),
+                emits=("canonical_search_source_status_envelope",),
+                consumer_model_id=CYCLES,
+                code_contract_id="contract:cycles.foreign_outcome_handoff",
+                rationale=(
+                    "Default retrieval returns local results together with the explicit organization "
+                    "source status, so one successful source cannot hide another source failure."
+                ),
+            ),
+            MeshClosureTransition(
+                "cycles_apply_exact_organization_maintenance_batch",
+                consumes=(
+                    "organization_scheduled_trigger",
+                    "current_organization_snapshot",
+                ),
+                emits=(
+                    "organization_nonoverlap_packet_set",
+                    "organization_complete_change_inventory",
+                    "organization_clean_base_restore",
+                ),
+                consumer_model_id=CYCLES,
+                code_contract_id="contract:cycles.organization_terminal_receipt",
+                rationale=(
+                    "The maintenance owner selects only non-overlapping packets, stages the union of pre/post "
+                    "materialized paths including deletions, and restores a clean base mirror before terminal success."
+                ),
+            ),
             MeshClosureTransition(
                 "cycles_serialize_writes_and_commit_terminal_receipts",
                 consumes=(
@@ -377,29 +501,38 @@ def closure_model(models: tuple[ChildModelEvidence, ...]) -> MeshClosureModel:
                     "organization_cycle_receipt_v3",
                     "global_writer_serialized",
                     "foreign_use_outcome_handoff",
+                    "dream_bounded_opportunity_projection",
+                    "local_cycle_timeout_tree",
                 ),
                 consumer_model_id=CYCLES,
                 code_contract_id="contract:cycles.foreign_outcome_handoff",
                 rationale=(
                     "Independent scheduled roots may overlap read-only work, while a single delegated writer "
-                    "serializes mutations and each root commits its own exact terminal receipt."
+                    "serializes mutations, Dream persists only a digest-bound bounded opportunity projection, "
+                    "the local route retains ordered timeout headroom, and each root commits its own exact terminal receipt."
                 ),
             ),
             MeshClosureTransition(
                 "lifecycle_selects_delta",
-                consumes=("observation_or_versioned_legacy_input", "foreign_use_outcome_handoff"),
+                consumes=(
+                    "observation_or_versioned_legacy_input",
+                    "foreign_use_outcome_handoff",
+                    "residual_raw_candidate_upgrade_input",
+                ),
                 emits=(
                     "lifecycle_delta_selected",
                     "retrieval_eligibility_snapshot",
                     "sleep_batch_progress_saved",
+                    "raw_candidate_upgrade_frozen",
                     "exact_entry_deny_published",
                     "exact_current_corruption_blocked",
                 ),
                 consumer_model_id=LIFECYCLE,
                 code_contract_id="contract:lifecycle.selected_delta",
                 rationale=(
-                    "The unique lifecycle owner freezes/resumes a bounded batch, checkpoints exact item results, "
-                    "and projects only impact-scoped retrieval safety while the prior generation remains current."
+                    "The unique lifecycle owner freezes/resumes a bounded batch, binds each schema-less unbound "
+                    "candidate as exact upgrade work before catalog loading, checkpoints exact item results, and "
+                    "projects only impact-scoped retrieval safety while the prior generation remains current."
                 ),
             ),
             MeshClosureTransition(
@@ -420,8 +553,8 @@ def closure_model(models: tuple[ChildModelEvidence, ...]) -> MeshClosureModel:
             ),
             MeshClosureTransition(
                 "authority_commits_complete_generation",
-                consumes=("exact_model_revision", "exact_mesh_revision", "structural_diagnostic", "retrieval_eligibility_snapshot"),
-                emits=("model_generation_committed", "model_binding_validated", "rollback_safe"),
+                consumes=("exact_model_revision", "exact_mesh_revision", "structural_diagnostic", "retrieval_eligibility_snapshot", "raw_candidate_upgrade_frozen"),
+                emits=("model_generation_committed", "model_binding_validated", "raw_candidate_current_projection_published", "rollback_safe"),
                 consumer_model_id=AUTHORITY,
                 code_contract_id="contract:authority.complete_generation",
                 rationale="The child authority model validates and stages one complete generation or safe rollback.",

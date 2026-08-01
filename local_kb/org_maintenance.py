@@ -214,12 +214,71 @@ def build_organization_cleanup_review(proposal: dict[str, Any]) -> dict[str, Any
             selected_set.remove(action_id)
             decision_row["decision"] = "blocked_evidence"
             decision_row["reason"] = "Another selected lifecycle action changes this packet input first; reopen the merge/split packet against the rebuilt source generation."
+
+    # A proposal may contain several individually valid merge/split packets whose
+    # inputs overlap.  Applying the first packet changes the generation observed
+    # by every later overlapping packet, so selecting all of them would make an
+    # exact-selected apply impossible by construction.  Keep the deterministic
+    # proposal order and select a maximal non-overlapping packet set; deferred
+    # packets remain visible and must be rebuilt from the next source generation.
+    reserved_packet_paths: set[str] = set()
+    for action_id in selected_action_ids:
+        action = action_by_id.get(action_id, {})
+        if action_id not in selected_set or str(action.get("action_type") or "") not in {"merge-cards", "split-card"}:
+            continue
+        packet = action.get("apply_packet") if isinstance(action.get("apply_packet"), dict) else {}
+        input_paths = {
+            str(item.get("path") or "").replace("\\", "/")
+            for item in packet.get("inputs") or []
+            if isinstance(item, dict) and str(item.get("path") or "")
+        }
+        output_paths = {
+            str(item.get("target_path") or "").replace("\\", "/")
+            for item in packet.get("outputs") or []
+            if isinstance(item, dict) and str(item.get("target_path") or "")
+        }
+        packet_paths = input_paths | output_paths
+        conflicts = sorted(packet_paths & reserved_packet_paths)
+        if conflicts:
+            selected_set.remove(action_id)
+            decision_row = next(
+                (row for row in decisions if str(row.get("action_id") or "") == action_id),
+                None,
+            )
+            if decision_row is not None:
+                decision_row["decision"] = "blocked_evidence"
+                decision_row["reason"] = (
+                    "Another selected merge/split packet changes the same materialized path in this batch "
+                    f"({', '.join(conflicts)}); reopen this packet against the next source generation."
+                )
+            continue
+        reserved_packet_paths.update(packet_paths)
+
     selected_action_ids = [item for item in selected_action_ids if item in selected_set]
     selected_action_types = {
         str(action_by_id[item].get("action_type") or "")
         for item in selected_action_ids
         if item in action_by_id
     }
+    selected_actions = [action_by_id[item] for item in selected_action_ids if item in action_by_id]
+    allow_trusted = any(
+        str(action.get("target_path") or "").replace("\\", "/").startswith("kb/main/")
+        or any(
+            str(output.get("target_path") or "").replace("\\", "/").startswith("kb/main/")
+            for output in (
+                action.get("apply_packet", {}).get("outputs")
+                if isinstance(action.get("apply_packet"), dict)
+                else []
+            ) or []
+            if isinstance(output, dict)
+        )
+        for action in selected_actions
+    )
+    allow_delete = any(str(action.get("action_type") or "") == "delete-card" for action in selected_actions)
+    allow_promote = any(
+        str(action.get("action_type") or "") in {"accept-import", "promote-card"}
+        for action in selected_actions
+    )
 
     return {
         "decision_count": len(decisions),

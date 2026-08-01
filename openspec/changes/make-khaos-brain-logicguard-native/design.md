@@ -87,7 +87,36 @@ Any conflict or write failure leaves the prior complete generation authoritative
 
 Sleep consumes lifecycle-selected deltas and typed Dream handoffs. For each affected predictive unit it decides whether to create, revise, merge, supersede, or leave unchanged. It uses LogicGuard diagnostics/gap ledgers to identify missing evidence, warrants, assumptions, opposition, boundaries, duplicate support, and unsupported cross-model relations. It commits model/mesh revisions and publishes projections/index only through the existing Sleep transaction and watermark boundary.
 
+Foreground postflight intake is observation-only. The canonical launcher exposes
+structured `feedback` but no direct candidate-capture command, and the installed
+recorder appends exactly one history event without changing card, model, mesh, or
+active-index authority. A raw candidate left by an older or external writer is
+upgrade input for the next Sleep batch, not a readable legacy card. Sleep freezes
+the exact raw path and bytes as an explicit work item, excludes only that named
+path while validating the prior current generation, and then replaces it through
+the same model-first transaction that publishes the current projection and index.
+An unsupported declared schema or a schema-less card carrying only part of a
+current authority binding blocks visibly instead of being guessed. If a batch was
+already frozen by the pre-fix lifecycle before this inventory rule existed, one
+resume may bind the exact discovered residual to that still-open batch and records
+the exceptional omission repair in its immutable receipt. Sleep must bind every
+accepted raw candidate to the current projection schema and LogicGuard generation
+before retrieval can admit it. Normal runtime does not retain a direct candidate
+writer, alias, compatibility reader, or fallback reader.
+
 Dream pins one exact mesh revision and selects high-value open gaps. It may materialize a bounded neighborhood, remove/override evidence, activate rebuttals, replace a model pin in simulation, or test edge removal. It writes only sandbox evidence, a simulation receipt, and at most one idempotent typed Sleep handoff per evidence fingerprint. It never commits a `FileModelStore`/`FileModelMeshStore` transaction or writes YAML/index authority.
+
+The Dream opportunity scan may inspect the full current evidence inventory, but
+the durable run artifact is a bounded diagnostic projection rather than a copy
+of every historical action. Exact full-inventory identity is preserved as a
+count plus digest and the stable fingerprint set. At most 64 ranked, selected,
+or prior-closure examples are written to `opportunities.json`, while at most
+four experiments may execute. Source actions retain exact event and task-summary
+counts/digests with only small human-readable samples. This closes the observed
+`native-kb-sleep-maintenance-20260801T103457272618Z-dde8644f` failure, where
+Sleep published generation 167 successfully but Dream wrote a 44 MB, 3,019-row
+opportunity ocean and the combined native owner hit its 900-second hard timeout
+before the cycle receipt could close.
 
 ```mermaid
 flowchart LR
@@ -276,6 +305,14 @@ subreceipt is sealed. A process cleanup uncertainty, corrupt authority, or open
 writer lease blocks unsafe descendants; an ordinary bounded Dream experiment
 failure does not discard independent Sleep work.
 
+The combined local task has a route-specific 2,400-second native budget and a
+2,700-second enclosing-owner budget. The existing 660-second cooperative Sleep
+deadline still stops admitting new bounded work; the larger hard budget covers
+an already-started atomic publication plus the bounded Dream phase. The shared
+aggregate and installer owners remain larger than both. A hard timeout still
+fails visibly and requires confirmed zero descendants; the extra budget is not
+a success inference or retry path.
+
 The organization task owns a separate non-overlapping organization lease. Its
 first phase syncs and atomically activates the complete foreign snapshot; later
 phases reuse the existing organization maintenance and contribution owners,
@@ -310,6 +347,15 @@ source-qualified `result_ref`; a foreign row additionally binds organization id,
 snapshot generation and manifest digest, card/source hashes, bundle digest, and
 exact LogicGuard binding. UI, CLI, task use, and later outcome validation consume
 that same receipt instead of launching a second local-only search.
+
+The canonical machine response is one versioned search envelope, not a bare
+result list. It always contains `results`, `organization_status`, the combined
+`retrieval_receipt`, and `no_card`. `organization_status` remains present when
+local results succeed, so a missing, stale, malformed, or incompatible
+organization snapshot cannot be mistaken for a healthy empty organization
+match. The text projection renders the same source status and reason. There is
+no diagnostic opt-in flag and no compatibility reader for the retired bare-list
+shape.
 
 ### 15. Foreign-card experience is recorded in four distinct stages
 
@@ -358,6 +404,43 @@ mapping, model/mesh reconstruction, rollback inventory, and post-apply checks.
 Insufficient evidence produces a concrete required input and reopen predicate,
 not permanent generic `watch` state. Normal snapshot construction reads only the
 current organization contract after the versioned cutover.
+
+One organization source generation selects a deterministic maximal set of
+non-overlapping merge/split packets. If two otherwise ready packets read or
+write the same materialized card path, the earlier stable proposal-order packet
+may be selected and the later packet is explicitly deferred for regeneration
+against the next source generation. A batch MUST NOT select packets that make
+one another stale and then describe the resulting partial apply as success.
+
+The maintenance publication inventory is the union of all materialized paths in
+the pre-apply catalog and post-apply catalog, plus current manifests, audit rows,
+and removed imports. This inventory intentionally includes deleted card,
+projection, model, mesh, and bundle paths. The branch commit, pre-push readback,
+and base-branch restoration all consume that exact inventory, and the mirror
+must be clean after restoration. Structural consolidation may change the active
+card count; acceptance compares every pre-maintenance identity with one exact
+preserved, migrated, merged, split, rejected, deprecated, or deleted disposition
+rather than demanding equal before/after counts.
+
+The GitHub checker installed in the organization repository is a projection of
+this same current source contract, not an independent legacy policy. It accepts
+maintenance-owned `kb/main`, card-bound LogicGuard bundle, catalog, manifest,
+and cleanup-audit paths only as one complete reviewed packet. Generated YAML and
+JSON transport text uses one declared UTF-8/LF-normalized digest policy, so a
+Windows CRLF worktree and GitHub's Linux LF checkout validate the same content
+without weakening semantic, binding, bundle, or inventory checks. A local
+successful wrapper, pushed branch, PR, or auto-merge label proves readiness only;
+adoption requires a successful remote check and a merged organization-main
+commit, after which a later organization sync may activate the corresponding
+snapshot v3.
+
+The automatic maintenance lane keeps pull-request and required-status-check
+protection, but its branch policy requires zero human approvals. GitHub Actions
+cannot approve its own pull request, so a required human review is a visible
+configuration failure rather than a reason to wait silently. The repair is the
+declared repository configuration (`required_pull_request_reviews: null`), not
+an administrator merge bypass; `--admin`, force push, and direct unreviewed
+adoption remain outside the automatic route.
 
 ### 18. Cycle receipt schema v3 binds execution identity
 

@@ -50,6 +50,11 @@ Independent maintenance thread:
 3. Infer up to three alternative routes when the task may be reachable through more than one conceptual direction.
 4. If sub-agents are available and the task is non-trivial, let `kb-scout` handle the initial scan. Otherwise run:
    `python .agents/skills/local-kb-retrieve/scripts/kb_search.py --route-hint "<primary route>" --query "<task summary plus useful keywords>" --top-k 5`
+   With `--json`, consume the single current `khaos-brain.search-result.v1`
+   envelope. Read `results` and `organization_status` together: valid local
+   results do not prove that the organization snapshot is current. The search
+   command has no optional receipt mode; its default envelope already includes
+   the combined `retrieval_receipt` and `no_card`.
 5. If this is a long mixed plan, mark phase-change KB checkpoints and run a fresh route-specific retrieval before each new action class or risk surface. Skip repeated checks for same-type work where the first retrieval still applies.
 6. Read the returned entries and their exact `logicguard_context`: pinned authority generation, model and mesh revisions, root node or ArgumentBlock, typed nodes and edges, explicit gaps, and grounded mesh neighborhood.
 7. Prefer entries with stronger route alignment, `status: trusted`, and higher `confidence`.
@@ -58,7 +63,7 @@ Independent maintenance thread:
 10. Before finalizing any non-trivial task, run one explicit KB postflight check. First ask whether Codex exposed mistake-first evidence: its own mistake, weak path, missed instruction, failed validation, tool or skill misuse, user correction, or later correction episode. Treat that as the highest-priority observation evidence. Then ask whether this task exposed a reusable lesson, a skill/plugin or subagent/delegation usage lesson, a miss, a route gap, a card weakness, or a KB-process failure.
 11. If the answer is yes, let `kb-recorder` append structured feedback with one caller-stable event id so the scheduled AI consolidation flow can process it later. Give the postflight launcher at least 180 seconds because the sole current writer may use up to 120 seconds to acquire its lock and needs bounded completion headroom. Keep that id until terminal JSON. If the command is interrupted, never start a second writer: first confirm the original process tree has zero descendant processes, then inspect the same event id; never retry with a new id. `success`, `failed`, and `timeout_unknown` are distinct, and only `success` proves one durable event plus its matching terminal receipt. When more than one card materially influenced the task, record all of those entry ids rather than only the top hit.
 12. If the answer is no, make that an explicit conclusion rather than silently forgetting to check.
-13. If a reusable new lesson emerges during the task, record it into candidates or structured history rather than trying to fully consolidate it inside the active task thread.
+13. If a reusable new lesson emerges during the task, append one structured history observation rather than creating or rewriting a candidate in the active task thread. Sleep alone admits that observation, creates or updates a candidate, and publishes its current LogicGuard model and index generation.
 14. When a reusable lesson is being recorded, do not stop at a generic summary. Preserve predictive-model evidence: the scenario, the action or condition, the observed result, and how future Codex behavior should use that result.
 15. When the task involved a weaker path, mistake, or later correction, preserve both sides of the contrast whenever possible: what the earlier action was, what weaker result it led to, what changed, and what improved afterward. These contrastive observations are often the easiest ones to turn into future card alternatives. Successful reusable patterns may still be recorded; mistake-first priority is not a rule to suppress success observations.
 16. Preserve `thread_ref`, `project_ref`, and `workspace_root` whenever they are known. Sleep maintenance should be able to reconstruct same-project chronology and correction episodes rather than reading every observation as an isolated note.
@@ -107,7 +112,7 @@ Output discipline:
 - If the entries are weak or ambiguous, say so.
 - Do not expose private entry content unless the user is authorized to see it.
 - User-specific lessons should default to private handling and should describe what this user is likely to prefer or reject in a concrete task context, not who the user “is” in general.
-- Keep sidecar agents scoped: `kb-scout` should be read-mostly and `kb-recorder` should default to history, comments, and candidate writes rather than broad structural edits.
+- Keep sidecar agents scoped: `kb-scout` should be read-mostly and `kb-recorder` should write only bounded history observations and comments. Candidate, model, mesh, and index writes belong to Sleep.
 - Record subagent/delegation usage lessons when sidecars materially helped or hurt speed, main-thread focus, context isolation, verification, or integration.
 - In a maintenance thread, be explicit about what the tooling actually changed versus what still remains a proposal.
 - For non-trivial work, treat the explicit postflight observation check as part of done rather than optional housekeeping.
@@ -117,3 +122,6 @@ Output discipline:
 - Runtime-behavior lessons should be written as predictions about this runtime under concrete conditions, not as vague folklore about “LLMs in general.”
 - Cross-index maintenance should only strengthen direct alternate retrieval paths from repeated actual route evidence in low-risk auto-apply. Pruning or broader route cleanup should remain proposal-first until stronger removal evidence exists.
 - Search has one current CLI grammar: use the explicit search entrypoint with `--route-hint`. Removed argument aliases are rejected and are not runtime migration paths.
+- Search has one current JSON shape: the versioned envelope always exposes
+  `organization_status`, `results`, `retrieval_receipt`, and `no_card`. Never
+  interpret a non-empty local `results` list as organization-source success.

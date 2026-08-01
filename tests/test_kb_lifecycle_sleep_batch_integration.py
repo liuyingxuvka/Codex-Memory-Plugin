@@ -6,10 +6,13 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
+import yaml
+
 from local_kb.active_index import active_index_path
 from local_kb.feedback import build_observation, record_observation
 from local_kb.lifecycle import run_incremental_sleep
 from local_kb.sleep_batch import load_current_sleep_batch
+from local_kb.store import load_yaml_file
 from tests.current_runtime_helpers import activate_current_kb_runtime
 
 
@@ -106,6 +109,116 @@ def test_later_arrival_does_not_expand_an_open_frozen_batch() -> None:
         assert next_cycle["batch_id"] != resumed["batch_id"]
         assert next_cycle["target_batch_size"] == 1
         assert next_cycle["output_watermark"] == 3
+
+
+def test_new_sleep_batch_freezes_and_upgrades_one_raw_candidate() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        repo_root = Path(tmp)
+        activate_current_kb_runtime(repo_root)
+        raw_path = repo_root / "kb" / "candidates" / "raw-upgrade.yaml"
+        raw_path.parent.mkdir(parents=True, exist_ok=True)
+        raw_path.write_text(
+            yaml.safe_dump(
+                {
+                    "id": "raw-upgrade",
+                    "title": "Raw candidate awaiting Sleep",
+                    "type": "pattern",
+                    "scope": "private",
+                    "domain_path": ["system", "sleep"],
+                    "cross_index": [],
+                    "related_cards": [],
+                    "tags": ["sleep"],
+                    "trigger_keywords": ["raw-upgrade"],
+                    "if": {"notes": "When a raw candidate remains after an interrupted writer."},
+                    "action": {"description": "Let Sleep replace it directly with the current projection."},
+                    "predict": {"expected_result": "One current candidate projection is published.", "alternatives": []},
+                    "use": {"guidance": "Use only after Sleep publication."},
+                    "confidence": 0.5,
+                    "source": [{"origin": "test", "date": "2026-08-01"}],
+                    "status": "candidate",
+                    "updated_at": "2026-08-01",
+                    "decision_deadline": "2026-08-08T00:00:00+00:00",
+                    "required_skills": ["logicguard"],
+                },
+                sort_keys=False,
+                allow_unicode=True,
+            ),
+            encoding="utf-8",
+        )
+
+        receipt = run_incremental_sleep(repo_root, run_id="sleep-upgrade-raw")
+
+        assert receipt["final_run_state"] == "completed"
+        assert receipt["raw_candidate_repair"]["status"] == "upgraded"
+        assert receipt["raw_candidate_repair"]["count"] == 1
+        assert receipt["raw_candidate_repair"]["batch_bound"] is True
+        assert receipt["raw_candidate_repair"]["legacy_plan_omission_repaired"] is False
+        assert any(
+            item.startswith("raw-candidate-upgrade:")
+            for item in receipt["batch_plan"]["selected_item_ids"]
+        )
+        assert load_yaml_file(raw_path)["projection_schema_version"] == (
+            "khaos-brain.card-projection.v1"
+        )
+
+
+def test_resume_repairs_a_raw_candidate_omitted_by_an_already_frozen_batch() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        repo_root = Path(tmp)
+        activate_current_kb_runtime(repo_root)
+        _record_history_only_observation(repo_root, "frozen before raw repair discovery")
+        progress = run_incremental_sleep(
+            repo_root,
+            run_id="sleep-freeze-before-raw",
+            soft_deadline_seconds=0,
+        )
+        assert progress["final_run_state"] == "progress_saved"
+        assert not any(
+            item.startswith("raw-candidate-upgrade:")
+            for item in progress["batch_plan"]["selected_item_ids"]
+        )
+
+        raw_path = repo_root / "kb" / "candidates" / "late-raw.yaml"
+        raw_path.parent.mkdir(parents=True, exist_ok=True)
+        raw_path.write_text(
+            yaml.safe_dump(
+                {
+                    "id": "late-raw",
+                    "title": "Late raw candidate",
+                    "type": "pattern",
+                    "scope": "private",
+                    "domain_path": ["system", "sleep"],
+                    "cross_index": [],
+                    "related_cards": [],
+                    "tags": ["sleep"],
+                    "trigger_keywords": ["late-raw"],
+                    "if": {"notes": "When repair input appears after a batch was frozen."},
+                    "action": {"description": "Repair it without expanding the frozen observation list."},
+                    "predict": {"expected_result": "The same batch publishes one current projection.", "alternatives": []},
+                    "use": {"guidance": "Use only after current publication."},
+                    "confidence": 0.5,
+                    "source": [{"origin": "test", "date": "2026-08-01"}],
+                    "status": "candidate",
+                    "updated_at": "2026-08-01",
+                    "decision_deadline": "2026-08-08T00:00:00+00:00",
+                    "required_skills": ["logicguard"],
+                },
+                sort_keys=False,
+                allow_unicode=True,
+            ),
+            encoding="utf-8",
+        )
+
+        resumed = run_incremental_sleep(repo_root, run_id="sleep-resume-with-late-raw")
+
+        assert resumed["final_run_state"] == "completed"
+        assert resumed["batch_id"] == progress["batch_id"]
+        assert resumed["raw_candidate_repair"]["status"] == "upgraded"
+        assert resumed["raw_candidate_repair"]["batch_bound"] is False
+        assert resumed["raw_candidate_repair"]["legacy_plan_omission_repaired"] is True
+        assert load_yaml_file(raw_path)["projection_schema_version"] == (
+            "khaos-brain.card-projection.v1"
+        )
 
 
 def test_blocked_item_does_not_prevent_completed_siblings_from_publishing() -> None:

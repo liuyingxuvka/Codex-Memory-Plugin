@@ -8,12 +8,14 @@ from pathlib import Path
 from unittest.mock import patch
 
 from local_kb.org_migration import (
+    ORG_BUILDER_MIGRATION_ID,
+    RETIRED_ORG_SOURCE_BUILDER_V1,
     _copy_backup,
     _native_filesystem_path,
     _snapshot_root,
     migrate_organization_repo_to_current,
 )
-from local_kb.org_source_contract import load_current_catalog, materialize_current_source
+from local_kb.org_source_contract import ORG_SOURCE_BUILDER, load_current_catalog, materialize_current_source
 from local_kb.org_sources import (
     _run_git,
     clone_or_fetch_organization_repo,
@@ -51,6 +53,21 @@ class OrganizationSourceTests(unittest.TestCase):
         self.assertEqual(result["trusted_count"], 1)
         self.assertEqual(result["candidate_count"], 1)
         self.assertTrue(result["source_generation_id"])
+
+    def test_source_digest_is_portable_across_windows_and_linux_newlines(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._write_valid_org_repo(root)
+            catalog = load_current_catalog(root)
+            source = root / catalog["cards"][0]["source_path"]
+            source.write_bytes(source.read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
+            windows = validate_organization_repo(root)
+            source.write_bytes(source.read_bytes().replace(b"\r\n", b"\n"))
+            linux = validate_organization_repo(root)
+
+        self.assertEqual(ORG_SOURCE_BUILDER["text_digest_policy"], "utf8-lf-v1")
+        self.assertTrue(windows["ok"], windows["errors"])
+        self.assertTrue(linux["ok"], linux["errors"])
 
     def test_normal_runtime_rejects_raw_schema1_and_uncataloged_cards(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -93,6 +110,30 @@ class OrganizationSourceTests(unittest.TestCase):
         self.assertTrue(obsolete_missing)
         self.assertTrue(catalog_exists)
         self.assertTrue(no_legacy_metadata)
+
+    def test_migration_directly_rebuilds_exact_retired_builder_v1(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            with patch(
+                "local_kb.org_source_contract.ORG_SOURCE_BUILDER",
+                RETIRED_ORG_SOURCE_BUILDER_V1,
+            ):
+                materialize_current_source(
+                    root,
+                    organization_id="sandbox",
+                    cards=[("kb/main/model.yaml", base_card("model", "Model", "Use model."))],
+                )
+            before = validate_organization_repo(root)
+
+            result = migrate_organization_repo_to_current(root)
+            after = validate_organization_repo(root)
+            catalog = load_current_catalog(root)
+
+        self.assertFalse(before["ok"])
+        self.assertTrue(result["ok"], result)
+        self.assertEqual(result["migration_id"], ORG_BUILDER_MIGRATION_ID)
+        self.assertTrue(after["ok"], after["errors"])
+        self.assertEqual(catalog["builder_identity"], ORG_SOURCE_BUILDER)
 
     def test_migration_freezes_yaml_timestamps_into_portable_bundle_scalars(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -10,7 +10,11 @@ import yaml
 
 from local_kb.active_index import active_index_corruption_path, active_index_path, mark_active_index_corruption
 from local_kb.dream import (
+    DREAM_MAX_RECORDED_OPPORTUNITIES,
+    _bounded_opportunity_projection,
     _logicguard_dream_probe,
+    _prepare_opportunities,
+    build_route_candidate_opportunities,
     dream_run_dir,
     run_dream_maintenance as _run_dream_maintenance,
 )
@@ -65,6 +69,59 @@ def write_dream_process_entry(repo_root: Path) -> None:
 
 
 class DreamMaintenanceTests(unittest.TestCase):
+    def test_large_opportunity_ocean_is_compacted_before_it_becomes_a_run_artifact(self) -> None:
+        actions = []
+        for index in range(500):
+            actions.append(
+                {
+                    "action_type": "consider-new-candidate",
+                    "action_key": f"route-action-{index}",
+                    "event_count": 200,
+                    "event_ids": [f"event-{index}-{item}" for item in range(200)],
+                    "task_summaries": [
+                        f"long repeated task summary {index} {item} " + ("x" * 200)
+                        for item in range(200)
+                    ],
+                    "target": {
+                        "kind": "route",
+                        "ref": f"system/large-ocean/route-{index}",
+                    },
+                    "candidate_scaffold_preview": {
+                        "title": f"route {index}",
+                        "if": {"notes": "bounded signal"},
+                        "action": {"description": "run one bounded validation"},
+                        "predict": {"expected_result": "one compact result"},
+                    },
+                    "apply_eligibility": {"eligible": False},
+                }
+            )
+
+        opportunities = build_route_candidate_opportunities(actions, [])
+        prepared = _prepare_opportunities(
+            opportunities,
+            authority_pin={
+                "generation_id": "fixture-generation",
+                "pointer_digest": "sha256:fixture-generation",
+            },
+        )
+        prepared.sort(key=lambda item: item["route_ref"])
+        recorded = _bounded_opportunity_projection(prepared, selected=prepared[:4])
+        encoded = json.dumps(
+            {
+                "opportunity_count": len(prepared),
+                "recorded_opportunity_count": len(recorded),
+                "opportunities": recorded,
+            },
+            ensure_ascii=False,
+        ).encode("utf-8")
+
+        self.assertEqual(len(prepared), 500)
+        self.assertEqual(len(recorded), DREAM_MAX_RECORDED_OPPORTUNITIES)
+        self.assertLess(len(encoded), 1_000_000)
+        self.assertNotIn("event_ids", prepared[0]["source_action"])
+        self.assertEqual(len(prepared[0]["source_action"]["event_id_sample"]), 8)
+        self.assertEqual(len(prepared[0]["task_summaries"]), 8)
+
     def test_dream_rejects_canonical_write_request_before_creating_run_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             repo_root = Path(tmp_dir)

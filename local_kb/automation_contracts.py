@@ -18,11 +18,33 @@ from typing import Any, Mapping
 
 STANDARD_NATIVE_TIMEOUT_SECONDS = 900
 SLEEP_NATIVE_SOFT_DEADLINE_SECONDS = 660
+SLEEP_CYCLE_NATIVE_TIMEOUT_SECONDS = 2400
 UPDATE_NATIVE_TIMEOUT_SECONDS = 10800
 STANDARD_OWNER_TIMEOUT_SECONDS = 1200
+SLEEP_CYCLE_OWNER_TIMEOUT_SECONDS = 2700
 UPDATE_OWNER_TIMEOUT_SECONDS = 11100
 AGGREGATE_ASSURANCE_TIMEOUT_SECONDS = 16200
 PRE_RESTORE_ASSURANCE_TIMEOUT_SECONDS = 16800
+
+
+def native_timeout_seconds(skill_id: str) -> int:
+    """Return the hard timeout owned by one exact native route."""
+
+    if skill_id == "kb-sleep-maintenance":
+        return SLEEP_CYCLE_NATIVE_TIMEOUT_SECONDS
+    if skill_id == "khaos-brain-update":
+        return UPDATE_NATIVE_TIMEOUT_SECONDS
+    return STANDARD_NATIVE_TIMEOUT_SECONDS
+
+
+def owner_timeout_seconds(skill_id: str) -> int:
+    """Return the enclosing owner timeout with cleanup headroom."""
+
+    if skill_id == "kb-sleep-maintenance":
+        return SLEEP_CYCLE_OWNER_TIMEOUT_SECONDS
+    if skill_id == "khaos-brain-update":
+        return UPDATE_OWNER_TIMEOUT_SECONDS
+    return STANDARD_OWNER_TIMEOUT_SECONDS
 
 
 # One target-neutral policy surface is shared by contract generation, upgrade
@@ -69,6 +91,7 @@ AUTOMATION_COMPLETION_CONTRACTS: dict[str, dict[str, Any]] = {
         "entrypoint_path": ".agents/skills/local-kb-retrieve/scripts/kb_sleep.py",
         "native_test_files": [
             "tests/test_kb_automation_native_receipts.py",
+            "tests/test_process_control.py",
             "tests/test_sleep_batch.py",
             "tests/test_kb_lifecycle_sleep_batch_integration.py",
             "tests/test_kb_active_index_generation.py",
@@ -101,6 +124,7 @@ AUTOMATION_COMPLETION_CONTRACTS: dict[str, dict[str, Any]] = {
             "explicit model gaps",
             "stage models, meshes, deterministic projections, the exact active index",
             "committed watermark and prior validated generation unchanged",
+            "2400-second native timeout",
         ],
         "obligations": [
             _obligation("lane-delta-intake", "intake", "input", "Acquire or safely recover the lane, then bind the exact open batch or freeze one finite batch after the committed watermark.", "test_observation_is_admitted_and_disposed_by_next_sleep", "test_sleep_recovers_zero_watermark_by_skipping_terminal_history", "test_fresh_lane_lock_with_dead_owner_is_recovered_immediately"),
@@ -117,6 +141,7 @@ AUTOMATION_COMPLETION_CONTRACTS: dict[str, dict[str, Any]] = {
             _obligation("remaining-reconciliation", "verify", "validation", "Reconcile previous, newly eligible, opening, settled, closing, and net-reduction counts under one versioned rule.", "test_target_is_twice_new_items_clamped_to_tested_bounds", "test_next_cycle_compares_closing_remainder_and_reports_growth", "test_sleep_progress_saved_receipt_rejects_remaining_mismatch"),
             _obligation("downstream-not-run", "verify", "branch", "On progress_saved, completed-with-blocks, failed, open-batch, or backlog-growing outcomes, prove only the local Dream phase was not run; the independent organization cycle remains untouched.", "test_soft_stop_preserves_generation_and_resumes_only_pending_frozen_items", "test_blocked_item_does_not_prevent_completed_siblings_from_publishing", "test_sleep_progress_saved_receipt_rejects_downstream_stage_that_ran", "test_sleep_downstream_gate_is_local_only"),
             _obligation("failure-fail-closed", "verify", "recovery", "Keep the committed watermark and prior validated generation unchanged on progress_saved or failure, isolate malformed siblings without replaying completed work, and never infer hard-timeout success.", "test_malformed_history_is_isolated_without_advancing_watermark", "test_sleep_progress_saved_receipt_binds_frozen_batch_and_local_dream_gate"),
+            _obligation("timeout-tree-cleanup", "verify", "recovery", "Give the complete local Sleep plus Dream cycle a 2400-second native budget inside a 2700-second owner budget, and prove zero descendants after any timeout.", "test_sleep_timeout_hierarchy_preserves_cleanup_margin", "test_sleep_wrapper_uses_cycle_budget_and_declares_the_complete_timeout_tree"),
             _obligation("depth-calibration", "verify", "validation", "Reject shallow proposal-only completion and require the full native receipt.", "test_sleep_contract_is_deep_and_current", "test_sleep_shallow_contract_is_rejected"),
         ],
     },
@@ -127,6 +152,7 @@ AUTOMATION_COMPLETION_CONTRACTS: dict[str, dict[str, Any]] = {
         "native_test_files": [
             "tests/test_kb_dream.py",
             "tests/test_khaos_logicguard_models.py",
+            "tests/test_process_control.py",
         ],
         "prompt_markers": [
             "stable fingerprints",
@@ -139,10 +165,13 @@ AUTOMATION_COMPLETION_CONTRACTS: dict[str, dict[str, Any]] = {
             "rebuttal strengthening",
             "typed idempotent Sleep handoffs",
             "must not directly write cards",
+            "full opportunity inventory",
+            "at most 64",
         ],
         "obligations": [
             _obligation("lane-evidence-intake", "intake", "input", "Acquire the Dream lane and load current opportunity evidence.", "test_dream_run_recovers_stale_lane_lock_instead_of_skipping"),
             _obligation("stable-fingerprint", "execute", "semantic", "Fingerprint decision-relevant evidence without volatile run metadata.", "test_dream_run_skips_prior_passed_sandbox_validation"),
+            _obligation("bounded-opportunity-artifact", "execute", "workflow", "Evaluate the full exact opportunity inventory but persist at most 64 representative opportunity rows plus exact count, digest, and omission evidence.", "test_large_opportunity_ocean_is_compacted_before_it_becomes_a_run_artifact"),
             _obligation("bounded-selection", "execute", "branch", "Select a small valuable route-deduplicated experiment batch.", "test_dream_selection_uses_bounded_route_deduped_batch"),
             _obligation("sandbox-experiment", "execute", "workflow", "Execute the native bounded experiment or candidate-validation path.", "test_dream_run_can_validate_existing_candidate_entry"),
             _obligation("exact-model-simulation", "execute", "semantic", "Pin one exact LogicGuard generation, model revision, root block, and mesh revision, then run a bounded applicable suite covering evidence removal, assumption removal, rebuttal strengthening, boundary pressure, cross-edge removal, and neighbor-pin replacement only against that immutable snapshot.", "test_dream_simulation_is_exact_and_does_not_advance_mesh", "test_dream_probe_covers_model_roles_cross_edge_and_neighbor_pin"),
@@ -151,6 +180,7 @@ AUTOMATION_COMPLETION_CONTRACTS: dict[str, dict[str, Any]] = {
             _obligation("no-direct-knowledge-write", "verify", "scope", "Never mutate cards, candidates, confidence, or central predictive history directly.", "test_dream_run_records_history_only_for_taxonomy_gap"),
             _obligation("canonical-generation-unchanged", "verify", "scope", "Prove that Dream did not advance or rewrite canonical model or mesh authority and hand only typed model-gap findings to Sleep.", "test_dream_simulation_is_exact_and_does_not_advance_mesh", "test_dream_hands_single_adjacent_observation_to_sleep"),
             _obligation("terminal-receipt", "verify", "closure", "Return a bounded no-op, handoff, or failure receipt rather than partial progress.", "test_dream_selects_multiple_valuable_experiments_in_plan_order"),
+            _obligation("timeout-tree-cleanup", "verify", "recovery", "Keep the Dream native and owner timeouts strictly below aggregate and installer owners, and prove zero descendants after any timeout.", "test_dream_timeout_hierarchy_preserves_cleanup_margin"),
             _obligation("depth-calibration", "verify", "validation", "Reject shallow selection-only completion and require the full native receipt.", "test_dream_contract_is_deep_and_current", "test_dream_shallow_contract_is_rejected"),
         ],
     },
@@ -160,6 +190,7 @@ AUTOMATION_COMPLETION_CONTRACTS: dict[str, dict[str, Any]] = {
         "entrypoint_path": "scripts/kb_org_outbox.py",
         "native_test_files": [
             "tests/test_org_automation.py",
+            "tests/test_process_control.py",
             "tests/test_org_outbox.py",
             "tests/test_skill_sharing.py",
             "tests/test_e2e_skill_bundle_contribution_flow.py",
@@ -184,6 +215,7 @@ AUTOMATION_COMPLETION_CONTRACTS: dict[str, dict[str, Any]] = {
             _obligation("branch-pr-auto-merge", "execute", "side_effect", "Use the import branch, push/PR path, and auto-merge label only when checks allow.", "test_contribution_pr_and_label_are_check_gated", "test_create_pull_request_posts_pr_then_labels"),
             _obligation("postflight-terminal", "verify", "closure", "Record postflight and return a complete created/skipped/error receipt.", "test_contribution_records_postflight_on_non_skipped_success"),
             _obligation("lane-failure-recovery", "verify", "recovery", "Close the lane correctly and surface errors without partial success claims.", "test_contribution_sync_failure_releases_lane_and_returns_failed_terminal"),
+            _obligation("timeout-tree-cleanup", "verify", "recovery", "Keep contribution native and owner timeouts strictly below aggregate and installer owners, and prove zero descendants after any timeout.", "test_org_contribution_timeout_hierarchy_preserves_cleanup_margin"),
             _obligation("depth-calibration", "verify", "validation", "Reject shallow outbox-only completion and require the full native receipt.", "test_org_contribute_contract_is_deep_and_current", "test_org_contribute_shallow_contract_is_rejected"),
         ],
     },
@@ -193,6 +225,7 @@ AUTOMATION_COMPLETION_CONTRACTS: dict[str, dict[str, Any]] = {
         "entrypoint_path": "scripts/kb_org_maintainer.py",
         "native_test_files": [
             "tests/test_org_automation.py",
+            "tests/test_process_control.py",
             "tests/test_org_maintenance.py",
             "tests/test_org_cleanup.py",
             "tests/test_skill_sharing.py",
@@ -219,6 +252,7 @@ AUTOMATION_COMPLETION_CONTRACTS: dict[str, dict[str, Any]] = {
             _obligation("exact-selected-apply", "execute", "side_effect", "Apply only exact selected action ids and preserve local adoption authority.", "test_apply_rebuilds_current_source_and_applies_exact_selected_ids"),
             _obligation("postapply-merge-readiness", "verify", "validation", "Run post-apply organization checks and use their decision to gate the GitHub label.", "tests/test_org_automation.py::OrganizationAutomationTests::test_maintenance_postapply_readiness_controls_pr_and_label"),
             _obligation("postflight-terminal", "verify", "closure", "Record a complete no-op, applied, blocked, or failure receipt.", "test_maintenance_records_postflight_on_non_skipped_success"),
+            _obligation("timeout-tree-cleanup", "verify", "recovery", "Keep organization-maintenance native and owner timeouts strictly below aggregate and installer owners, and prove zero descendants after any timeout.", "test_org_maintenance_timeout_hierarchy_preserves_cleanup_margin"),
             _obligation("depth-calibration", "verify", "recovery", "Reject inspection-only completion and require the full native receipt.", "test_org_maintenance_contract_is_deep_and_current", "test_org_maintenance_shallow_contract_is_rejected"),
         ],
     },
@@ -229,6 +263,7 @@ AUTOMATION_COMPLETION_CONTRACTS: dict[str, dict[str, Any]] = {
         "native_test_files": [
             "tests/test_software_update.py",
             "tests/test_kb_automation_native_receipts.py",
+            "tests/test_process_control.py",
             "tests/test_codex_install.py",
             "tests/test_khaos_logicguard_migration.py",
             "tests/test_kb_upgrade_migration.py",
@@ -258,6 +293,7 @@ AUTOMATION_COMPLETION_CONTRACTS: dict[str, dict[str, Any]] = {
             _obligation("aggregate-hard-gates", "verify", "validation", "Require current target-owned migration, projection, FlowGuard, LogicGuard, retrieval, and installed-health evidence before restoration is authorized.", "test_manual_update_uses_ff_only_and_closes_natively", "test_consumer_assurance_failure_keeps_survivors_paused_and_marks_failed"),
             _obligation("restore-or-stay-paused", "verify", "branch", "Restore the exact captured automation state only after every target-owned hard gate passes; otherwise keep every survivor paused.", "test_manual_update_uses_ff_only_and_closes_natively", "test_consumer_assurance_failure_keeps_survivors_paused_and_marks_failed", "test_manual_update_restores_status_and_user_pause_independently"),
             _obligation("final-machine-receipt", "verify", "closure", "End an applicable manual route only after exact restoration readback, a final installed-health check, CURRENT state, and snapshot cleanup; only declared no-update may close earlier.", "test_manual_update_uses_ff_only_and_closes_natively", "test_all_legal_update_noops_perform_only_manual_gate", "test_update_operational_blockers_cannot_close_as_successful_noops", "test_native_update_runner_keeps_operational_blockers_unfinished"),
+            _obligation("timeout-tree-cleanup", "verify", "recovery", "Keep update native and owner timeouts strictly below aggregate and installer owners, and prove zero descendants after any timeout.", "test_update_timeout_hierarchy_preserves_cleanup_margin"),
             _obligation("depth-calibration", "verify", "reuse", "Reject check-only or install-only completion and require the full native receipt.", "test_update_contract_is_deep_and_current", "test_update_shallow_contract_is_rejected"),
         ],
     },

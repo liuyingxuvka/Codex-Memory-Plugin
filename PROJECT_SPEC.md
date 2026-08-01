@@ -302,7 +302,6 @@ The repository should be organized so the file system itself supports the concep
 │           ├─ kb_nav.py
 │           ├─ kb_search.py
 │           ├─ kb_feedback.py
-│           ├─ kb_capture_candidate.py
 │           ├─ kb_consolidate.py
 │           ├─ kb_dream.py
 │           ├─ kb_sleep.py

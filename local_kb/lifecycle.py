@@ -1346,6 +1346,7 @@ def _build_sleep_work_inventory(
     rows: list[dict[str, Any]],
     input_watermark: int,
     lifecycle_state: Mapping[str, Any],
+    raw_candidate_upserts: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> tuple[list[str], list[str], dict[str, dict[str, Any]]]:
     """Return one deterministic, de-duplicated backlog boundary for Sleep."""
 
@@ -1356,6 +1357,19 @@ def _build_sleep_work_inventory(
     newly_eligible: list[str] = []
     work: dict[str, dict[str, Any]] = {}
     claimed_observations: set[str] = set()
+
+    for relative_path, payload in sorted((raw_candidate_upserts or {}).items()):
+        item_id = (
+            "raw-candidate-upgrade:"
+            + content_fingerprint([relative_path, payload])[:24]
+        )
+        work[item_id] = {
+            "kind": "raw-candidate-upgrade",
+            "relative_path": str(relative_path),
+            "payload": dict(payload),
+        }
+        eligible.append(item_id)
+        newly_eligible.append(item_id)
 
     for handoff in pending_dream_handoffs(repo_root):
         handoff_id = str(handoff.get("handoff_id") or "").strip()
@@ -1510,7 +1524,9 @@ def _run_incremental_sleep_locked(
     from local_kb.calibration import plan_foreign_calibration
     from local_kb.history import record_history_event
     from local_kb.model_maintenance import (
+        discover_sleep_raw_candidate_upserts,
         load_current_model_entries,
+        load_current_model_entries_for_sleep_repair,
         publish_sleep_model_generation,
     )
     from local_kb.sleep_batch import (
@@ -1524,11 +1540,13 @@ def _run_incremental_sleep_locked(
     input_watermark = int(prior_sleep.get("committed_watermark") or 0)
     rows, parse_errors = _history_rows(repo_root)
     lifecycle_before = load_lifecycle_state(repo_root)
+    raw_candidate_upserts = discover_sleep_raw_candidate_upserts(repo_root)
     eligible_ids, newly_eligible_ids, work_inventory = _build_sleep_work_inventory(
         repo_root,
         rows=rows,
         input_watermark=input_watermark,
         lifecycle_state=lifecycle_before,
+        raw_candidate_upserts=raw_candidate_upserts,
     )
     current_batch = load_current_sleep_batch(repo_root)
     current_batch_id = (
@@ -1606,16 +1624,26 @@ def _run_incremental_sleep_locked(
         for key, value in lifecycle_before.get("foreign_entries", {}).items()
         if isinstance(value, Mapping)
     }
-    staged_model_upserts: dict[str, dict[str, Any]] = {}
+    staged_model_upserts: dict[str, dict[str, Any]] = {
+        path: dict(payload) for path, payload in raw_candidate_upserts.items()
+    }
     deferred_history_events: list[dict[str, Any]] = []
     candidate_catalog_entries: list[Any] | None = None
 
     def get_candidate_catalog_entries() -> list[Any]:
         nonlocal candidate_catalog_entries
         if candidate_catalog_entries is None:
-            candidate_catalog_entries, _generation = load_current_model_entries(
-                repo_root
-            )
+            if raw_candidate_upserts:
+                candidate_catalog_entries, _generation = (
+                    load_current_model_entries_for_sleep_repair(
+                        repo_root,
+                        replacing_paths=tuple(raw_candidate_upserts),
+                    )
+                )
+            else:
+                candidate_catalog_entries, _generation = load_current_model_entries(
+                    repo_root
+                )
         return candidate_catalog_entries
 
     def rehydrate(details: Mapping[str, Any]) -> None:
@@ -1695,6 +1723,36 @@ def _run_incremental_sleep_locked(
                 },
             )
             attempt_blocked += 1
+            continue
+
+        if work_item.get("kind") == "raw-candidate-upgrade":
+            relative_path = str(work_item.get("relative_path") or "")
+            payload = work_item.get("payload", {})
+            if not relative_path or not isinstance(payload, Mapping):
+                raise ValueError(
+                    f"Frozen raw candidate repair {item_id!r} is incomplete"
+                )
+            current_batch = record_sleep_batch_item_result(
+                repo_root,
+                batch_id=batch_id,
+                item_id=item_id,
+                status="completed",
+                details={
+                    "source_kind": "raw-candidate-upgrade",
+                    "lifecycle_events": [],
+                    "model_upserts": {relative_path: dict(payload)},
+                    "deferred_history_events": [],
+                    "handoff_acknowledgement": {},
+                    "counters": {
+                        "processed_observations": 0,
+                        "candidate_created": 0,
+                        "candidate_reused": 0,
+                        "foreign_calibrated": 0,
+                        "raw_candidate_upgraded": 1,
+                    },
+                },
+            )
+            attempt_completed += 1
             continue
 
         observation = work_item.get("observation", {})
@@ -1876,6 +1934,13 @@ def _run_incremental_sleep_locked(
             "retryable": True,
             "reason": "sleep-progress-saved",
             "model_generation": _sleep_not_run("batch has pending frozen items"),
+            "raw_candidate_repair": {
+                "schema_version": "khaos-brain.sleep-raw-candidate-repair.v1",
+                "status": "pending",
+                "count": len(raw_candidate_upserts),
+                "paths": sorted(raw_candidate_upserts),
+                "input_digest": content_fingerprint(raw_candidate_upserts),
+            },
             "lifecycle_review": _sleep_not_run("publication has not started"),
             "post_review_index_refresh": _sleep_not_run("publication has not started"),
             "index_validation": _sleep_not_run("publication has not started"),
@@ -1902,7 +1967,18 @@ def _run_incremental_sleep_locked(
 
     all_events: list[dict[str, Any]] = []
     all_history: list[dict[str, Any]] = []
-    all_upserts: dict[str, dict[str, Any]] = {}
+    plan_has_raw_candidate_items = any(
+        str(item).startswith("raw-candidate-upgrade:")
+        for item in plan.get("eligible_item_ids") or []
+    )
+    all_upserts: dict[str, dict[str, Any]] = (
+        {}
+        if plan_has_raw_candidate_items
+        else {
+            path: dict(payload)
+            for path, payload in raw_candidate_upserts.items()
+        }
+    )
     disposition_keys: list[str] = []
     candidate_event_keys: set[str] = set()
     pending_acks: list[dict[str, str]] = []
@@ -2217,6 +2293,17 @@ def _run_incremental_sleep_locked(
         "candidate_created": candidate_created,
         "candidate_reused": candidate_reused,
         "foreign_calibrated": foreign_calibrated,
+        "raw_candidate_repair": {
+            "schema_version": "khaos-brain.sleep-raw-candidate-repair.v1",
+            "status": "upgraded" if not blockers else "failed",
+            "count": len(raw_candidate_upserts),
+            "paths": sorted(raw_candidate_upserts),
+            "input_digest": content_fingerprint(raw_candidate_upserts),
+            "batch_bound": plan_has_raw_candidate_items,
+            "legacy_plan_omission_repaired": bool(
+                raw_candidate_upserts and not plan_has_raw_candidate_items
+            ),
+        },
         "lifecycle_review": lifecycle_review,
         "model_generation": model_generation,
         "post_review_index_refresh": index_refresh,

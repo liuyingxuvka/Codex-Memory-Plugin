@@ -19,11 +19,9 @@ from local_kb.automation_contracts import (
     AUTOMATION_COMPLETION_CONTRACTS,
     PRE_RESTORE_ASSURANCE_TIMEOUT_SECONDS,
     SLEEP_NATIVE_SOFT_DEADLINE_SECONDS,
-    STANDARD_NATIVE_TIMEOUT_SECONDS,
-    STANDARD_OWNER_TIMEOUT_SECONDS,
-    UPDATE_NATIVE_TIMEOUT_SECONDS,
-    UPDATE_OWNER_TIMEOUT_SECONDS,
+    native_timeout_seconds,
     obligation_id,
+    owner_timeout_seconds,
 )
 from local_kb.maintenance_lanes import (
     canonical_digest,
@@ -607,16 +605,8 @@ def _timeout_tree_cleanup_evidence(
     exit_code: int,
 ) -> dict[str, Any]:
     policy = _mapping(payload.get("_owner_timeout_policy"))
-    expected_native = (
-        UPDATE_NATIVE_TIMEOUT_SECONDS
-        if skill_id == "khaos-brain-update"
-        else STANDARD_NATIVE_TIMEOUT_SECONDS
-    )
-    expected_guarded = (
-        UPDATE_OWNER_TIMEOUT_SECONDS
-        if skill_id == "khaos-brain-update"
-        else STANDARD_OWNER_TIMEOUT_SECONDS
-    )
+    expected_native = native_timeout_seconds(skill_id)
+    expected_guarded = owner_timeout_seconds(skill_id)
     timed_out = policy.get("timed_out") is True or int(exit_code) == 124
     cleanup_ok = bool(
         not timed_out
@@ -689,7 +679,12 @@ def _gated_noop_evidence(
     gate_facts: Mapping[str, Any],
     performed_suffixes: tuple[str, ...],
 ) -> dict[str, dict[str, Any]]:
-    expected_suffixes = set(_all_domain_suffixes(skill_id))
+    # Timeout ownership is wrapper-level evidence injected after the native
+    # route evaluator returns.  A target's early not-applicable branch must not
+    # pretend to own or duplicate that cross-cutting wrapper proof.
+    expected_suffixes = set(_all_domain_suffixes(skill_id)) - {
+        "timeout-tree-cleanup"
+    }
     if set(obligation_sources) != expected_suffixes:
         raise ValueError(
             f"gated no-op evidence map mismatch for {skill_id}: "
@@ -723,7 +718,11 @@ def _gated_noop_evidence(
             f"gated no-op facts are incomplete or inconsistent for {skill_id}:{branch_id}"
         )
     evidence: dict[str, dict[str, Any]] = {}
-    for suffix in _all_domain_suffixes(skill_id):
+    for suffix in (
+        item
+        for item in _all_domain_suffixes(skill_id)
+        if item != "timeout-tree-cleanup"
+    ):
         sources = obligation_sources[suffix]
         if not sources:
             raise ValueError(
@@ -1536,6 +1535,12 @@ def _dream_evidence(payload: Mapping[str, Any], exit_code: int) -> dict[str, dic
     artifacts = _mapping(payload.get("artifact_paths"))
     evidence_deltas = [str(item) for item in _list(payload.get("evidence_deltas"))]
     opportunity_count = payload.get("opportunity_count")
+    recorded_opportunity_count = payload.get("recorded_opportunity_count")
+    omitted_opportunity_count = payload.get("omitted_opportunity_count")
+    max_recorded_opportunities = payload.get("max_recorded_opportunities")
+    opportunity_inventory_digest = str(
+        payload.get("opportunity_inventory_digest") or ""
+    )
     executable_count = payload.get("executable_opportunity_count")
     valuable_count = payload.get("valuable_opportunity_count")
     selected_count = payload.get("selected_experiment_count")
@@ -1629,6 +1634,25 @@ def _dream_evidence(payload: Mapping[str, Any], exit_code: int) -> dict[str, dic
             "Evaluated evidence fingerprints are present as a unique stable set.",
             "evaluated_fingerprints",
             "input_digest",
+        ),
+        obligation_id(skill_id, "bounded-opportunity-artifact"): _evidence(
+            valid_counts
+            and isinstance(recorded_opportunity_count, int)
+            and isinstance(omitted_opportunity_count, int)
+            and isinstance(max_recorded_opportunities, int)
+            and 0 <= int(recorded_opportunity_count) <= int(max_recorded_opportunities) == 64
+            and int(omitted_opportunity_count)
+            == int(opportunity_count) - int(recorded_opportunity_count)
+            and int(recorded_opportunity_count) <= int(opportunity_count)
+            and opportunity_inventory_digest
+            == str(payload.get("input_digest") or "")
+            == content_hash(fingerprints).lower(),
+            "Dream evaluated the complete fingerprint inventory while persisting only the bounded representative opportunity projection.",
+            "opportunity_count",
+            "recorded_opportunity_count",
+            "omitted_opportunity_count",
+            "max_recorded_opportunities",
+            "opportunity_inventory_digest",
         ),
         obligation_id(skill_id, "bounded-selection"): _evidence(
             valid_counts
@@ -2516,6 +2540,10 @@ def evaluate_native_payload(
     if skill_id not in evaluators:
         return {"ok": False, "terminal_status": "failed", "evidence": {}, "issues": ["unknown skill"]}
     evidence = evaluators[skill_id](payload, int(exit_code))
+    if "timeout-tree-cleanup" in _all_domain_suffixes(skill_id):
+        evidence[obligation_id(skill_id, "timeout-tree-cleanup")] = (
+            _timeout_tree_cleanup_evidence(skill_id, payload, int(exit_code))
+        )
     expected = {
         obligation_id(skill_id, suffix) for suffix in _all_domain_suffixes(skill_id)
     }
@@ -2946,6 +2974,9 @@ def build_fixture_payload(
             "lane_guard": {"lane": "kb-dream", "blocked": False},
             "execution_plan": {"status": "completed"},
             "opportunity_count": 1,
+            "recorded_opportunity_count": 1,
+            "omitted_opportunity_count": 0,
+            "max_recorded_opportunities": 64,
             "executable_opportunity_count": 1,
             "valuable_opportunity_count": 1,
             "evaluated_fingerprints": ["fixture-fingerprint"],
@@ -2963,6 +2994,10 @@ def build_fixture_payload(
             "artifact_paths": {"run_dir": "fixture/run", "report_path": "fixture/report.json"},
             "lock_release": {"ok": True, "released": True},
         }
+        payload["opportunity_inventory_digest"] = content_hash(
+            payload["evaluated_fingerprints"]
+        ).lower()
+        payload["input_digest"] = payload["opportunity_inventory_digest"]
         payload["authority_pin"] = {
             "generation_id": "fixture-generation",
             "pointer_digest": "sha256:fixture-generation",
@@ -3226,16 +3261,8 @@ def build_fixture_payload(
         raise KeyError(skill_id)
     payload["run_id"] = run_id or str(payload.get("run_id") or f"fixture-{skill_id}")
     payload["_owner_timeout_policy"] = {
-        "native_timeout_seconds": (
-            UPDATE_NATIVE_TIMEOUT_SECONDS
-            if skill_id == "khaos-brain-update"
-            else STANDARD_NATIVE_TIMEOUT_SECONDS
-        ),
-        "owner_timeout_seconds": (
-            UPDATE_OWNER_TIMEOUT_SECONDS
-            if skill_id == "khaos-brain-update"
-            else STANDARD_OWNER_TIMEOUT_SECONDS
-        ),
+        "native_timeout_seconds": native_timeout_seconds(skill_id),
+        "owner_timeout_seconds": owner_timeout_seconds(skill_id),
         "aggregate_timeout_seconds": AGGREGATE_ASSURANCE_TIMEOUT_SECONDS,
         "installer_timeout_seconds": PRE_RESTORE_ASSURANCE_TIMEOUT_SECONDS,
         "timed_out": False,

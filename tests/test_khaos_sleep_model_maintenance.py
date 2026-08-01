@@ -23,6 +23,7 @@ from local_kb.logicguard_models import (
     read_exact_mesh,
 )
 from local_kb.model_maintenance import (
+    discover_sleep_raw_candidate_upserts,
     publish_sleep_model_generation,
     recover_interrupted_model_generations,
 )
@@ -195,6 +196,24 @@ class KhaosSleepModelMaintenanceTests(unittest.TestCase):
                 "khaos-brain.card-projection.v1",
             )
             self.assertEqual(projected["authority_scope"], "candidates")
+
+    def test_sleep_upgrade_intake_rejects_a_schema_less_candidate_with_partial_authority(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            raw_path = root / "kb" / "candidates" / "partial.yaml"
+            raw_path.parent.mkdir(parents=True, exist_ok=True)
+            raw = card("partial", declared_scope="private")
+            raw["authority_generation_id"] = "generation-partial-must-not-be-guessed"
+            raw_path.write_text(
+                yaml.safe_dump(raw, sort_keys=False, allow_unicode=True),
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(
+                ProjectionValidationError,
+                "partial current authority fields",
+            ):
+                discover_sleep_raw_candidate_upserts(root)
 
     def test_no_delta_generation_deep_validates_one_batch_not_one_mesh_per_card(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
