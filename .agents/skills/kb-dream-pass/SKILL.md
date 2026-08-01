@@ -1,6 +1,6 @@
 ---
 name: kb-dream-pass
-description: Run one repository-managed automatic bounded KB Dream evidence pass. Use only for explicit Dream maintenance or the scheduled KB Dream automation, not Sleep consolidation, ordinary retrieval, or trusted-card maintenance.
+description: Run one repository-managed bounded KB Dream evidence pass as the second phase of local maintenance or as an explicit diagnostic. Dream has no independent schedule and never owns Sleep consolidation, ordinary retrieval, or trusted-card maintenance.
 ---
 
 # KB Dream Pass
@@ -19,7 +19,7 @@ The native Dream runner owns simulations, experiments, terminal validation, and 
 
 ## Required behavior
 
-1. Acquire the shared `kb-dream` lane and run only when the maintenance lock is clear.
+1. When invoked by the local composite task, require its exact phase identity and delegated global-writer token for the small receipt/handoff commit; do not acquire a second scheduled-owner lane. An explicit diagnostic uses its own bounded run identity but still cannot become a scheduler or model publisher.
 2. Pin the exact canonical generation, model revision, root node/ArgumentBlock, and ModelMesh revision before selection. Never substitute a floating head or readable-card projection when an exact binding is missing.
 3. Build each evidence fingerprint from the pinned LogicGuard identities, canonical route, hypothesis, source identifiers and content digests, and prior applicable outcome. Run id, time, AI model name, thread id, and prompt wording must not make unchanged evidence appear new.
 4. Load prior closure outcomes before broad work. If the fingerprint is already closed and no decision-relevant evidence changed, return or reuse `no_delta_closed` without another experiment, history entry, candidate, observation, or handoff.
@@ -38,7 +38,7 @@ Return the run id, pinned generation/model/mesh identities, evaluated fingerprin
 
 ## Native completion boundary
 
-For a scheduled run, intake, planning, or proposal-only output is incomplete. Run `python scripts/run_kb_automation.py --skill kb-dream-pass --json`. The target-owned wrapper invokes the native Dream owner once and accepts only its immutable terminal receipt for that exact run. A declared no-op counts only when the Dream gate receipt proves it terminal. Fixture or capability evidence cannot replace the concrete scheduled run.
+For the local composite task or an explicit diagnostic, intake, planning, or proposal-only output is incomplete. The local cycle invokes the native Dream owner exactly once after clean Sleep and embeds its immutable terminal receipt in the local cycle receipt v3. A direct diagnostic may use `python scripts/run_kb_automation.py --skill kb-dream-pass --json`, but it never creates an independent schedule. A declared no-op counts only when the Dream gate receipt proves it terminal. Fixture or capability evidence cannot replace the concrete phase run.
 
 If the native owner or any validation child times out, the run is incomplete until the target-owned launcher terminates the complete process tree, confirms zero remaining descendants, and records that cleanup.
 

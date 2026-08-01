@@ -15,6 +15,9 @@ ORGANIZATION_REVIEW_SKILL_ID = "organization-review"
 
 
 def _apply_changed_paths(org_root: Path, apply_result: dict[str, Any]) -> list[str]:
+    declared = [str(item).replace("\\", "/") for item in apply_result.get("changed_paths") or [] if str(item)]
+    if declared:
+        return sorted(set(declared))
     paths: set[str] = set()
     for item in apply_result.get("applied") or []:
         if not isinstance(item, dict):
@@ -40,8 +43,12 @@ def _merge_readiness(
     skill_safety_checkpoint: dict[str, Any],
 ) -> dict[str, Any]:
     blockers: list[str] = []
-    allowed_prefixes = ("kb/imports/", "kb/main/")
-    allowed_exact = {"maintenance/cleanup_audit.jsonl"}
+    allowed_prefixes = ("kb/imports/", "kb/main/", "kb/logicguard/bundles/")
+    allowed_exact = {
+        "maintenance/cleanup_audit.jsonl",
+        "kb/organization_catalog.json",
+        "khaos_org_kb.yaml",
+    }
     if not changed_files:
         blockers.append("no reviewed maintenance changes")
     if "maintenance/cleanup_audit.jsonl" not in changed_files:
@@ -99,14 +106,23 @@ def build_organization_cleanup_review(proposal: dict[str, Any]) -> dict[str, Any
         target_path = str(action.get("target_path") or "").replace("\\", "/")
         risk = str(action.get("risk") or "").strip()
         approve = False
-        decision = "watch"
+        decision = "keep"
         reason = ""
 
         if action.get("apply_supported") is False:
             source_reason = str(action.get("reason") or "").strip()
+            decision = str(action.get("review_status") or "blocked_evidence")
+            missing_roles = [str(item) for item in action.get("missing_roles") or []]
+            reason = (f"{source_reason} Reopen only when new evidence satisfies: {missing_roles}.").strip()
+        elif action_type in {"merge-cards", "split-card"}:
+            packet = action.get("apply_packet") if isinstance(action.get("apply_packet"), dict) else {}
+            approve = packet.get("review_status") == "ready" and bool(packet.get("packet_digest"))
+            decision = "selected-for-apply" if approve else "blocked_evidence"
             reason = (
-                f"{source_reason} Current organization tooling keeps this exact action watch-only until a concrete, reversible apply packet exists."
-            ).strip()
+                "A complete reversible apply packet is ready and selected."
+                if approve
+                else "Merge/split remains blocked until its packet declares complete outputs and field ownership."
+            )
         elif action_type == "delete-card":
             current_status = str(action.get("current_status") or "").strip()
             current_confidence = float(action.get("current_confidence") or 1.0)
@@ -150,7 +166,8 @@ def build_organization_cleanup_review(proposal: dict[str, Any]) -> dict[str, Any
             approve = True
             reason = "Deterministic organization cleanup action is selected for Sleep-style apply."
         else:
-            reason = "Unknown organization cleanup action type remains watch-only."
+            decision = "blocked_evidence"
+            reason = "Unknown organization cleanup action type is blocked with no executable packet."
 
         if approve:
             decision = "selected-for-apply"
@@ -173,6 +190,36 @@ def build_organization_cleanup_review(proposal: dict[str, Any]) -> dict[str, Any
                 "reason": reason,
             }
         )
+
+    action_by_id = {
+        str(action.get("action_id") or ""): action
+        for action in proposal.get("actions") or []
+        if isinstance(action, dict)
+    }
+    selected_set = set(selected_action_ids)
+    selected_targets = {
+        str(action_by_id[action_id].get("target_path") or "")
+        for action_id in selected_set
+        if action_id in action_by_id
+        and str(action_by_id[action_id].get("action_type") or "") not in {"merge-cards", "split-card"}
+    }
+    for decision_row in decisions:
+        action_id = str(decision_row.get("action_id") or "")
+        action = action_by_id.get(action_id, {})
+        if action_id not in selected_set or str(action.get("action_type") or "") not in {"merge-cards", "split-card"}:
+            continue
+        packet = action.get("apply_packet") if isinstance(action.get("apply_packet"), dict) else {}
+        input_paths = {str(item.get("path") or "") for item in packet.get("inputs") or [] if isinstance(item, dict)}
+        if input_paths & selected_targets:
+            selected_set.remove(action_id)
+            decision_row["decision"] = "blocked_evidence"
+            decision_row["reason"] = "Another selected lifecycle action changes this packet input first; reopen the merge/split packet against the rebuilt source generation."
+    selected_action_ids = [item for item in selected_action_ids if item in selected_set]
+    selected_action_types = {
+        str(action_by_id[item].get("action_type") or "")
+        for item in selected_action_ids
+        if item in action_by_id
+    }
 
     return {
         "decision_count": len(decisions),
@@ -331,12 +378,22 @@ def build_organization_maintenance_report(
         in {"skill-bundle-safety-block", "skill-bundle-fork-required"}
     ]
     merge_split_checkpoint = {
-        "complete": True,
+        "complete": all(
+            isinstance(action.get("apply_packet"), dict)
+            and str(action.get("review_status") or "") in {"ready", "blocked_evidence", "keep_separate", "keep_single"}
+            for action in [*merge_actions, *split_actions]
+        ),
+        "resolved": all(str(action.get("review_status") or "") in {"ready", "keep_separate", "keep_single"} for action in [*merge_actions, *split_actions]),
         "reviewed_card_count": int(cleanup_proposal.get("card_count") or 0),
         "merge_decision_ids": [str(action.get("action_id") or "") for action in merge_actions],
         "split_decision_ids": [str(action.get("action_id") or "") for action in split_actions],
         "no_merge_candidates": not merge_actions,
         "no_split_candidates": not split_actions,
+        "blocked_evidence_action_ids": [
+            str(action.get("action_id") or "")
+            for action in [*merge_actions, *split_actions]
+            if str(action.get("review_status") or "") == "blocked_evidence"
+        ],
     }
     card_count = int(cleanup_proposal.get("card_count") or 0)
     card_decision_ids = [
@@ -417,6 +474,7 @@ def build_organization_maintenance_report(
             bool(organization_check.get("ok"))
             and bool(skill_safety_checkpoint["passed"])
             and bool(card_decision_checkpoint["complete"])
+            and bool(merge_split_checkpoint["complete"])
         ),
         "maintenance_model": cleanup_proposal.get("maintenance_model") or {},
         "validation": validation,
@@ -429,6 +487,7 @@ def build_organization_maintenance_report(
             "auto_merge_blockers": organization_check.get("auto_merge_blockers") or [],
         },
         "cleanup": {
+            "proposal": cleanup_proposal,
             "duplicate_content_hash_count": len(duplicate_content_hashes),
             "duplicate_content_hashes": duplicate_content_hashes,
             "proposal_action_count": len(cleanup_actions),

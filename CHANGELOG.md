@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.8.0 - 2026-07-31
+
+- Replace four independent maintenance schedules with two working-hours composite tasks: local maintenance runs Sleep and then a read-only Dream handoff, while organization maintenance refreshes the complete organization snapshot before maintaining and contributing cards. The two tasks have independent leases and share exactly one short-lived global writer when durable state overlaps.
+- Make organization exchange card-first and task-time network-free. Ordinary maintenance prefetches an immutable, content-addressed snapshot containing every active organization card and its portable LogicGuard model, mesh, projection, binding, and digest; retrieval globally ranks local and organization cards from that local snapshot and can use a foreign card directly without adopting or copying it.
+- Separate `viewed`, `selected`, `used`, and `outcome_recorded` evidence. Sleep consumes exact foreign-use outcomes to reinforce, dampen, suppress, localize a candidate, or propose an organization update without ever mutating organization authority.
+- Add direct-to-current organization-source upgrade, deterministic duplicate handling, exact 19-card legacy migration coverage, create-once/CAS snapshot publication, and reversible merge/split packets. Retired structures remain upgrade input only and have no normal-runtime compatibility reader or fallback.
+- Upgrade local and organization cycle receipts to immutable schema v3 with exact request, source, tool, state, lease, phase, output, and payload identities. A failed or blocked task never fabricates the other task's status, and stale or partial receipts cannot be reused.
+- Refresh the five maintained Skills, prompts, installer inventory, status-only UI language, OpenSpec contracts, and operational documentation for exactly two scheduled composite tasks, two composite children, and one explicit-user-only software updater.
+- Activate FlowGuard model-system generation 3 for the new retrieval, feedback, organization, and maintenance topology and its corrected semantic-input boundary, with current behavior-ledger, FieldLifecycleMesh, ModelMesh, Model-Test Alignment, TestMesh, known-bad, and current-runtime evidence.
+- Preserve Sleep as the sole normal-runtime publisher of canonical local LogicGuard generations. Dream remains immutable simulation plus a typed next-Sleep gap handoff; ordinary retrieval and feedback never publish models or meshes.
+- Store FlowGuard convergence evidence as a compact terminal projection that preserves findings, repair obligations, counts, and fingerprints without embedding every successful explored trace; the same 4,440 explored inputs now produce a reviewable receipt instead of a multi-gigabyte file, and its identity now binds the runner, public dependency pin, model manifest/head, convergence projection, and governed-runtime digest.
+- Upgrade the public CI model-assurance pin from FlowGuard v0.58.5 to v0.68.0 and make the release-facing suite consume the current model-system authority audit, so clean GitHub validation can verify the same content-addressed authority class used locally, including the model-maturation receipt contract used by the current model-miss checks.
+- Remove a foreground retrieval regression that replayed roughly 253,000 lifecycle events on every query. Local-only search now reads no foreign-calibration state; organization search reads one fail-closed compact projection maintained by Sleep/upgrade. The real-corpus benchmark returned from roughly 25-32 seconds under concurrent load to a 124 ms warm P95 without lowering the 1-second gate.
+
 ## v0.7.1 - 2026-07-23
 
 - Republish the v0.7.0 resumable-Sleep source unchanged under a new immutable tag after the v0.7.0 tag was pushed before its exact `main` validation receipt existed. The v0.7.1 release waits for the exact `main` commit to pass before tag publication; no old tag is moved.

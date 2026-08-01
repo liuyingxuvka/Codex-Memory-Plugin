@@ -9,7 +9,8 @@ from unittest.mock import patch
 from local_kb.automation_runtime import content_hash
 from local_kb.install import MAINTENANCE_SKILL_NAMES, REPO_AUTOMATION_SPECS
 from local_kb.operator_activation import (
-    MANUAL_ONLY_SKILL_IDS,
+    COMPOSITE_CHILD_SKILL_IDS,
+    EXPLICIT_USER_ONLY_SKILL_IDS,
     REQUIRED_READINESS_CHECKS,
     SCHEDULED_SKILL_IDS,
     SKILL_INVENTORY_SCHEMA_VERSION,
@@ -54,7 +55,10 @@ def _gate(repo_root: Path) -> dict:
                 "schema_version": SKILL_INVENTORY_SCHEMA_VERSION,
                 "maintained_skill_ids": sorted(MAINTENANCE_SKILL_NAMES),
                 "scheduled_skill_ids": sorted(SCHEDULED_SKILL_IDS),
-                "manual_only_skill_ids": sorted(MANUAL_ONLY_SKILL_IDS),
+                "composite_child_skill_ids": sorted(COMPOSITE_CHILD_SKILL_IDS),
+                "explicit_user_only_skill_ids": sorted(
+                    EXPLICIT_USER_ONLY_SKILL_IDS
+                ),
             },
             "maintained_skill_refs": {
                 skill_id: {
@@ -68,7 +72,7 @@ def _gate(repo_root: Path) -> dict:
     }
 
 
-def test_activation_gate_requires_exact_current_aggregate_and_four_scheduled_terminals() -> None:
+def test_activation_gate_requires_exact_current_aggregate_and_two_scheduled_terminals() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         repo_root = root / "repo"
@@ -141,9 +145,12 @@ def test_activation_gate_requires_exact_current_aggregate_and_four_scheduled_ter
         assert set(
             result["binding"]["skill_inventory"]["scheduled_skill_ids"]
         ) == {str(spec["skill_name"]) for spec in REPO_AUTOMATION_SPECS}
-        assert result["binding"]["skill_inventory"]["manual_only_skill_ids"] == [
-            "khaos-brain-update"
-        ]
+        assert result["binding"]["skill_inventory"][
+            "composite_child_skill_ids"
+        ] == sorted(COMPOSITE_CHILD_SKILL_IDS)
+        assert result["binding"]["skill_inventory"][
+            "explicit_user_only_skill_ids"
+        ] == sorted(EXPLICIT_USER_ONLY_SKILL_IDS)
 
 
 def test_current_machine_override_activates_all_and_writes_current_receipt() -> None:
@@ -399,7 +406,12 @@ def test_current_activation_receipt_rejects_ambiguous_skill_inventory() -> None:
         receipt["readiness"]["skill_inventory"]["scheduled_skill_ids"] = sorted(
             MAINTENANCE_SKILL_NAMES
         )
-        receipt["readiness"]["skill_inventory"]["manual_only_skill_ids"] = []
+        receipt["readiness"]["skill_inventory"][
+            "composite_child_skill_ids"
+        ] = []
+        receipt["readiness"]["skill_inventory"][
+            "explicit_user_only_skill_ids"
+        ] = []
         unsigned = dict(receipt)
         unsigned.pop("receipt_hash")
         receipt["receipt_hash"] = content_hash(unsigned)

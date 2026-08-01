@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from local_kb.automation_contracts import AUTOMATION_COMPLETION_CONTRACTS
 from local_kb.install import (
     AUTOMATION_MODEL_ENV_VAR,
     AUTOMATION_REASONING_EFFORT_ENV_VAR,
@@ -81,3 +82,30 @@ def test_stale_configured_model_is_not_used_as_an_alternate_authority(
 
     with pytest.raises(RuntimeError, match="not present in current provider metadata"):
         resolve_automation_runtime(tmp_path)
+
+
+def test_automation_contract_inventory_has_two_scheduled_owners_and_two_children() -> None:
+    scheduled = {
+        skill_id
+        for skill_id, contract in AUTOMATION_COMPLETION_CONTRACTS.items()
+        if contract["execution_kind"] == "scheduled"
+    }
+    composite_children = {
+        skill_id
+        for skill_id, contract in AUTOMATION_COMPLETION_CONTRACTS.items()
+        if contract["execution_kind"] == "composite-child"
+    }
+    manual = {
+        skill_id
+        for skill_id, contract in AUTOMATION_COMPLETION_CONTRACTS.items()
+        if contract["execution_kind"] == "explicit-user-request"
+    }
+
+    assert scheduled == {"kb-sleep-maintenance", "kb-organization-maintenance"}
+    assert composite_children == {"kb-dream-pass", "kb-organization-contribute"}
+    assert manual == {"khaos-brain-update"}
+    assert AUTOMATION_COMPLETION_CONTRACTS["kb-dream-pass"]["automation_id"] == ""
+    assert (
+        AUTOMATION_COMPLETION_CONTRACTS["kb-organization-contribute"]["automation_id"]
+        == ""
+    )

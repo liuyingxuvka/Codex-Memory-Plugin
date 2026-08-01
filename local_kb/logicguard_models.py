@@ -1693,6 +1693,91 @@ def read_bound_argument_context(
     return json.loads(cached)
 
 
+def read_foreign_argument_context(
+    bundle: Mapping[str, Any],
+    *,
+    expected_binding: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Validate and materialize a packaged organization LogicGuard bundle.
+
+    Foreign cards are read-only transport artifacts.  This path deliberately
+    does not open local authority stores, resolve a local head, or publish a
+    model.  It validates the exact model/mesh/projection binding carried by
+    the immutable organization snapshot and returns only that card's bounded
+    argument context.
+    """
+
+    if not isinstance(bundle, Mapping) or str(bundle.get("schema_version") or "") != "khaos-brain.organization-logicguard-bundle.v1":
+        raise ExactBindingError("Foreign LogicGuard bundle schema is missing or unsupported")
+    binding_payload = bundle.get("binding") if isinstance(bundle.get("binding"), Mapping) else {}
+    if expected_binding and dict(binding_payload) != dict(expected_binding):
+        raise ExactBindingError("Foreign LogicGuard bundle binding differs from its snapshot manifest")
+    required_binding = ("authority_scope", "logicguard_model_id", "logicguard_node_id", "logicguard_block_id", "logicguard_revision_id", "logicguard_mesh_id", "logicguard_mesh_revision_id")
+    if any(not str(binding_payload.get(field) or "").strip() for field in required_binding):
+        raise ExactBindingError("Foreign LogicGuard bundle lacks an exact model/mesh binding")
+    logicguard = _researchguard_logic_module()
+    try:
+        model = logicguard.load_model_from_dict(dict(bundle.get("model") or {}))
+    except Exception as exc:
+        raise ExactBindingError(f"Foreign LogicGuard model payload is invalid: {type(exc).__name__}: {exc}") from exc
+    model_id = str(binding_payload.get("logicguard_model_id") or "")
+    revision_id = str(binding_payload.get("logicguard_revision_id") or "")
+    node_id = str(binding_payload.get("logicguard_node_id") or "")
+    block_id = str(binding_payload.get("logicguard_block_id") or "")
+    scope = normalize_authority_scope(str(binding_payload.get("authority_scope") or ""))
+    if str(model.id) != model_id or str(model.root_claim) != node_id:
+        raise ExactBindingError("Foreign LogicGuard model identity does not match its binding")
+    if str(model.metadata.get("authority_scope") or "") != scope:
+        raise ExactBindingError("Foreign LogicGuard model authority scope differs from its binding")
+    block = model.blocks.get(block_id)
+    if block is None or str(block.root_claim) != node_id:
+        raise ExactBindingError("Foreign LogicGuard ArgumentBlock does not own its bound root claim")
+    mesh = bundle.get("mesh") if isinstance(bundle.get("mesh"), Mapping) else {}
+    if str(mesh.get("mesh_id") or "") != str(binding_payload.get("logicguard_mesh_id") or "") or str(mesh.get("revision") or "") != str(binding_payload.get("logicguard_mesh_revision_id") or ""):
+        raise ExactBindingError("Foreign LogicGuard mesh identity does not match its binding")
+    registry = mesh.get("registry") if isinstance(mesh.get("registry"), list) else []
+    if not any(
+        isinstance(item, Mapping)
+        and str((item.get("model_ref") or {}).get("model_id") or "") == model_id
+        and str((item.get("model_ref") or {}).get("revision") or "") == revision_id
+        for item in registry
+    ):
+        raise ExactBindingError("Foreign LogicGuard mesh does not pin the bound model revision")
+    member_ids = {str(item) for item in block.member_nodes}
+    member_ids.add(node_id)
+    nodes = [model.nodes[item].to_dict() for item in sorted(member_ids) if item in model.nodes]
+    edges = [edge.to_dict() for edge in model.edges if str(edge.source) in member_ids and str(edge.target) in member_ids]
+    neighborhood = {
+        "model_pins": [dict(item) for item in registry if isinstance(item, Mapping)],
+        "cross_edges": [dict(item) for item in mesh.get("cross_model_edges", []) if isinstance(item, Mapping)],
+        "memberships": [dict(item) for item in mesh.get("memberships", []) if isinstance(item, Mapping)],
+        "frontier": [],
+        "complete": True,
+        "truncation_reasons": [],
+        "materialization_fingerprint": "foreign-bundle:" + str(bundle.get("bundle_digest") or ""),
+    }
+    projection = bundle.get("projection") if isinstance(bundle.get("projection"), Mapping) else {}
+    projection_digest_value = str(projection.get("projection_digest") or "")
+    if not projection_digest_value:
+        raise ExactBindingError("Foreign LogicGuard bundle projection digest is missing")
+    return {
+        "binding": dict(binding_payload),
+        "model_content_digest": str(bundle.get("model_digest") or ""),
+        "mesh_content_digest": str(bundle.get("mesh_digest") or ""),
+        "root_claim": node_id,
+        "argument_block": block.to_dict(),
+        "nodes": nodes,
+        "edges": edges,
+        "open_role_gaps": normalize_string_list(model.metadata.get("open_role_gaps")),
+        "neighborhood": neighborhood,
+        "evaluation": {"status": "foreign-read-only", "authority": "organization-snapshot"},
+        "claim_boundary": (
+            "This is an exact LogicGuard argument read from an immutable organization bundle. "
+            "It is read-only, does not become local authority, and licenses structural reasoning only."
+        ),
+    }
+
+
 def simulate_bound_mesh(
     repo_root: Path,
     binding: LogicGuardBinding,

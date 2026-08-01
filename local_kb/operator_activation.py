@@ -10,6 +10,7 @@ from typing import Any, Mapping
 
 from local_kb.automation_runtime import content_hash
 from local_kb.install import (
+    MAINTENANCE_SKILL_SPECS,
     MAINTENANCE_SKILL_NAMES,
     REPO_AUTOMATION_SPECS,
     _write_text_atomic,
@@ -28,15 +29,20 @@ INSTALLATION_IDENTITY_SCHEMA_VERSION = (
     "khaos-brain.operator-installation-currentness.v1"
 )
 SKILL_INVENTORY_SCHEMA_VERSION = (
-    "khaos-brain.operator-activation-skill-inventory.v1"
+    "khaos-brain.operator-activation-skill-inventory.v2"
 )
 SCHEDULED_SKILL_IDS = tuple(
     str(spec["skill_name"]) for spec in REPO_AUTOMATION_SPECS
 )
-MANUAL_ONLY_SKILL_IDS = tuple(
-    skill_id
-    for skill_id in MAINTENANCE_SKILL_NAMES
-    if skill_id not in SCHEDULED_SKILL_IDS
+COMPOSITE_CHILD_SKILL_IDS = tuple(
+    str(spec["name"])
+    for spec in MAINTENANCE_SKILL_SPECS
+    if str(spec.get("execution_kind")) == "composite-child"
+)
+EXPLICIT_USER_ONLY_SKILL_IDS = tuple(
+    str(spec["name"])
+    for spec in MAINTENANCE_SKILL_SPECS
+    if str(spec.get("execution_kind")) == "explicit-user-request"
 )
 REQUIRED_READINESS_CHECKS = frozenset(
     {
@@ -57,6 +63,7 @@ REQUIRED_READINESS_CHECKS = frozenset(
         "retrieval_quality",
         "full_regression",
         "model_code_test_alignment",
+        "model_test_mesh_terminal",
     }
 )
 
@@ -66,7 +73,8 @@ def _expected_skill_inventory() -> dict[str, Any]:
         "schema_version": SKILL_INVENTORY_SCHEMA_VERSION,
         "maintained_skill_ids": sorted(MAINTENANCE_SKILL_NAMES),
         "scheduled_skill_ids": sorted(SCHEDULED_SKILL_IDS),
-        "manual_only_skill_ids": sorted(MANUAL_ONLY_SKILL_IDS),
+        "composite_child_skill_ids": sorted(COMPOSITE_CHILD_SKILL_IDS),
+        "explicit_user_only_skill_ids": sorted(EXPLICIT_USER_ONLY_SKILL_IDS),
     }
 
 
@@ -80,17 +88,24 @@ def _skill_inventory_issues(value: object) -> list[str]:
     for key in (
         "maintained_skill_ids",
         "scheduled_skill_ids",
-        "manual_only_skill_ids",
+        "composite_child_skill_ids",
+        "explicit_user_only_skill_ids",
     ):
         rows = value.get(key)
         if not isinstance(rows, list) or rows != expected[key]:
             issues.append(f"activation-skill-inventory-{key}-mismatch")
     scheduled = set(value.get("scheduled_skill_ids") or [])
-    manual_only = set(value.get("manual_only_skill_ids") or [])
+    composite_children = set(value.get("composite_child_skill_ids") or [])
+    explicit_user_only = set(value.get("explicit_user_only_skill_ids") or [])
     maintained = set(value.get("maintained_skill_ids") or [])
-    if scheduled.intersection(manual_only):
+    classified = (scheduled, composite_children, explicit_user_only)
+    if any(
+        left.intersection(right)
+        for index, left in enumerate(classified)
+        for right in classified[index + 1 :]
+    ):
         issues.append("activation-skill-inventory-overlap")
-    if scheduled.union(manual_only) != maintained:
+    if scheduled.union(composite_children, explicit_user_only) != maintained:
         issues.append("activation-skill-inventory-not-exhaustive")
     return issues
 
@@ -712,9 +727,10 @@ def activate_all_for_current_machine(
         ),
         "claim_boundary": (
             "This receipt authorizes only the user's explicit all-active, "
-            "user_paused=false override for the four scheduled automations on this "
-            "Codex home. It binds the complete five-skill inventory and keeps "
-            "khaos-brain-update manual-only. Installed currentness binds only the "
+            "user_paused=false override for the two composite scheduled automations on this "
+            "Codex home. It binds the complete five-skill inventory, keeps the "
+            "two composite children unscheduled and khaos-brain-update "
+            "explicit-user-only. Installed currentness binds only the "
             "stable installation authority projection; history-migration diagnostics "
             "must still pass but are not receipt identity. It does not prove a future "
             "scheduled run completed. Portable installers still preserve each "

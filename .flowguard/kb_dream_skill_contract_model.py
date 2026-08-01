@@ -10,7 +10,7 @@ FLOWGUARD_MODEL_MARKER = "flowguard-executable-model"
 def export_contract_model():
     return build_contract_model(
         "kb-dream-pass",
-        "Pin exact LogicGuard revisions, run bounded immutable model simulations, and hand decision-relevant model gaps to Sleep exactly once.",
+        "Run as the unscheduled local-cycle child, pin exact LogicGuard revisions, execute bounded immutable simulations, and hand decision-relevant model gaps to Sleep exactly once.",
     )
 
 

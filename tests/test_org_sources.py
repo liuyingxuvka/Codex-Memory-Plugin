@@ -1,10 +1,19 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from local_kb.org_migration import (
+    _copy_backup,
+    _native_filesystem_path,
+    _snapshot_root,
+    migrate_organization_repo_to_current,
+)
+from local_kb.org_source_contract import load_current_catalog, materialize_current_source
 from local_kb.org_sources import (
     _run_git,
     clone_or_fetch_organization_repo,
@@ -13,346 +22,179 @@ from local_kb.org_sources import (
     guess_organization_source_id,
     validate_organization_repo,
 )
-from local_kb.org_migration import migrate_organization_repo_to_current
 from local_kb.store import load_organization_entries, load_yaml_file, write_yaml_file
+from tests.org_helpers import base_card, write_legacy_org_repo, write_valid_org_repo
 
 
 class OrganizationSourceTests(unittest.TestCase):
     def _write_valid_org_repo(self, root: Path) -> None:
-        write_yaml_file(
-            root / "khaos_org_kb.yaml",
-            {
-                "kind": "khaos-organization-kb",
-                "schema_version": 1,
-                "organization_id": "sandbox",
-                "kb": {
-                    "main_path": "kb/main",
-                    "imports_path": "kb/imports",
-                },
-                "skills": {
-                    "registry_path": "skills/registry.yaml",
-                    "candidates_path": "skills/candidates",
-                },
-            },
+        materialize_current_source(
+            root,
+            organization_id="sandbox",
+            cards=[
+                ("kb/main/model.yaml", base_card("model", "Model", "Use model.")),
+                ("kb/main/candidate.yaml", base_card("candidate", "Candidate", "Use candidate.", status="candidate")),
+            ],
         )
-        write_yaml_file(root / "kb" / "main" / "model.yaml", {"id": "model", "status": "trusted"})
-        write_yaml_file(root / "kb" / "main" / "candidate.yaml", {"id": "candidate", "status": "candidate"})
-        (root / "kb" / "imports").mkdir(parents=True)
-        (root / "kb" / "imports" / ".gitkeep").write_text("", encoding="utf-8")
-        write_yaml_file(root / "skills" / "registry.yaml", {"skills": [{"id": "org.demo", "status": "approved"}]})
-        (root / "skills" / "candidates").mkdir(parents=True)
-        (root / "skills" / "candidates" / ".gitkeep").write_text("", encoding="utf-8")
+        write_yaml_file(root / "skills" / "registry.yaml", {"skills": [{"id": "org.demo", "status": "approved", "version": "1", "content_hash": "sha256:" + "1" * 64}]})
 
-    def test_validate_organization_repo_accepts_valid_manifest_layout(self) -> None:
+    def test_validate_accepts_only_complete_schema2_source(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             self._write_valid_org_repo(root)
-
             result = validate_organization_repo(root)
 
         self.assertTrue(result["ok"], result["errors"])
-        self.assertEqual(result["organization_id"], "sandbox")
-        self.assertEqual(result["layout"], "main-imports")
-        self.assertEqual(result["target_layout"], "main-imports")
-        self.assertNotIn("legacy_compatibility", result)
-        self.assertIn("sole current", result["layout_message"])
-        self.assertEqual(result["incoming_lane_path"], "kb/imports")
-        self.assertEqual(result["exchange_surface_path"], "kb/main")
-        self.assertEqual(result["local_download_paths"], ["kb/main"])
-        self.assertEqual(result["local_download_excluded_paths"], ["kb/imports"])
-        self.assertEqual(result["trusted_count"], 1)
-        self.assertEqual(result["candidate_count"], 1)
-        self.assertEqual(result["skill_count"], 1)
-
-    def test_validate_organization_repo_accepts_main_imports_layout(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            write_yaml_file(
-                root / "khaos_org_kb.yaml",
-                {
-                    "kind": "khaos-organization-kb",
-                    "schema_version": 1,
-                    "organization_id": "sandbox",
-                    "kb": {
-                        "main_path": "kb/main",
-                        "imports_path": "kb/imports",
-                    },
-                    "skills": {
-                        "registry_path": "skills/registry.yaml",
-                        "candidates_path": "skills/candidates",
-                    },
-                },
-            )
-            write_yaml_file(root / "kb" / "main" / "trusted.yaml", {"id": "model", "status": "trusted"})
-            write_yaml_file(root / "kb" / "main" / "candidate.yaml", {"id": "candidate", "status": "candidate"})
-            write_yaml_file(root / "kb" / "main" / "rejected.yaml", {"id": "rejected", "status": "rejected"})
-            (root / "kb" / "imports").mkdir(parents=True)
-            write_yaml_file(root / "skills" / "registry.yaml", {"skills": []})
-            (root / "skills" / "candidates").mkdir(parents=True)
-
-            result = validate_organization_repo(root)
-
-        self.assertTrue(result["ok"], result["errors"])
-        self.assertEqual(result["layout"], "main-imports")
-        self.assertEqual(result["target_layout"], "main-imports")
-        self.assertNotIn("legacy_compatibility", result)
-        self.assertEqual(result["incoming_lane_path"], "kb/imports")
-        self.assertEqual(result["exchange_surface_path"], "kb/main")
-        self.assertEqual(result["local_download_paths"], ["kb/main"])
-        self.assertEqual(result["local_download_excluded_paths"], ["kb/imports"])
-        self.assertEqual(result["main_count"], 3)
+        self.assertEqual(result["schema_version"], 2)
+        self.assertEqual(result["main_count"], 2)
         self.assertEqual(result["main_active_count"], 2)
-        self.assertEqual(result["imports_count"], 0)
-        self.assertEqual(result["main_status_counts"]["trusted"], 1)
-        self.assertEqual(result["main_status_counts"]["candidate"], 1)
         self.assertEqual(result["trusted_count"], 1)
         self.assertEqual(result["candidate_count"], 1)
+        self.assertTrue(result["source_generation_id"])
 
-    def test_local_organization_download_reads_main_not_imports(self) -> None:
+    def test_normal_runtime_rejects_raw_schema1_and_uncataloged_cards(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            write_yaml_file(
-                root / "khaos_org_kb.yaml",
-                {
-                    "kind": "khaos-organization-kb",
-                    "schema_version": 1,
-                    "organization_id": "sandbox",
-                    "kb": {
-                        "main_path": "kb/main",
-                        "imports_path": "kb/imports",
-                    },
-                    "skills": {
-                        "registry_path": "skills/registry.yaml",
-                        "candidates_path": "skills/candidates",
-                    },
-                },
-            )
-            write_yaml_file(root / "kb" / "main" / "main-card.yaml", {"id": "main-card", "status": "trusted"})
-            write_yaml_file(root / "kb" / "imports" / "alice" / "import-card.yaml", {"id": "import-card", "status": "candidate"})
-            write_yaml_file(root / "skills" / "registry.yaml", {"skills": []})
-            (root / "skills" / "candidates").mkdir(parents=True)
+            write_legacy_org_repo(root)
+            legacy = validate_organization_repo(root)
+            write_valid_org_repo(root / "current")
+            write_yaml_file(root / "current" / "kb" / "main" / "extra.yaml", base_card("extra", "Extra", "Use."))
+            uncataloged = validate_organization_repo(root / "current")
 
+        self.assertFalse(legacy["ok"])
+        self.assertTrue(any("schema_version" in item or "obsolete" in item for item in legacy["errors"]))
+        self.assertFalse(uncataloged["ok"])
+        self.assertTrue(any("uncataloged" in item for item in uncataloged["errors"]))
+
+    def test_download_surface_reads_main_and_excludes_imports(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            materialize_current_source(root, organization_id="sandbox", cards=[("kb/main/main.yaml", base_card("main", "Main", "Use."))])
+            write_yaml_file(root / "kb" / "imports" / "alice" / "import.yaml", base_card("import", "Import", "Review.", status="candidate"))
             validation = validate_organization_repo(root)
             entries = load_organization_entries(root, "sandbox")
-            entry_ids = [entry.data["id"] for entry in entries]
 
         self.assertTrue(validation["ok"], validation["errors"])
         self.assertEqual(validation["imports_count"], 1)
-        self.assertEqual(entry_ids, ["main-card"])
+        self.assertEqual([entry.data["id"] for entry in entries], ["main"])
 
-    def test_validate_organization_repo_rejects_missing_manifest(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            result = validate_organization_repo(Path(tmp))
-
-        self.assertFalse(result["ok"])
-        self.assertIn("missing organization KB manifest", result["errors"][0])
-
-    def test_strict_runtime_rejects_retired_layout(self) -> None:
+    def test_migration_builds_current_bundles_and_removes_legacy_authority(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            write_yaml_file(
-                root / "khaos_org_kb.yaml",
-                {
-                    "kind": "khaos-organization-kb",
-                    "schema_version": 1,
-                    "organization_id": "sandbox",
-                    "kb": {
-                        "trusted_path": "kb/trusted",
-                        "candidates_path": "kb/candidates",
-                        "imports_path": "kb/imports",
-                    },
-                    "skills": {
-                        "registry_path": "skills/registry.yaml",
-                        "candidates_path": "skills/candidates",
-                    },
-                },
-            )
-            write_yaml_file(root / "kb" / "trusted" / "model.yaml", {"id": "model", "status": "trusted"})
-            (root / "kb" / "candidates").mkdir(parents=True)
-            (root / "kb" / "imports").mkdir(parents=True)
-            write_yaml_file(root / "skills" / "registry.yaml", {"skills": []})
-            (root / "skills" / "candidates").mkdir(parents=True)
-
-            result = validate_organization_repo(root)
-
-        self.assertFalse(result["ok"])
-        self.assertTrue(any("obsolete" in error for error in result["errors"]))
-
-    def test_one_time_migration_rewrites_retired_layout_and_leaves_zero_residuals(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            write_yaml_file(
-                root / "khaos_org_kb.yaml",
-                {
-                    "kind": "khaos-organization-kb",
-                    "schema_version": 1,
-                    "organization_id": "sandbox",
-                    "kb": {
-                        "trusted_path": "kb/trusted",
-                        "candidates_path": "kb/candidates",
-                        "imports_path": "kb/imports",
-                    },
-                    "skills": {
-                        "registry_path": "skills/registry.yaml",
-                        "candidates_path": "skills/candidates",
-                    },
-                },
-            )
-            write_yaml_file(root / "kb" / "trusted" / "model.yaml", {"id": "model", "status": "trusted"})
-            write_yaml_file(root / "kb" / "candidates" / "candidate.yaml", {"id": "candidate", "status": "candidate"})
-            (root / "kb" / "imports").mkdir(parents=True)
-            write_yaml_file(root / "skills" / "registry.yaml", {"skills": []})
-            (root / "skills" / "candidates").mkdir(parents=True)
-
-            migration = migrate_organization_repo_to_current(root)
+            write_legacy_org_repo(root)
+            result = migrate_organization_repo_to_current(root)
             validation = validate_organization_repo(root)
+            obsolete_missing = not (root / "kb" / "trusted").exists() and not (root / "kb" / "candidates").exists()
+            catalog_exists = (root / "kb" / "organization_catalog.json").is_file()
+            no_legacy_metadata = all("legacy_upgrade" not in load_yaml_file(root / row["source_path"]) for row in load_current_catalog(root)["cards"])
 
-            self.assertTrue(migration["ok"], migration)
-            self.assertEqual(migration["status"], "committed")
-            self.assertTrue(validation["ok"], validation["errors"])
-            self.assertFalse((root / "kb" / "trusted").exists())
-            self.assertFalse((root / "kb" / "candidates").exists())
-            self.assertTrue((root / "kb" / "main" / "trusted" / "model.yaml").exists())
-            self.assertTrue((root / "kb" / "main" / "candidates" / "candidate.yaml").exists())
+        self.assertTrue(result["ok"], result)
+        self.assertTrue(validation["ok"], validation["errors"])
+        self.assertTrue(obsolete_missing)
+        self.assertTrue(catalog_exists)
+        self.assertTrue(no_legacy_metadata)
 
-    def test_one_time_migration_blocks_a_conflicting_current_target_without_mutation(self) -> None:
+    def test_migration_freezes_yaml_timestamps_into_portable_bundle_scalars(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            write_yaml_file(
-                root / "khaos_org_kb.yaml",
-                {
-                    "kind": "khaos-organization-kb",
-                    "schema_version": 1,
-                    "organization_id": "sandbox",
-                    "kb": {
-                        "trusted_path": "kb/trusted",
-                        "candidates_path": "kb/candidates",
-                        "imports_path": "kb/imports",
-                    },
-                    "skills": {
-                        "registry_path": "skills/registry.yaml",
-                        "candidates_path": "skills/candidates",
-                    },
-                },
-            )
-            write_yaml_file(root / "kb" / "trusted" / "model.yaml", {"id": "old", "status": "trusted"})
-            write_yaml_file(
-                root / "kb" / "main" / "trusted" / "model.yaml",
-                {"id": "different", "status": "trusted"},
-            )
-            (root / "kb" / "candidates").mkdir(parents=True)
-            (root / "kb" / "imports").mkdir(parents=True)
-            write_yaml_file(root / "skills" / "registry.yaml", {"skills": []})
-            (root / "skills" / "candidates").mkdir(parents=True)
+            write_legacy_org_repo(root)
+            legacy_path = root / "kb" / "trusted" / "overlap-scan.yaml"
+            legacy_card = load_yaml_file(legacy_path)
+            legacy_card["updated_at"] = datetime(2026, 7, 31, 12, 0, tzinfo=timezone.utc)
+            write_yaml_file(legacy_path, legacy_card)
 
-            migration = migrate_organization_repo_to_current(root)
+            result = migrate_organization_repo_to_current(root)
+            validation = validate_organization_repo(root)
+            migrated = load_yaml_file(root / "kb" / "main" / "trusted" / "overlap-scan.yaml")
 
-            self.assertFalse(migration["ok"], migration)
-            self.assertEqual(migration["status"], "blocked")
-            self.assertEqual(migration["collisions"], ["kb/main/trusted/model.yaml"])
-            self.assertTrue((root / "kb" / "trusted" / "model.yaml").exists())
-            self.assertEqual(
-                load_yaml_file(root / "kb" / "main" / "trusted" / "model.yaml")["id"],
-                "different",
-            )
+        self.assertTrue(result["ok"], result)
+        self.assertTrue(validation["ok"], validation["errors"])
+        self.assertIsInstance(migrated["updated_at"], str)
 
-    def test_one_time_migration_restores_the_snapshot_when_current_validation_fails(self) -> None:
+    def test_migration_duplicate_ids_are_deterministic_and_exact_duplicates_retire(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            write_yaml_file(
-                root / "khaos_org_kb.yaml",
-                {
-                    "kind": "khaos-organization-kb",
-                    "schema_version": 1,
-                    "organization_id": "sandbox",
-                    "kb": {
-                        "trusted_path": "kb/trusted",
-                        "candidates_path": "kb/candidates",
-                        "imports_path": "kb/imports",
-                    },
-                    "skills": {
-                        "registry_path": "skills/registry.yaml",
-                        "candidates_path": "skills/candidates",
-                    },
-                },
-            )
-            write_yaml_file(root / "kb" / "trusted" / "model.yaml", {"id": "model", "status": "trusted"})
-            (root / "kb" / "candidates").mkdir(parents=True)
-            (root / "kb" / "imports").mkdir(parents=True)
-            write_yaml_file(root / "skills" / "registry.yaml", {"skills": []})
-            (root / "skills" / "candidates").mkdir(parents=True)
+            write_legacy_org_repo(root, include_sandbox_cards=False)
+            (root / "kb" / "trusted" / "seed.yaml").unlink()
+            first = base_card("same", "Same", "Use same.")
+            second = base_card("same", "Different", "Use differently.", status="candidate")
+            write_yaml_file(root / "kb" / "trusted" / "same.yaml", first)
+            write_yaml_file(root / "kb" / "candidates" / "different.yaml", second)
+            write_yaml_file(root / "kb" / "candidates" / "exact.yaml", first)
+            result = migrate_organization_repo_to_current(root)
+            catalog = load_current_catalog(root)
 
-            with patch(
-                "local_kb.org_sources.validate_organization_repo",
-                return_value={"ok": False, "errors": ["forced current validation failure"]},
-            ):
-                migration = migrate_organization_repo_to_current(root)
+        self.assertTrue(result["ok"], result)
+        ids = [row["entry_id"] for row in catalog["cards"]]
+        self.assertIn("same", ids)
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertTrue(any(item.startswith("same--dup-") for item in ids))
+        self.assertTrue(any(item["disposition"] == "retired_exact_duplicate" for item in catalog["tombstones"]))
 
-            restored_manifest = load_yaml_file(root / "khaos_org_kb.yaml")
-            self.assertFalse(migration["ok"], migration)
-            self.assertEqual(migration["status"], "rolled_back")
-            self.assertTrue((root / "kb" / "trusted" / "model.yaml").exists())
-            self.assertFalse((root / "kb" / "main").exists())
-            self.assertEqual(restored_manifest["kb"]["trusted_path"], "kb/trusted")
-            self.assertNotIn("main_path", restored_manifest["kb"])
+    def test_migration_rolls_back_owned_tree_when_current_validation_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_legacy_org_repo(root)
+            with patch("local_kb.org_sources.validate_organization_repo", return_value={"ok": False, "errors": ["forced"]}):
+                result = migrate_organization_repo_to_current(root)
+            restored = load_yaml_file(root / "khaos_org_kb.yaml")
+            trusted_restored = (root / "kb" / "trusted").exists()
 
-    def test_default_org_mirror_path_sanitizes_organization_id(self) -> None:
-        path = default_org_mirror_path(Path("repo"), "acme/org kb")
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["status"], "rolled_back")
+        self.assertEqual(restored["schema_version"], 1)
+        self.assertTrue(trusted_restored)
 
-        self.assertEqual(path.as_posix(), "repo/.local/organization_sources/acme-org-kb")
+    def test_migration_backup_supports_windows_extended_length_card_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "repo"
+            try:
+                relative_parent = Path("kb") / "main" / "system" / "knowledge-library" / "maintenance"
+                while len(str(root / relative_parent / "long-card.yaml")) < 220:
+                    relative_parent /= "nested-card-domain"
+                source = root / relative_parent / "long-card.yaml"
+                source.parent.mkdir(parents=True)
+                source.write_text("id: long-card\n", encoding="utf-8")
+                (root / "khaos_org_kb.yaml").write_text("schema_version: 1\n", encoding="utf-8")
+                backup = _snapshot_root(root, "20260731T233518+0000-8a052469")
+                target = backup / source.relative_to(root)
 
-    def test_guess_organization_source_id_uses_repo_name(self) -> None:
-        self.assertEqual(
-            guess_organization_source_id("https://github.com/acme/khaos-org-kb-sandbox.git"),
-            "khaos-org-kb-sandbox",
-        )
+                self.assertLess(len(str(source)), 260)
+                self.assertGreater(len(str(target)), 260)
+                _copy_backup(root, backup)
 
-    def test_clone_or_fetch_supports_local_git_repo(self) -> None:
+                self.assertEqual(
+                    _native_filesystem_path(target).read_text(encoding="utf-8"),
+                    "id: long-card\n",
+                )
+            finally:
+                if root.exists():
+                    shutil.rmtree(_native_filesystem_path(root))
+
+    def test_clone_and_connect_support_current_local_git_repo(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             source = root / "source"
             mirror = root / "mirror"
+            profile = root / "profile"
             self._write_valid_org_repo(source)
             self.assertEqual(0, _run_git(["init"], cwd=source).returncode)
             self.assertEqual(0, _run_git(["add", "."], cwd=source).returncode)
-            self.assertEqual(
-                0,
-                _run_git(
-                    ["-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-m", "seed"],
-                    cwd=source,
-                ).returncode,
-            )
+            self.assertEqual(0, _run_git(["-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-m", "seed"], cwd=source).returncode)
+            clone = clone_or_fetch_organization_repo(str(source), mirror)
+            connected = connect_organization_source(profile, str(source))
+            mirror_valid = validate_organization_repo(mirror)["ok"]
 
-            clone_result = clone_or_fetch_organization_repo(str(source), mirror)
-            validation = validate_organization_repo(mirror)
+        self.assertTrue(clone["ok"], clone)
+        self.assertTrue(mirror_valid)
+        self.assertTrue(connected["ok"], connected)
+        self.assertEqual(connected["settings"]["organization_id"], "sandbox")
 
-        self.assertTrue(clone_result["ok"], clone_result["errors"])
-        self.assertEqual(clone_result["action"], "clone")
-        self.assertTrue(validation["ok"], validation["errors"])
-
-    def test_connect_organization_source_clones_valid_repo_and_builds_settings(self) -> None:
+    def test_paths_and_missing_manifest(self) -> None:
+        self.assertEqual(default_org_mirror_path(Path("repo"), "acme/org kb").as_posix(), "repo/.local/organization_sources/acme-org-kb")
+        self.assertEqual(guess_organization_source_id("https://github.com/acme/khaos-org-kb-sandbox.git"), "khaos-org-kb-sandbox")
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            source = root / "source"
-            repo_root = root / "repo"
-            self._write_valid_org_repo(source)
-            self.assertEqual(0, _run_git(["init"], cwd=source).returncode)
-            self.assertEqual(0, _run_git(["add", "."], cwd=source).returncode)
-            self.assertEqual(
-                0,
-                _run_git(
-                    ["-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-m", "seed"],
-                    cwd=source,
-                ).returncode,
-            )
-
-            result = connect_organization_source(repo_root, str(source))
-            mirror_exists = Path(result["settings"]["local_mirror_path"]).exists()
-
-        self.assertTrue(result["ok"], result)
-        self.assertEqual(result["settings"]["validation_status"], "valid")
-        self.assertEqual(result["settings"]["organization_id"], "sandbox")
-        self.assertTrue(mirror_exists)
+            self.assertFalse(validate_organization_repo(Path(tmp))["ok"])
 
 
 if __name__ == "__main__":

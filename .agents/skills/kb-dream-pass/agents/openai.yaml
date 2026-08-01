@@ -1,7 +1,7 @@
 interface:
   display_name: "KB Dream Pass"
-  short_description: "Run one bounded local KB dream pass"
-  default_prompt: "Use $kb-dream-pass to run one bounded KB Dream pass for this repository."
+  short_description: "Run the bounded Dream child phase or a diagnostic"
+  default_prompt: "Use $kb-dream-pass as the unscheduled Dream child phase or for one explicit bounded diagnostic."
 
 policy:
   allow_implicit_invocation: false

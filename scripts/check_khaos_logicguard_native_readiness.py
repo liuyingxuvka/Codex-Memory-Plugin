@@ -50,6 +50,7 @@ REQUIRED_CHECKS = (
     "full_regression",
     "install_health",
     "model_code_test_alignment",
+    "model_test_mesh_terminal",
 )
 
 _VALIDATION_TOOLCHAINS = (

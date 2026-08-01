@@ -9,6 +9,10 @@ import time
 import unittest
 from pathlib import Path
 
+from local_kb.model_maintenance import publish_sleep_model_generation
+from local_kb.search import search_with_receipt
+from tests.current_runtime_helpers import activate_current_kb_runtime
+
 
 class KbPreflightEntryCurrentGrammarTests(unittest.TestCase):
     def _launcher(self) -> tuple[Path, Path]:
@@ -104,7 +108,78 @@ class KbPreflightEntryCurrentGrammarTests(unittest.TestCase):
         elapsed = time.perf_counter() - started
         self.assertEqual(completed.returncode, 0, completed.stderr)
         self.assertIn("--task-summary", completed.stdout)
+        self.assertIn("--used-result-refs", completed.stdout)
+        self.assertNotIn("--used-entry-ids", completed.stdout)
         self.assertLess(elapsed, 5)
+
+    def test_feedback_records_used_result_before_current_outcome(self) -> None:
+        repo_root, _launcher_path = self._launcher()
+        script_path = (
+            repo_root
+            / ".agents"
+            / "skills"
+            / "local-kb-retrieve"
+            / "scripts"
+            / "kb_feedback.py"
+        )
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            target = Path(tmp_dir)
+            activate_current_kb_runtime(target)
+            publication = publish_sleep_model_generation(
+                target,
+                reason="test:feedback-cli",
+                card_upserts={
+                    "kb/public/feedback-card.yaml": {
+                        "id": "feedback-card",
+                        "title": "Feedback exact result card",
+                        "type": "model",
+                        "scope": "public",
+                        "status": "trusted",
+                        "confidence": 0.9,
+                        "domain_path": ["system", "feedback"],
+                        "tags": ["feedback", "exact"],
+                        "trigger_keywords": ["feedback", "exact"],
+                        "if": {"notes": "A retrieved result was used."},
+                        "action": {"description": "Record the exact result identity."},
+                        "predict": {"expected_result": "Outcome attaches to one result."},
+                        "use": {"guidance": "Use result_ref, not a bare card id."},
+                    }
+                },
+            )
+            self.assertTrue(publication["ok"], publication)
+            _entries, retrieval = search_with_receipt(
+                target, query="feedback exact result"
+            )
+            result_ref = retrieval["returned_results"][0]["result_ref"]
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(script_path),
+                    "--repo-root",
+                    str(target),
+                    "--event-id",
+                    "feedback-cli-exact-event",
+                    "--task-summary",
+                    "Verify exact retrieval feedback.",
+                    "--retrieval-request-id",
+                    retrieval["request_id"],
+                    "--used-result-refs",
+                    result_ref,
+                    "--outcome",
+                    "success",
+                    "--json",
+                ],
+                cwd=repo_root,
+                capture_output=True,
+                text=True,
+                timeout=15,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            payload = json.loads(completed.stdout)
+
+        self.assertEqual(payload["schema_version"], "khaos-brain.feedback-result.v2")
+        self.assertEqual(payload["interaction_receipt"]["interaction"], "used")
+        self.assertEqual(payload["outcome_receipt"]["used_result_refs"], [result_ref])
 
     def test_feedback_emits_terminal_json_and_inspects_the_same_event_id(self) -> None:
         repo_root, _launcher_path = self._launcher()

@@ -69,8 +69,6 @@ class SoftwareUpdateStateTests(unittest.TestCase):
     def _write_automation_states(self, codex_home: Path) -> dict[str, str]:
         states = {
             "kb-sleep": "ACTIVE",
-            "kb-dream": "PAUSED",
-            "kb-org-contribute": "ACTIVE",
             "kb-org-maintenance": "PAUSED",
         }
         for automation_id, status in states.items():
@@ -132,7 +130,12 @@ class SoftwareUpdateStateTests(unittest.TestCase):
             "upgrade_assurance": {"ok": True},
             "automation_restore_deferred": True,
             "retired_skill_ids": ["kb-architect-pass"],
-            "retired_automation_ids": ["kb-architect", "khaos-brain-system-update"],
+            "retired_automation_ids": [
+                "kb-architect",
+                "khaos-brain-system-update",
+                "kb-dream",
+                "kb-org-contribute",
+            ],
             "automations": [
                 {"id": automation_id, "status": status}
                 for automation_id, status in states.items()

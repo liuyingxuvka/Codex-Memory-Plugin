@@ -103,19 +103,27 @@ def test_manual_update_failure_keeps_survivors_paused() -> None:
     assert state.update_survivors_paused
 
 
-def test_operator_activation_uses_four_scheduled_and_one_manual_only_skill() -> None:
+def test_operator_activation_uses_two_composite_scheduled_owners_and_unscheduled_children() -> None:
     label, state = _advance(
         model.ConsumerState(),
         model.ConsumerInput(
             "operator_activate",
             maintained_skill_ids=model.AUTOMATION_TARGET_IDS,
             scheduled_skill_ids=model.SCHEDULED_SKILL_IDS,
-            manual_only_skill_ids=model.MANUAL_ONLY_SKILL_IDS,
+            composite_child_skill_ids=model.COMPOSITE_CHILD_SKILL_IDS,
+            explicit_user_only_skill_ids=model.EXPLICIT_USER_ONLY_SKILL_IDS,
         ),
     )
-    assert label == "scheduled_automations_activated_manual_update_unscheduled"
+    assert label == (
+        "two_scheduled_owners_activated_children_and_update_unscheduled"
+    )
     assert set(state.active_scheduled_skills) == set(model.SCHEDULED_SKILL_IDS)
-    assert state.manual_only_skills == ("khaos-brain-update",)
+    assert set(state.composite_child_skills) == set(
+        model.COMPOSITE_CHILD_SKILL_IDS
+    )
+    assert set(state.explicit_user_only_skills) == set(
+        model.EXPLICIT_USER_ONLY_SKILL_IDS
+    )
     assert "khaos-brain-update" not in state.active_scheduled_skills
 
 
@@ -126,7 +134,8 @@ def test_operator_activation_rejects_five_as_scheduled() -> None:
             "operator_activate",
             maintained_skill_ids=model.AUTOMATION_TARGET_IDS,
             scheduled_skill_ids=model.AUTOMATION_TARGET_IDS,
-            manual_only_skill_ids=(),
+            composite_child_skill_ids=(),
+            explicit_user_only_skill_ids=(),
         ),
     )
     assert label == "activation_inventory_blocked"
@@ -170,3 +179,8 @@ def test_flowguard_consumer_independence_report_passes() -> None:
     assert report["ok"], report
     assert report["contracts"]["cross_unit_test_evidence_overlaps"] == []
     assert report["scenarios"]["ok"] is True
+    for key in ("model", "lifecycle_model"):
+        projection = report[key]["evidence_projection"]
+        assert projection["kind"] == "terminal-summary"
+        assert projection["full_success_traces_embedded"] is False
+        assert "metadata" not in report[key]

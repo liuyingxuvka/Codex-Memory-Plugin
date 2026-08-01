@@ -1,4 +1,4 @@
-"""Build four automation bindings and one explicit-manual update binding.
+"""Build the maintained Skill bindings and one explicit-manual update binding.
 
 The target obligation catalog lives in ``local_kb.automation_contracts`` and
 the executable topology lives in the declared FlowGuard child model.  This
@@ -69,6 +69,8 @@ NATIVE_IMPLEMENTATION_PATHS = {
     "kb-organization-maintenance": (
         "local_kb/org_automation.py",
         "local_kb/org_maintenance.py",
+        "local_kb/org_cycle.py",
+        "local_kb/org_snapshot.py",
     ),
     "khaos-brain-update": (
         "local_kb/software_update.py",

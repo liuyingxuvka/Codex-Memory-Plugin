@@ -1714,9 +1714,32 @@ def run_dream_maintenance(
     *,
     run_id: str | None = None,
     max_events: int | None = None,
+    canonical_write_requested: bool = False,
 ) -> dict[str, Any]:
     generated_at = utc_now_iso()
     resolved_run_id = sanitize_run_id(run_id or f"kb-dream-{utc_now_compact()}")
+    canonical_write_policy = {
+        "allowed": False,
+        "performed": False,
+        "global_writer_required": False,
+        "noncanonical_outputs": [
+            "immutable-simulation-artifacts",
+            "typed-sleep-gap-handoffs",
+        ],
+    }
+    if canonical_write_requested:
+        return {
+            "schema_version": DREAM_SCHEMA_VERSION,
+            "kind": DREAM_REPORT_KIND,
+            "run_id": resolved_run_id,
+            "generated_at": generated_at,
+            "ok": False,
+            "status": "blocked",
+            "final_run_state": "blocked",
+            "reason": "dream-canonical-write-forbidden",
+            "canonical_write_policy": canonical_write_policy,
+            "artifact_paths": {},
+        }
     run_dir = dream_run_dir(repo_root, resolved_run_id)
     run_dir.mkdir(parents=True, exist_ok=True)
     lane_lock = acquire_lane_lock(repo_root, "kb-dream", run_id=resolved_run_id)
@@ -1741,6 +1764,7 @@ def run_dream_maintenance(
                 "kind": DREAM_REPORT_KIND,
                 "run_id": resolved_run_id,
                 "generated_at": generated_at,
+                "canonical_write_policy": canonical_write_policy,
                 "status": "skipped",
                 "reason": "maintenance-lane-active",
                 "terminal_gate": {
@@ -2202,6 +2226,7 @@ def run_dream_maintenance(
             "kind": DREAM_REPORT_KIND,
             "run_id": resolved_run_id,
             "generated_at": generated_at,
+            "canonical_write_policy": canonical_write_policy,
             "status": "completed",
             "authority_pin": {
                 "generation_id": str(authority_pin.get("generation_id") or ""),

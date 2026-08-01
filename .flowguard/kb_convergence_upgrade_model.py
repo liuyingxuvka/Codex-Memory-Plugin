@@ -28,10 +28,21 @@ AUTOMATION_TARGET_OBLIGATIONS = {
     for skill_id in AUTOMATION_COMPLETION_CONTRACTS
 }
 AUTOMATION_TARGET_IDS = tuple(AUTOMATION_TARGET_OBLIGATIONS)
-SCHEDULED_SKILL_IDS = tuple(
-    skill_id for skill_id in AUTOMATION_TARGET_IDS if skill_id != UPDATE_SKILL_ID
+# Only the two composite owners are scheduled. Dream and organization
+# contribution remain maintained child/diagnostic Skills, while the update
+# Skill remains explicit-user-only; all three are therefore unscheduled in the
+# consumer inventory rather than silently receiving their own timer.
+SCHEDULED_SKILL_IDS = (
+    "kb-sleep-maintenance",
+    "kb-organization-maintenance",
 )
-MANUAL_ONLY_SKILL_IDS = (UPDATE_SKILL_ID,)
+COMPOSITE_CHILD_SKILL_IDS = (
+    "kb-dream-pass",
+    "kb-organization-contribute",
+)
+EXPLICIT_USER_ONLY_SKILL_IDS = (
+    UPDATE_SKILL_ID,
+)
 AUTOMATION_CHECK_KINDS = (
     "intake-runtime",
     "native-runtime",
@@ -79,7 +90,8 @@ class ConsumerInput:
     mark_current_ok: bool = True
     maintained_skill_ids: tuple[str, ...] = ()
     scheduled_skill_ids: tuple[str, ...] = ()
-    manual_only_skill_ids: tuple[str, ...] = ()
+    composite_child_skill_ids: tuple[str, ...] = ()
+    explicit_user_only_skill_ids: tuple[str, ...] = ()
     activation_checks_ok: bool = True
     activation_transaction_completed: bool = True
     activation_status_authority_current: bool = True
@@ -135,7 +147,8 @@ class ConsumerState:
     update_survivors_paused: bool = False
     activation_inventory_validated: bool = False
     active_scheduled_skills: tuple[str, ...] = ()
-    manual_only_skills: tuple[str, ...] = ()
+    composite_child_skills: tuple[str, ...] = ()
+    explicit_user_only_skills: tuple[str, ...] = ()
     activation_survivors_paused: bool = False
     activation_status_authority_current: bool = False
     upgrade_attempt_authority_status: str = "unknown"
@@ -325,13 +338,26 @@ class ConsumerIndependenceBlock:
         if input_obj.kind == "operator_activate":
             maintained = tuple(sorted(input_obj.maintained_skill_ids))
             scheduled = tuple(sorted(input_obj.scheduled_skill_ids))
-            manual_only = tuple(sorted(input_obj.manual_only_skill_ids))
+            composite_children = tuple(
+                sorted(input_obj.composite_child_skill_ids)
+            )
+            explicit_user_only = tuple(
+                sorted(input_obj.explicit_user_only_skill_ids)
+            )
             inventory_ok = bool(
                 maintained == tuple(sorted(AUTOMATION_TARGET_IDS))
                 and scheduled == tuple(sorted(SCHEDULED_SKILL_IDS))
-                and manual_only == tuple(sorted(MANUAL_ONLY_SKILL_IDS))
-                and not set(scheduled).intersection(manual_only)
-                and set(scheduled).union(manual_only) == set(maintained)
+                and composite_children
+                == tuple(sorted(COMPOSITE_CHILD_SKILL_IDS))
+                and explicit_user_only
+                == tuple(sorted(EXPLICIT_USER_ONLY_SKILL_IDS))
+                and not set(scheduled).intersection(composite_children)
+                and not set(scheduled).intersection(explicit_user_only)
+                and not set(composite_children).intersection(explicit_user_only)
+                and set(scheduled).union(
+                    composite_children, explicit_user_only
+                )
+                == set(maintained)
             )
             if not inventory_ok:
                 return (
@@ -341,7 +367,8 @@ class ConsumerIndependenceBlock:
                             state,
                             activation_inventory_validated=False,
                             active_scheduled_skills=(),
-                            manual_only_skills=(),
+                            composite_child_skills=(),
+                            explicit_user_only_skills=(),
                             activation_survivors_paused=True,
                         ),
                         label="activation_inventory_blocked",
@@ -362,8 +389,11 @@ class ConsumerIndependenceBlock:
                             state,
                             activation_inventory_validated=True,
                             active_scheduled_skills=(),
-                            manual_only_skills=tuple(
-                                sorted(MANUAL_ONLY_SKILL_IDS)
+                            composite_child_skills=tuple(
+                                sorted(COMPOSITE_CHILD_SKILL_IDS)
+                            ),
+                            explicit_user_only_skills=tuple(
+                                sorted(EXPLICIT_USER_ONLY_SKILL_IDS)
                             ),
                             activation_survivors_paused=True,
                             activation_status_authority_current=False,
@@ -374,17 +404,24 @@ class ConsumerIndependenceBlock:
             return (
                 FunctionResult(
                     ConsumerOutput(
-                        "scheduled_automations_activated_manual_update_unscheduled"
+                        "two_scheduled_owners_activated_children_and_update_unscheduled"
                     ),
                     replace(
                         state,
                         activation_inventory_validated=True,
                         active_scheduled_skills=tuple(sorted(SCHEDULED_SKILL_IDS)),
-                        manual_only_skills=tuple(sorted(MANUAL_ONLY_SKILL_IDS)),
+                        composite_child_skills=tuple(
+                            sorted(COMPOSITE_CHILD_SKILL_IDS)
+                        ),
+                        explicit_user_only_skills=tuple(
+                            sorted(EXPLICIT_USER_ONLY_SKILL_IDS)
+                        ),
                         activation_survivors_paused=False,
                         activation_status_authority_current=True,
                     ),
-                    label="scheduled_automations_activated_manual_update_unscheduled",
+                    label=(
+                        "two_scheduled_owners_activated_children_and_update_unscheduled"
+                    ),
                 ),
             )
 
@@ -1215,7 +1252,7 @@ def _current_update_requires_native_completion(
     return InvariantResult.pass_()
 
 
-def _activation_excludes_manual_only_skill(
+def _activation_preserves_execution_classes(
     state: ConsumerState, trace: object
 ) -> InvariantResult:
     del trace
@@ -1233,14 +1270,23 @@ def _activation_excludes_manual_only_skill(
         )
     if (
         set(state.active_scheduled_skills) != set(SCHEDULED_SKILL_IDS)
-        or set(state.manual_only_skills) != set(MANUAL_ONLY_SKILL_IDS)
+        or set(state.composite_child_skills)
+        != set(COMPOSITE_CHILD_SKILL_IDS)
+        or set(state.explicit_user_only_skills)
+        != set(EXPLICIT_USER_ONLY_SKILL_IDS)
         or set(state.active_scheduled_skills).intersection(
-            state.manual_only_skills
+            state.composite_child_skills
+        )
+        or set(state.active_scheduled_skills).intersection(
+            state.explicit_user_only_skills
+        )
+        or set(state.composite_child_skills).intersection(
+            state.explicit_user_only_skills
         )
     ):
         return InvariantResult.fail(
-            "operator activation did not preserve the exact four scheduled "
-            "plus one manual-only inventory"
+            "operator activation did not preserve exactly two scheduled owners, "
+            "two composite children, and one explicit-user-only skill"
         )
     return InvariantResult.pass_()
 
@@ -1405,9 +1451,9 @@ CONSUMER_INVARIANTS = (
         _current_update_requires_native_completion,
     ),
     Invariant(
-        "operator_activation_excludes_manual_only_skill",
-        "Operator activation binds four scheduled skills and keeps the update skill manual-only.",
-        _activation_excludes_manual_only_skill,
+        "operator_activation_preserves_execution_classes",
+        "Operator activation binds two scheduled owners, two composite children, and one explicit-user-only update skill.",
+        _activation_preserves_execution_classes,
     ),
     Invariant(
         "upgrade_attempt_currentness_is_pointer_only",
@@ -1500,19 +1546,22 @@ CONSUMER_INPUTS = (
         "operator_activate",
         maintained_skill_ids=AUTOMATION_TARGET_IDS,
         scheduled_skill_ids=SCHEDULED_SKILL_IDS,
-        manual_only_skill_ids=MANUAL_ONLY_SKILL_IDS,
+        composite_child_skill_ids=COMPOSITE_CHILD_SKILL_IDS,
+        explicit_user_only_skill_ids=EXPLICIT_USER_ONLY_SKILL_IDS,
     ),
     ConsumerInput(
         "operator_activate",
         maintained_skill_ids=AUTOMATION_TARGET_IDS,
         scheduled_skill_ids=AUTOMATION_TARGET_IDS,
-        manual_only_skill_ids=(),
+        composite_child_skill_ids=(),
+        explicit_user_only_skill_ids=(),
     ),
     ConsumerInput(
         "operator_activate",
         maintained_skill_ids=AUTOMATION_TARGET_IDS,
         scheduled_skill_ids=SCHEDULED_SKILL_IDS,
-        manual_only_skill_ids=MANUAL_ONLY_SKILL_IDS,
+        composite_child_skill_ids=COMPOSITE_CHILD_SKILL_IDS,
+        explicit_user_only_skill_ids=EXPLICIT_USER_ONLY_SKILL_IDS,
         activation_checks_ok=False,
         activation_transaction_completed=False,
     ),
@@ -1520,7 +1569,8 @@ CONSUMER_INPUTS = (
         "operator_activate",
         maintained_skill_ids=AUTOMATION_TARGET_IDS,
         scheduled_skill_ids=SCHEDULED_SKILL_IDS,
-        manual_only_skill_ids=MANUAL_ONLY_SKILL_IDS,
+        composite_child_skill_ids=COMPOSITE_CHILD_SKILL_IDS,
+        explicit_user_only_skill_ids=EXPLICIT_USER_ONLY_SKILL_IDS,
         activation_status_authority_current=False,
         installation_check_uses_current_status_authority=False,
     ),
@@ -1650,7 +1700,8 @@ __all__ = [
     "AUTOMATION_TARGET_IDS",
     "AUTOMATION_CHECK_KINDS",
     "SCHEDULED_SKILL_IDS",
-    "MANUAL_ONLY_SKILL_IDS",
+    "COMPOSITE_CHILD_SKILL_IDS",
+    "EXPLICIT_USER_ONLY_SKILL_IDS",
     "UPDATE_SKILL_ID",
     "ConsumerInput",
     "ConsumerOutput",

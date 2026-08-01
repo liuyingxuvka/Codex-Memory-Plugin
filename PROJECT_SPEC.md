@@ -1074,8 +1074,8 @@ This distinction matters because the repository should not treat speculative exp
 
 The required operating rules are:
 
-- dream and sleep must run in separate automations, threads, or maintenance sessions
-- they must not run concurrently on the same repository state
+- Dream and Sleep remain separate phases with one owner task; they must not run concurrently on the same repository state
+- the scheduled local task runs Sleep first and Dream second only after an unblocked Sleep publish
 - dream should not duplicate route-candidate creation that current sleep consolidation already marks as eligible
 - dream should write only bounded simulation/experiment artifacts plus typed, idempotent Sleep model-gap handoffs
 - dream must not append ordinary observations, create candidates, or mutate the central lifecycle/history ledger directly
@@ -1142,11 +1142,10 @@ mechanism-maintenance agent and no human review queue in the core lifecycle.
 Ordinary prompt, Skill, installer, or product changes remain explicit development
 work with OpenSpec, FlowGuard, SkillGuard, tests, and release evidence as applicable.
 
-The four fully automatic local maintenance roles are:
+The two fully automatic maintenance owners are:
 
-- `KB Sleep` at 12:00: the only owner of observation disposition, candidate creation and terminal outcomes, promotion, downgrade, merge, confidence calibration, Dream-handoff acknowledgement, and atomic LogicGuard model/mesh/projection/index generation publication
-- `KB Dream` at 13:00: exact immutable model simulations and at-most-once typed Sleep model-gap handoffs; no direct model, mesh, projection, candidate, observation, or central-history writes
-- organization contribution and organization maintenance in their stable repository-derived windows
+- `KB Sleep` at 12:00: the only owner of observation disposition, candidate creation and terminal outcomes, promotion, downgrade, merge, confidence calibration, Dream-handoff acknowledgement, and atomic LogicGuard model/mesh/projection/index generation publication; the same task runs the immutable Dream phase after a clean Sleep terminal
+- `KB Organization Maintenance` in its configured repository-derived window: organization maintenance followed by contribution, then complete local organization-snapshot refresh
 
 Software update is not a fifth role and has no scheduled task. The desktop UI
 only shows the exact configured upstream status. An update begins only when the
@@ -1171,10 +1170,11 @@ remainder. With carried actionable debt and no new intake it still selects at
 least the tested minimum when possible. Each completed item and each explicitly
 blocked item is checkpointed durably; a blocker must name its owner and executable
 reopen condition. A cooperative soft stop returns `progress_saved`, preserves
-settled item evidence, leaves the committed watermark unchanged, and makes Dream
-and organization descendants explicitly `not_run`.
+settled item evidence, leaves the committed watermark unchanged, and makes only
+the Dream child phase explicitly `not_run`. The independent organization task
+remains untouched.
 
-Each of the four scheduled roles and the separate manual-update Skill is one
+Each of the two scheduled owners and the separate manual-update Skill is one
 independent consumer unit. Every unit owns one native route, one non-overlapping
 obligation set, its own exact checks, and an immutable native run artifact bound
 to one run id and content hash. Capability tests prove that a version can perform
@@ -1191,7 +1191,7 @@ run, or supply a receipt to another Skill.
 
 The manual-update unit binds the explicit current-conversation request and exact
 manual execution id. It has no scheduler or trigger identity. Its one native
-transaction keeps all four automations paused while it validates the update,
+transaction keeps both automations paused while it validates the update,
 builds the exact restoration plan, applies and reads back that plan, runs the
 ordinary installed-state check, emits its own terminal receipt, and marks
 `CURRENT`. `no-update` is its only successful no-op; operational blockers remain
@@ -1207,18 +1207,20 @@ consumer tree. No compatibility, converter, renewal path, alias, or fallback
 runtime survives.
 
 Current-machine operator activation uses one exact inventory schema that names
-all five maintained Skills and partitions them into exactly four scheduled
-members plus the manual-only `khaos-brain-update`. The partition is disjoint and
-exhaustive. Activation, restoration, and live automation readback operate only
-on the four scheduled automation ids; the manual Skill remains installed with
-no automation binding. An old or ambiguous receipt is rejected rather than
+all five maintained Skills and partitions them into exactly two scheduled
+owners, two composite-child Skills, and the explicit-user-only
+`khaos-brain-update`. The partition is disjoint and exhaustive. Activation,
+restoration, and live automation readback operate only on the two scheduled
+automation ids; child Skills and the manual Skill remain installed with no
+independent timer. An old or ambiguous receipt is rejected rather than
 reinterpreted.
 
 Fresh installation and every supported upgrade provision only
 `kb-sleep-maintenance`, `kb-dream-pass`, `kb-organization-contribute`,
-`kb-organization-maintenance`, and `khaos-brain-update`, plus the surviving
-automations. The installer must delete only the exact retired
-`kb-architect-pass` Skill and `kb-architect` automation, even when an old machine
+`kb-organization-maintenance`, and `khaos-brain-update`, plus the two composite
+automations. The installer must delete only the exact retired split
+automations (`kb-dream` and `kb-org-contribute`) and the exact retired
+`kb-architect-pass` Skill/`kb-architect` automation, even when an old machine
 has missing or stale install manifests; similarly named user assets remain
 untouched. Historical Architect records are inert provenance and may remain only
 in integrity-checked cold history.
@@ -1232,7 +1234,7 @@ immutable replay evidence. Source-only tests, fixtures, models, notes, and
 `.skillguard` author evidence are not installation inputs. Interruption recovery
 restores any incomplete transaction before a new one begins. Every surviving
 automation retains both its exact prior runtime status and independent
-`user_paused` value. Failed aggregate validation leaves all four survivors
+`user_paused` value. Failed aggregate validation leaves both survivors
 paused.
 
 The current FlowGuard package and the public ResearchGuard package used by
@@ -1287,10 +1289,10 @@ installed authority.
 
 The portable installer continues to preserve each machine's pre-upgrade runtime
 status and independent user-pause choice. This machine has a separate explicit
-operator override: after installation and final assurance, all four surviving
+operator override: after installation and final assurance, both surviving
 automations return to `ACTIVE` with `user_paused=false`, while the exact retired
-Architect and system-update tasks remain absent. The closeout stages and
-hash-binds that whole four-member state, reads every result back, writes an
+Architect, split Dream, split contribution, and system-update tasks remain absent. The closeout stages and
+hash-binds that whole two-member state, reads every result back, writes an
 immutable machine receipt, and blocks if any member is missing, paused, or has a
 true user-pause bit.
 
@@ -1330,7 +1332,7 @@ last-known-good install manifest. Final success requires all five installed
 consumer trees to match their staged manifests and pass the clean-consumer
 assurance; it does not refresh or consult a SkillGuard router. If assurance or
 any later post-commit check fails, the previous successful manifest is
-preserved, the failed attempt remains explicitly retryable, and all four tasks
+preserved, the failed attempt remains explicitly retryable, and both tasks
 remain or return to `PAUSED`.
 
 Attempt history is immutable evidence, not ordinary currentness authority. The
@@ -1403,6 +1405,13 @@ there is no projection, legacy-source, or alternate-reader fallback. Full
 model/mesh/projection manifests and lifecycle replay remain mandatory for Sleep,
 migration, rebuild, and aggregate assurance.
 
+Foreign-card calibration follows the same foreground rule. A local-only query
+does not load calibration state. A query with eligible organization results reads
+one compact current foreign-calibration projection bound to its lifecycle event
+count, last sequence, digest, and event-file identity. Retrieval never repairs or
+replays that state; missing or stale authority fails visibly, and Sleep or the
+versioned upgrade is the only repair owner.
+
 Historical lifecycle settlement must remain scale-bounded. It compiles missing
 admission, disposition, and entry-snapshot events into bounded atomic batches,
 replays the lifecycle authority at most once before and once after each batch,
@@ -1439,13 +1448,13 @@ graph. They do not relaunch overlapping pytest or model commands. Reuse is valid
 only while source, normalized command, environment, verifier, inventory revision,
 terminal status, skips, and proof-artifact hashes remain exact and current.
 
-The updater has one target-native transaction. While all four surviving
+The updater has one target-native transaction. While both surviving
 automations are still `PAUSED`, it builds a no-mutation restoration plan that
 binds each source hash, target hash, prior status, `user_paused` value, and
-desired state. The same native owner validates that exact plan, applies the four
+desired state. The same native owner validates that exact plan, applies the two
 writes, reads back every state and hash, runs the ordinary install check,
 publishes its immutable terminal receipt, and marks the software state
-`CURRENT`. Drift or failure at any point re-pauses all four and leaves the state
+`CURRENT`. Drift or failure at any point re-pauses both and leaves the state
 `FAILED`.
 
 The update gate has exactly one successful no-op branch: `no-update`. Missing

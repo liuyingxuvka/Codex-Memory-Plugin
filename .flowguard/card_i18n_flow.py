@@ -1,8 +1,8 @@
 """FlowGuard model for Khaos Brain card creation and zh-CN display cleanup.
 
-This model checks the narrow workflow behind English-only cards:
+This model checks the narrow local workflow behind English-only cards:
 
-    external memory event -> card creation surface -> i18n cleanup -> sleep finalization
+    external memory event -> Sleep card creation -> i18n cleanup -> Sleep finalization
 
 It intentionally models card text abstractly. The only text state tracked is
 whether a card has the optional `i18n.zh-CN` display payload.
@@ -78,22 +78,17 @@ class CardCreationBlock:
     accepted_input_type = Event
     input_description = "abstract memory/card event"
     output_description = "CreationResult"
-    idempotency = "Repeated abstract events create separate candidate/adopted cards; dedupe is outside this narrow i18n model."
+    idempotency = "Only a Sleep candidate pass creates a local canonical card; dedupe is outside this narrow i18n model."
 
     def apply(self, input_obj: Event, state: State) -> Iterable[FunctionResult]:
-        source_by_kind = {
-            "manual_candidate_capture": "manual",
-            "sleep_candidate_pass": "sleep",
-            "dream_candidate": "dream",
-            "organization_adoption": "organization",
-        }
+        source_by_kind = {"sleep_candidate_pass": "sleep"}
         source = source_by_kind.get(input_obj.kind, "")
         if not source:
             yield FunctionResult(
                 output=CreationResult(input_obj),
                 new_state=state,
                 label="no_card_created",
-                reason="structured observation or i18n-only pass does not create a card",
+                reason="observations, Dream handoffs, and foreign-card use do not create a local canonical card",
             )
             return
         yield FunctionResult(
@@ -187,8 +182,8 @@ INITIAL_STATES = (State(),)
 OBSERVED_INPUTS = (
     Event("task_observation"),
     Event("manual_candidate_capture"),
-    Event("dream_candidate"),
-    Event("organization_adoption"),
+    Event("dream_gap_handoff"),
+    Event("foreign_card_use"),
     Event("sleep_candidate_pass", i18n_cleanup=True),
     Event("sleep_candidate_pass", i18n_cleanup=False),
     Event("sleep_i18n_only_pass", i18n_cleanup=True),
@@ -286,10 +281,8 @@ def main() -> int:
         invariants=(NO_SLEEP_FINALIZE_WITH_MISSING_I18N,),
         max_sequence_length=2,
         required_labels=(
-            "card_created_by_manual",
             "card_created_by_sleep",
-            "card_created_by_dream",
-            "card_created_by_organization",
+            "no_card_created",
             "sleep_i18n_cleanup_applied",
             "sleep_i18n_cleanup_skipped",
             "sleep_finalized_clean",
@@ -320,13 +313,18 @@ def main() -> int:
         ),
         "sleep_candidate_with_i18n_cleanup": _run_sequence((Event("sleep_candidate_pass", i18n_cleanup=True),)),
         "sleep_candidate_without_i18n_cleanup": _run_sequence((Event("sleep_candidate_pass", i18n_cleanup=False),)),
-        "organization_adoption_before_sleep": _run_sequence((Event("organization_adoption"),)),
+        "foreign_card_use_does_not_create_local_card": _run_sequence((Event("foreign_card_use"),)),
     }
     result = {
         "model": "card_i18n_flow",
         "flowguard_schema_version": "1.0",
         "question_results": {
-            "strict_all_card_creation_only_sleep": strict_sleep_only_report.ok,
+            "strict_all_local_card_creation_only_sleep": strict_sleep_only_report.ok,
+            "foreign_use_does_not_create_local_card": not scenarios[
+                "foreign_card_use_does_not_create_local_card"
+            ]["labels_seen"] or "no_card_created" in scenarios[
+                "foreign_card_use_does_not_create_local_card"
+            ]["labels_seen"],
             "sleep_i18n_cleanup_closes_loop_when_applied": ideal_sleep_report.ok,
             "observed_workflow_has_paths_that_leave_missing_i18n": not observed_report.ok,
         },
@@ -336,7 +334,7 @@ def main() -> int:
         "scenarios": scenarios,
     }
     print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
-    return 0 if ideal_sleep_report.ok and not observed_report.ok and not strict_sleep_only_report.ok else 1
+    return 0 if ideal_sleep_report.ok and not observed_report.ok and strict_sleep_only_report.ok else 1
 
 
 if __name__ == "__main__":

@@ -216,7 +216,7 @@ def run_manual_update(
         "install_check": {},
         "claim_boundary": (
             "Only an explicit current user request may enter the fast-forward and transactional install route. "
-            "A failed mutating update leaves the installer-owned four survivor automations paused."
+            "A failed mutating update leaves the installer-owned composite survivor automations paused."
         ),
         "run_id": resolved_run_id,
         "lane_lock": lane_lock,

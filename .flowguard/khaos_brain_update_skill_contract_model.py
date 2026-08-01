@@ -26,7 +26,7 @@ FLOWGUARD_MODEL_MARKER = "flowguard-executable-model"
 def export_contract_model():
     return build_contract_model(
         "khaos-brain-update",
-        "Require an explicit current-conversation request, keep all four retained automations paused during mutation, "
+        "Require an explicit current-conversation request, keep both retained composite automations paused during mutation, "
         "then let the native updater apply the exact captured state, read it back, run the final installed-health check, "
         "mark CURRENT, clean its snapshot, and emit its own terminal receipt.",
     )

@@ -25,6 +25,11 @@ from local_kb.automation_contracts import (
     UPDATE_OWNER_TIMEOUT_SECONDS,
     obligation_id,
 )
+from local_kb.maintenance_lanes import (
+    canonical_digest,
+    current_toolchain_digest,
+    validate_cycle_receipt_v3,
+)
 from local_kb.software_update import LEGAL_MANUAL_UPDATE_NOOP_REASONS
 
 
@@ -98,9 +103,7 @@ SLEEP_BATCH_CHECKPOINT_FIELDS = frozenset(
     }
 )
 SLEEP_DOWNSTREAM_STAGE_IDS = (
-    "kb-dream",
-    "kb-organization-contribute",
-    "kb-organization-maintenance",
+    "dream",
 )
 
 
@@ -199,6 +202,10 @@ def _real_artifact_issues(
     """Validate target-owned durable artifacts for non-fixture maintenance runs."""
 
     issues: list[str] = []
+    try:
+        repo_root = receipt_path.resolve().parents[4]
+    except IndexError:
+        repo_root = Path.cwd()
 
     def require_file(raw: object, code: str) -> Path | None:
         text = str(raw or "").strip()
@@ -207,10 +214,6 @@ def _real_artifact_issues(
             return None
         candidate = Path(text)
         if not candidate.is_absolute():
-            try:
-                repo_root = receipt_path.resolve().parents[4]
-            except IndexError:
-                repo_root = Path.cwd()
             candidate = repo_root / candidate
         if not candidate.is_file():
             issues.append(f"{code}:file-missing")
@@ -222,19 +225,72 @@ def _real_artifact_issues(
         payload.get("skipped") is True
         or terminal_status == "no-op"
     )
-    if gated_noop:
+    if gated_noop and not (
+        skill_id == "kb-organization-maintenance"
+        and payload.get("cycle_receipt_path")
+    ):
         return issues
     if skill_id == "kb-sleep-maintenance":
         native = require_file(payload.get("receipt_path"), "sleep-native-receipt")
         if native is not None:
             recorded = _read_json_mapping(native)
-            for key, value in payload.items():
-                if (
-                    key not in {"receipt_path", "_owner_timeout_policy"}
-                    and recorded.get(key) != value
-                ):
+            # The immutable lifecycle receipt is the child artifact.  The
+            # outer local-cycle owner then adds status, Dream, reuse, timeout,
+            # and delegated-writer evidence to the native payload.  Require
+            # every child-owned field to remain byte-semantically equal while
+            # allowing that explicitly richer outer superset.
+            for key, value in recorded.items():
+                if key != "receipt_path" and payload.get(key) != value:
                     issues.append(f"sleep-native-receipt-content-mismatch:{key}")
                     break
+        cycle = _mapping(payload.get("local_cycle"))
+        if cycle:
+            cycle_path = require_file(
+                cycle.get("cycle_receipt_path"), "local-cycle-receipt"
+            )
+            if cycle_path is not None:
+                cycle_payload = _read_json_mapping(cycle_path)
+                try:
+                    from local_kb.local_cycle import (
+                        LOCAL_CYCLE_WORKFLOW_REVISION,
+                        _local_child_plan_digest,
+                        _local_source_digest,
+                        _local_state_snapshot,
+                    )
+
+                    current_state_digest = canonical_digest(
+                        _local_state_snapshot(repo_root)
+                    )
+                except Exception as exc:
+                    current_state_digest = ""
+                    issues.append(
+                        f"local-cycle-current-state-unreadable:{type(exc).__name__}"
+                    )
+                validation = validate_cycle_receipt_v3(
+                    cycle_payload,
+                    expected_kind="local-maintenance-cycle",
+                    expected_run_id=str(payload.get("run_id") or ""),
+                    expected_owner="kb-sleep-maintenance",
+                    expected_automation_id="kb-sleep",
+                    expected_workflow_revision=LOCAL_CYCLE_WORKFLOW_REVISION,
+                    expected_source_component_digest=_local_source_digest(),
+                    expected_toolchain_digest=current_toolchain_digest(),
+                    expected_child_plan_digest=_local_child_plan_digest(),
+                    current_state_digest=current_state_digest,
+                )
+                issues.extend(
+                    f"local-cycle-{item}" for item in validation.get("issues", [])
+                )
+                if str(cycle_payload.get("payload_digest") or "") != str(
+                    cycle.get("cycle_receipt_digest") or ""
+                ):
+                    issues.append("local-cycle-receipt-binding-mismatch")
+                if str(cycle_payload.get("status") or "") not in {
+                    "completed",
+                    "completed_with_blocks",
+                    "progress_saved",
+                }:
+                    issues.append("local-cycle-receipt-not-successful")
     elif skill_id == "kb-dream-pass":
         artifacts = _mapping(payload.get("artifact_paths"))
         report = require_file(artifacts.get("report_path"), "dream-report")
@@ -246,9 +302,61 @@ def _real_artifact_issues(
             if str(recorded.get("run_id") or "") != str(payload.get("run_id") or ""):
                 issues.append("dream-report-run-id-mismatch")
     elif skill_id in {"kb-organization-contribute", "kb-organization-maintenance"}:
-        postflight = require_file(payload.get("postflight_path"), "organization-postflight")
-        if postflight is not None and postflight.stat().st_size <= 0:
-            issues.append("organization-postflight-empty")
+        if payload.get("skipped") is not True:
+            postflight = require_file(
+                payload.get("postflight_path"), "organization-postflight"
+            )
+            if postflight is not None and postflight.stat().st_size <= 0:
+                issues.append("organization-postflight-empty")
+        if skill_id == "kb-organization-maintenance" and payload.get(
+            "cycle_receipt_path"
+        ):
+            cycle_path = require_file(
+                payload.get("cycle_receipt_path"), "organization-cycle-receipt"
+            )
+            if cycle_path is not None:
+                cycle_payload = _read_json_mapping(cycle_path)
+                try:
+                    from local_kb.org_cycle import (
+                        ORGANIZATION_CYCLE_WORKFLOW_REVISION,
+                        _organization_child_plan_digest,
+                        _organization_source_digest,
+                        _organization_state_snapshot,
+                    )
+
+                    current_state_digest = canonical_digest(
+                        _organization_state_snapshot(repo_root)
+                    )
+                except Exception as exc:
+                    current_state_digest = ""
+                    issues.append(
+                        f"organization-cycle-current-state-unreadable:{type(exc).__name__}"
+                    )
+                validation = validate_cycle_receipt_v3(
+                    cycle_payload,
+                    expected_kind="organization-maintenance-cycle",
+                    expected_run_id=str(payload.get("run_id") or ""),
+                    expected_owner="kb-organization-maintenance",
+                    expected_automation_id="kb-org-maintenance",
+                    expected_workflow_revision=ORGANIZATION_CYCLE_WORKFLOW_REVISION,
+                    expected_source_component_digest=_organization_source_digest(),
+                    expected_toolchain_digest=current_toolchain_digest(),
+                    expected_child_plan_digest=_organization_child_plan_digest(),
+                    current_state_digest=current_state_digest,
+                )
+                issues.extend(
+                    f"organization-cycle-{item}"
+                    for item in validation.get("issues", [])
+                )
+                if str(cycle_payload.get("payload_digest") or "") != str(
+                    payload.get("cycle_receipt_digest") or ""
+                ):
+                    issues.append("organization-cycle-receipt-binding-mismatch")
+                if str(cycle_payload.get("status") or "") not in {
+                    "completed",
+                    "not_applicable",
+                }:
+                    issues.append("organization-cycle-receipt-not-successful")
     elif skill_id == "khaos-brain-update":
         if terminal_status == "current-and-restored":
             finalization = _mapping(payload.get("update_finalization"))
@@ -1065,7 +1173,7 @@ def _sleep_progress_saved_evidence(
         elif suffix == "downstream-not-run":
             evidence[item_id] = _evidence(
                 downstream_ok,
-                "Dream and both organization descendants are explicitly not_run for this open Sleep batch.",
+                "Only the local Dream phase is explicitly not_run for this open Sleep batch; the independent organization task is untouched.",
                 "downstream_stages",
                 branch_id="progress-saved",
             )
@@ -1369,7 +1477,7 @@ def _sleep_evidence(payload: Mapping[str, Any], exit_code: int) -> dict[str, dic
                 else not _mapping(payload.get("downstream_stages"))
             ),
             (
-                "Dream and both organization descendants are explicitly not_run because this published batch completed with blocked siblings."
+                "Only the local Dream phase is explicitly not_run because this published batch completed with blocked siblings; the independent organization task is untouched."
                 if completed_with_blocks
                 else "The Sleep batch completed without blocked siblings, so progress/failure downstream gating is not applicable to this terminal."
             ),
@@ -2265,8 +2373,6 @@ def _update_evidence(payload: Mapping[str, Any], exit_code: int) -> dict[str, di
     ]
     survivor_ids = {
         "kb-sleep",
-        "kb-dream",
-        "kb-org-contribute",
         "kb-org-maintenance",
     }
     return {
@@ -2317,8 +2423,13 @@ def _update_evidence(payload: Mapping[str, Any], exit_code: int) -> dict[str, di
             install_transaction.get("ok") is True
             and retired_skill_ids == {"kb-architect-pass"}
             and retired_automation_ids
-            == {"kb-architect", "khaos-brain-system-update"},
-            "The native update used a committed transaction whose retirement set contains the exact Architect and system-update automation surfaces.",
+            == {
+                "kb-architect",
+                "khaos-brain-system-update",
+                "kb-dream",
+                "kb-org-contribute",
+            },
+            "The native update used a committed transaction whose retirement set contains the exact legacy and split-owner automation surfaces.",
             "install.install_transaction",
             "install.retired_skill_ids",
             "install.retired_automation_ids",
@@ -3027,14 +3138,10 @@ def build_fixture_payload(
             "automation_state_snapshot": {
                 "states": {
                     "kb-sleep": "ACTIVE",
-                    "kb-dream": "ACTIVE",
-                    "kb-org-contribute": "ACTIVE",
                     "kb-org-maintenance": "PAUSED",
                 },
                 "user_paused": {
                     "kb-sleep": False,
-                    "kb-dream": False,
-                    "kb-org-contribute": False,
                     "kb-org-maintenance": True,
                 },
             },
@@ -3073,11 +3180,11 @@ def build_fixture_payload(
                 "retired_automation_ids": [
                     "kb-architect",
                     "khaos-brain-system-update",
+                    "kb-dream",
+                    "kb-org-contribute",
                 ],
                 "automations": [
                     {"id": "kb-sleep", "status": "ACTIVE"},
-                    {"id": "kb-dream", "status": "ACTIVE"},
-                    {"id": "kb-org-contribute", "status": "ACTIVE"},
                     {"id": "kb-org-maintenance", "status": "PAUSED"},
                 ],
             },
@@ -3103,14 +3210,10 @@ def build_fixture_payload(
                     "plan_hash": "fixture-restoration-plan",
                     "restored": {
                         "kb-sleep": "ACTIVE",
-                        "kb-dream": "ACTIVE",
-                        "kb-org-contribute": "ACTIVE",
                         "kb-org-maintenance": "PAUSED",
                     },
                     "restored_user_paused": {
                         "kb-sleep": False,
-                        "kb-dream": False,
-                        "kb-org-contribute": False,
                         "kb-org-maintenance": True,
                     },
                 },

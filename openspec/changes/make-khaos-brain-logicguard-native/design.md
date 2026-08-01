@@ -133,7 +133,7 @@ Existing facades extend rather than duplicate:
 
 ### 8. Direct-to-current migration is the only legacy reader
 
-The migration inventories all managed YAML cards, lifecycle states, and retired LogicGuard authority artifacts; freezes the complete ResearchGuard logic and FlowGuard toolchain identities; pauses the four retained automations while preserving user pause intent; and locks all managed writers. Author-side skill contract checking remains a separate maintainer action. For each card it:
+The migration inventories all managed YAML cards, lifecycle states, and retired LogicGuard authority artifacts; freezes the complete ResearchGuard logic and FlowGuard toolchain identities; pauses the two composite automations while preserving user pause intent; and locks all managed writers. Author-side skill contract checking remains a separate maintainer action. For each card it:
 
 1. snapshots and hashes legacy input;
 2. deterministically constructs a scoped LogicGuard model with explicit gaps;
@@ -214,6 +214,166 @@ Lifecycle status, Sleep/Dream scheduling, active-index publication, and desktop 
 
 Rollback before final commit restores the prior YAML/index/lifecycle generation and removes only transaction-created model/mesh revisions or abandons them as unreachable immutable artifacts. Automations remain paused on any failed migration or assurance gate. There is no rollback into a dual-runtime compatibility mode.
 
+Organization-source rollback keeps its existing repo-local snapshot and receipt identity. On Windows, backup and restore file operations use the native extended-length namespace so a valid deep card path remains complete even when the added rollback prefix crosses 260 characters; the product contract and stored receipt path do not change.
+
 ## Open Questions
 
 No product-direction question remains open. Thresholds such as maximum retrieval hops/nodes, Sleep batch size, and Dream experiment count will be calibrated from current performance fixtures and recorded as explicit configuration constants with fail-closed hard caps.
+
+### 11. Organization cards are a complete local foreign snapshot
+
+The organization mirror remains the remote Git/source input, but ordinary task
+retrieval MUST NOT read a mutable mirror or perform a lazy network fetch. The
+organization cycle materializes one immutable local snapshot per pinned
+organization generation under the ignored runtime root. A snapshot contains the
+catalog's exact active card identity set, every active card projection, every
+card's exact LogicGuard model/bundle binding, source commit/generation metadata,
+and lifecycle/tombstone summaries needed to exclude retired cards.
+
+The sync has two levels of completeness: the logical result is the entire
+active set, while the physical transfer may reuse content-addressed blobs whose
+hashes already exist locally. New material is staged first, checked against the
+exact expected identity/revision/hash set, sealed, and activated by changing one
+current pointer last. A missing card, bundle, digest, or identity mismatch never
+partially replaces the previous complete snapshot. A prior snapshot may remain
+available with an explicit stale status; a first-ever failed sync exposes an
+organization-unavailable result.
+
+The local search facade reads the local canonical index and the current
+organization snapshot as separate sources. An organization result is marked
+`foreign/organization`, read-only, and trial-eligible when its applicability,
+scope, lifecycle, and LogicGuard binding pass. It may participate in the current
+task without a user adoption action, but synchronization MUST NOT create a
+local model, adopted overlay, or executable Skill installation. The real task
+outcome is recorded as an `organization_use` observation; the next Sleep cycle
+may localize, strengthen, weaken, suppress, or leave the foreign card alone.
+Local canonical knowledge remains the default authority when an organization
+card conflicts with it.
+
+This replaces the prior `downloaded`/`adopt_requested` meaning. Cached content
+must not enter exchange-hash blocking solely because it was synchronized, and
+rejected, deprecated, tombstoned, or malformed cards are never searchable from
+the current snapshot.
+
+### 12. Two scheduled owners with phase-isolated internals
+
+The public scheduler exposes exactly one local maintenance task and one
+organization task. The local task owns one non-overlapping cycle lease and
+contains two permission-separated phases:
+
+1. `fresh_cycle`: pin the current local generation, run the existing Sleep
+   transaction, and only after a clean Sleep terminal run bounded read-only
+   Dream as the second phase of the same task.
+2. `resume_sleep`: when an open frozen Sleep batch exists, resume that batch and
+   mark the Dream phase deferred for this trigger. Dream handoffs are sealed
+   for the next eligible Sleep batch; they never publish a model directly.
+
+Dream remains read-only and Sleep remains the sole canonical model/generation
+publisher. A cycle receipt binds the mode, phase order, pinned generations,
+Dream subreceipt/handoff digest, Sleep subreceipt, output generation, timeout
+cleanup, and terminal status. A handoff is visible to Sleep only after the Dream
+subreceipt is sealed. A process cleanup uncertainty, corrupt authority, or open
+writer lease blocks unsafe descendants; an ordinary bounded Dream experiment
+failure does not discard independent Sleep work.
+
+The organization task owns a separate non-overlapping organization lease. Its
+first phase syncs and atomically activates the complete foreign snapshot; later
+phases reuse the existing organization maintenance and contribution owners,
+with their current PR/import/main authority boundaries. The task never consumes
+its own unmerged contribution in the same run. Personal mode activates only the
+local task; organization mode activates both tasks without sharing their locks
+or canonical generation pointers.
+
+### 13. Installation and source/Git parity are separate claims
+
+After implementation, affected FlowGuard models, current tests, OpenSpec
+validation, and the final readiness owner are terminal and current, the
+installer refreshes the consumer Skills and both task projections transactionally
+while preserving user pause state. The install check compares source, installed
+projection, package/toolchain, FlowGuard adoption record, and local Git revision
+as separate identities. It must not turn a repository-only change or a peer's
+unrelated dirty file into a false clean tree. A local commit may include only
+this task's claimed paths; publication or remote release remains a separate
+explicit claim.
+
+### 14. Multi-source retrieval has one ranking and one receipt
+
+Local and organization candidates are validated independently, then admitted to
+one result set. Exact content duplicates collapse before ranking; a current local
+copy owns that duplicate. Distinct cards compete through the same final score,
+with any local-authority preference represented as an explainable bounded score
+term rather than list concatenation. The selected top-k order is therefore not a
+side effect of source enumeration.
+
+One search call writes one durable combined receipt. Every returned row owns a
+source-qualified `result_ref`; a foreign row additionally binds organization id,
+snapshot generation and manifest digest, card/source hashes, bundle digest, and
+exact LogicGuard binding. UI, CLI, task use, and later outcome validation consume
+that same receipt instead of launching a second local-only search.
+
+### 15. Foreign-card experience is recorded in four distinct stages
+
+`viewed` is UI observability, `selected` is retrieval/routing intent, `used` means
+the task actually consumed the card, and `outcome_recorded` carries success,
+failure, misleading, rework, or unknown evidence. Viewing never implies use.
+`used` and `outcome_recorded` are exact-once events keyed by the combined receipt
+and source-qualified result reference. They do not copy the card locally, publish
+a model, install a Skill, or mutate organization authority.
+
+The next Sleep batch aggregates exact foreign identities and records one bounded
+local disposition: `reinforce`, `dampen`, `suppress`, `localize_candidate`,
+`organization_update_candidate`, or `no_delta`. This changes only local retrieval
+calibration or creates ordinary candidate evidence through existing lifecycle
+ownership. Sleep remains the sole local publisher.
+
+### 16. Two scheduled owners are independent and share only write exclusion
+
+The local cycle and organization cycle keep separate outer leases, requests,
+receipts, timeouts, and terminal states. Either may complete when the other is
+blocked. They acquire one owner-token global writer lease only around overlapping
+durable state such as history, lifecycle, canonical generation publication, or
+organization exchange accounting. Read-only snapshot retrieval and model
+simulation do not hold that lease. Contention defers or blocks only the attempted
+write phase with a visible owner reference; it never cascades a synthetic
+`not_run` to the other scheduled task.
+
+The local sequence is Sleep then Dream. Dream runs only after the current Sleep
+publication is terminal and clean; an open Sleep batch resumes without Dream.
+The organization sequence is snapshot sync, organization maintenance, then
+contribution, with one pinned source context and no consumption of its own
+unmerged contribution.
+
+### 17. Organization source upgrade replaces snapshot compatibility
+
+Organization maintenance inventories the exact source card identities and hashes,
+resolves duplicate ids deterministically, and stages current portable projections
+plus LogicGuard bundles at the source. Sparse cards preserve explicit gaps; they
+do not gain invented evidence. A complete source upgrade is activated only after
+all active cards validate, the old identities receive direct dispositions, and
+zero legacy source residuals are proven.
+
+Merge and split proposals are executable only through immutable reversible apply
+packets containing input digests, field ownership, provenance, old/new identity
+mapping, model/mesh reconstruction, rollback inventory, and post-apply checks.
+Insufficient evidence produces a concrete required input and reopen predicate,
+not permanent generic `watch` state. Normal snapshot construction reads only the
+current organization contract after the versioned cutover.
+
+### 18. Cycle receipt schema v3 binds execution identity
+
+Each cycle receipt is immutable and binds a normalized request digest, source and
+toolchain digests, automation identity, mode, pinned input generations, lease
+tokens, child receipt paths and hashes, outputs, cleanup evidence, and one strict
+terminal state. Reuse requires exact equality of all decision-relevant inputs and
+a terminal-success receipt. Same run id with changed inputs, partial child state,
+`blocked`, `failed`, `timeout`, `cleanup_unconfirmed`, or `not_run` is not reuse.
+
+### 19. Alignment consumes execution evidence
+
+FlowGuard planning artifacts freeze obligations and owners, but release alignment
+loads the final readiness evidence graph and maps each obligation to the exact
+terminal test/model receipt and JUnit node. TestMesh must account for every child
+as executed-success or explicit non-success; planned-but-not-run remains a blocker.
+The readiness parent fails if it sees planning-only success projection, missing
+current runs, stale source/tool fingerprints, or a two-task model that was not
+executed on the frozen snapshot.

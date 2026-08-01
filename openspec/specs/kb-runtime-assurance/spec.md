@@ -85,22 +85,23 @@ or the complete assurance campaign merely because time elapsed.
 
 Current-machine activation SHALL bind one exact maintained-skill inventory
 schema. That schema SHALL list all five maintained consumer skills, classify
-exactly four as scheduled, and classify only `khaos-brain-update` as
-manual-only. Scheduled activation and live readback SHALL operate only on the
-four scheduled automation IDs. The manual-only skill MUST remain installed but
-MUST NOT be treated as missing scheduled-production evidence or receive an
-automation binding.
+exactly two as scheduled owners, classify Dream and organization contribution
+as composite children, and classify only `khaos-brain-update` as
+explicit-user-only. Scheduled activation and live readback SHALL operate only
+on the two scheduled automation IDs. Composite children and the
+explicit-user-only skill MUST remain installed but MUST NOT be treated as
+missing scheduled-production evidence or receive separate automation bindings.
 
 Activation SHALL replay large lifecycle ledgers in a streaming form that
 preserves the exact canonical event digest without materializing the complete
 event array. After any automation has been changed to `ACTIVE`, every
 exception, including memory exhaustion during the installation check or
-receipt self-validation, SHALL restore all four managed automations to
+receipt self-validation, SHALL restore both managed automations to
 `PAUSED`. An `ACTIVE` state without one current validated activation receipt
 MUST NOT be accepted as completion.
 
 Before changing any automation to a safety `PAUSED` state, the installer SHALL
-bind all four original statuses and pause intents into the current upgrade
+bind both original statuses and pause intents into the current upgrade
 attempt. A failed retry SHALL reuse that exact snapshot rather than treat the
 installer-created TOML state as user intent. Outside a recoverable attempt,
 the Codex-owned TOML status remains the user-visible intent. An old
@@ -152,9 +153,9 @@ turn a changed migration authority into a current installation.
 - **AND** a tag without that exact receipt is rejected
 
 #### Scenario: Readiness contains all five maintained skills
-- **WHEN** current author and consumer assurance report the four scheduled skills plus `khaos-brain-update`
+- **WHEN** current author and consumer assurance report two scheduled owners, two composite children, and `khaos-brain-update`
 - **THEN** activation validates the complete five-skill inventory
-- **AND** it activates and reads back only the four scheduled automations
+- **AND** it activates and reads back only the two scheduled automations
 
 #### Scenario: A failed upgrade left an enabled automation safely paused
 - **WHEN** the live automation is `PAUSED` and the failed attempt snapshot binds its original state as `ACTIVE` with `user_paused=false`
@@ -166,12 +167,12 @@ turn a changed migration authority into a current installation.
 - **THEN** a later installation preserves that user-visible paused state
 
 #### Scenario: An inventory uses an old or ambiguous shape
-- **WHEN** the activation receipt omits the manual-only classification, overlaps the scheduled and manual sets, or does not exhaust the five maintained skills
+- **WHEN** the activation receipt omits any scheduled, composite-child, or explicit-user-only classification, overlaps those sets, or does not exhaust the five maintained skills
 - **THEN** activation fails without interpreting an older receipt or inferring a fallback classification
 
 #### Scenario: Activation assurance exhausts memory
 - **WHEN** a large lifecycle ledger cannot complete the installation check or receipt self-validation
-- **THEN** the activation route reports non-success and restores all four scheduled automations to `PAUSED`
+- **THEN** the activation route reports non-success and restores both scheduled automations to `PAUSED`
 - **AND** no unreceipted `ACTIVE` state is accepted or recovered through a second runtime path
 
 #### Scenario: Two healthy installation checks emit different diagnostics

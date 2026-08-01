@@ -1114,7 +1114,6 @@ def project_live_projection(root: Path = REPO_ROOT) -> dict[str, object]:
 
     codex_home = Path.home() / ".codex"
     org_automation_statuses = {
-        "kb-org-contribute": _toml_status(codex_home / "automations" / "kb-org-contribute" / "automation.toml"),
         "kb-org-maintenance": _toml_status(codex_home / "automations" / "kb-org-maintenance" / "automation.toml"),
     }
 
@@ -1227,7 +1226,7 @@ def project_live_projection(root: Path = REPO_ROOT) -> dict[str, object]:
         allowed_notes.append(
             {
                 "id": "org_automation_manual_pause_allowed",
-                "message": "Organization automations are paused locally; this model treats user-paused org cadence as allowed, not as a failure by itself.",
+                "message": "The organization automation is paused locally; this model treats user-paused org cadence as allowed, not as a failure by itself.",
                 "evidence": {"paused_automations": paused_org},
             }
         )

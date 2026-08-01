@@ -5,8 +5,10 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import runpy
+import subprocess
 import sys
 from typing import Any
 
@@ -44,6 +46,15 @@ from local_kb.transactional_install import consumer_skill_manifest  # noqa: E402
 
 MODEL_PATH = FLOWGUARD_ROOT / "kb_convergence_upgrade_model.py"
 EVIDENCE_PATH = FLOWGUARD_ROOT / "evidence" / "kb_convergence_suite.json"
+OBSERVED_MODEL_SYSTEM_PATH = (
+    FLOWGUARD_ROOT / "khaos_brain_logicguard_system" / "model.py"
+)
+OBSERVED_MODEL_SYSTEM_RUNNER = (
+    FLOWGUARD_ROOT / "khaos_brain_logicguard_system" / "run_checks.py"
+)
+TWO_CYCLE_MODEL_PATH = (
+    FLOWGUARD_ROOT / "khaos_brain_two_maintenance_cycle_flow.py"
+)
 CHILD_MODEL_PATHS = {
     "kb-sleep-maintenance": FLOWGUARD_ROOT
     / "kb_sleep_skill_contract_model.py",
@@ -59,6 +70,40 @@ CHILD_MODEL_PATHS = {
 
 def _digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _compact_summary(report: Any) -> dict[str, Any]:
+    """Project a FlowGuard result without embedding the explored state graph.
+
+    FlowGuard summary metadata intentionally retains the executable plan and
+    every explored trace for interactive debugging.  A durable release receipt
+    needs the terminal sections, findings, and repair obligations, but embedding
+    that replayable graph can turn a small result into a multi-gigabyte JSON
+    file.  Counterexamples remain present in section findings when a check is
+    non-green; successful full traces are deliberately regenerated from the
+    exact source/tool fingerprints instead of being copied into the receipt.
+    """
+
+    return {
+        "overall_status": report.overall_status,
+        "summary": report.summary,
+        "sections": [
+            {
+                "name": section.name,
+                "status": section.status,
+                "summary": section.summary,
+                "findings": list(section.findings),
+            }
+            for section in report.sections
+        ],
+        "finding_ledger": report.finding_ledger.to_dict(),
+        "maintenance_obligations": report.maintenance_obligations.to_dict(),
+        "evidence_projection": {
+            "kind": "terminal-summary",
+            "full_success_traces_embedded": False,
+            "counterexamples_preserved_in_findings": True,
+        },
+    }
 
 
 def _projection_digest() -> str:
@@ -79,6 +124,9 @@ def _projection_digest() -> str:
         REPO_ROOT / "scripts" / "run_khaos_brain_manual_update.py",
         REPO_ROOT / "scripts" / "check_consumer_install_assurance.py",
         REPO_ROOT / "tests" / "test_kb_automation_skillguard.py",
+        OBSERVED_MODEL_SYSTEM_PATH,
+        OBSERVED_MODEL_SYSTEM_RUNNER,
+        TWO_CYCLE_MODEL_PATH,
         *CHILD_MODEL_PATHS.values(),
     )
     rows = [
@@ -176,20 +224,23 @@ def _scenarios() -> tuple[Scenario, ...]:
             ),
         ),
         Scenario(
-            "operator_activation_separates_scheduled_and_manual_skills",
-            "The complete five-skill inventory activates only the four scheduled members.",
+            "operator_activation_separates_scheduled_children_and_manual_update",
+            "The five-skill inventory activates exactly two scheduled owners while retaining two child phases and one manual update skill.",
             model.ConsumerState(),
             (
                 model.ConsumerInput(
                     "operator_activate",
                     maintained_skill_ids=model.AUTOMATION_TARGET_IDS,
                     scheduled_skill_ids=model.SCHEDULED_SKILL_IDS,
-                    manual_only_skill_ids=model.MANUAL_ONLY_SKILL_IDS,
+                    composite_child_skill_ids=model.COMPOSITE_CHILD_SKILL_IDS,
+                    explicit_user_only_skill_ids=(
+                        model.EXPLICIT_USER_ONLY_SKILL_IDS
+                    ),
                 ),
             ),
             ScenarioExpectation(
                 required_trace_labels=(
-                    "scheduled_automations_activated_manual_update_unscheduled",
+                    "two_scheduled_owners_activated_children_and_update_unscheduled",
                 )
             ),
         ),
@@ -202,13 +253,14 @@ def _scenarios() -> tuple[Scenario, ...]:
                     "operator_activate",
                     maintained_skill_ids=model.AUTOMATION_TARGET_IDS,
                     scheduled_skill_ids=model.AUTOMATION_TARGET_IDS,
-                    manual_only_skill_ids=(),
+                    composite_child_skill_ids=(),
+                    explicit_user_only_skill_ids=(),
                 ),
             ),
             ScenarioExpectation(
                 required_trace_labels=("activation_inventory_blocked",),
                 forbidden_trace_labels=(
-                    "scheduled_automations_activated_manual_update_unscheduled",
+                    "two_scheduled_owners_activated_children_and_update_unscheduled",
                 ),
             ),
         ),
@@ -221,7 +273,10 @@ def _scenarios() -> tuple[Scenario, ...]:
                     "operator_activate",
                     maintained_skill_ids=model.AUTOMATION_TARGET_IDS,
                     scheduled_skill_ids=model.SCHEDULED_SKILL_IDS,
-                    manual_only_skill_ids=model.MANUAL_ONLY_SKILL_IDS,
+                    composite_child_skill_ids=model.COMPOSITE_CHILD_SKILL_IDS,
+                    explicit_user_only_skill_ids=(
+                        model.EXPLICIT_USER_ONLY_SKILL_IDS
+                    ),
                     activation_checks_ok=False,
                     activation_transaction_completed=False,
                 ),
@@ -231,7 +286,7 @@ def _scenarios() -> tuple[Scenario, ...]:
                     "activation_failed_survivors_paused",
                 ),
                 forbidden_trace_labels=(
-                    "scheduled_automations_activated_manual_update_unscheduled",
+                    "two_scheduled_owners_activated_children_and_update_unscheduled",
                 ),
             ),
         ),
@@ -244,7 +299,10 @@ def _scenarios() -> tuple[Scenario, ...]:
                     "operator_activate",
                     maintained_skill_ids=model.AUTOMATION_TARGET_IDS,
                     scheduled_skill_ids=model.SCHEDULED_SKILL_IDS,
-                    manual_only_skill_ids=model.MANUAL_ONLY_SKILL_IDS,
+                    composite_child_skill_ids=model.COMPOSITE_CHILD_SKILL_IDS,
+                    explicit_user_only_skill_ids=(
+                        model.EXPLICIT_USER_ONLY_SKILL_IDS
+                    ),
                     activation_status_authority_current=False,
                     installation_check_uses_current_status_authority=False,
                 ),
@@ -254,7 +312,7 @@ def _scenarios() -> tuple[Scenario, ...]:
                     "activation_failed_survivors_paused",
                 ),
                 forbidden_trace_labels=(
-                    "scheduled_automations_activated_manual_update_unscheduled",
+                    "two_scheduled_owners_activated_children_and_update_unscheduled",
                 ),
             ),
         ),
@@ -551,7 +609,7 @@ def _model_report() -> dict[str, Any]:
             "partial native receipt accepted",
             "manual update marks CURRENT before restoration",
             "cross-skill evidence reuse",
-            "manual-only update skill treated as a scheduled automation",
+            "composite child or explicit-user-only skill treated as a scheduled automation",
             "upgrade currentness scans attempt history or falls back to manifest state",
             "installation currentness launches a validation owner",
             "one changed component triggers every assurance owner",
@@ -579,7 +637,7 @@ def _model_report() -> dict[str, Any]:
             "consumer projection activation",
             "native terminal completion",
             "manual update restoration and CURRENT",
-            "four-automation activation from a five-skill classified inventory",
+            "two scheduled owners, two composite children, and one explicit manual skill",
             "bounded HEAD-to-current attempt lookup",
             "read-only installation currentness",
             "affected-owner assurance planning and exact receipt reuse",
@@ -589,7 +647,7 @@ def _model_report() -> dict[str, Any]:
             "clean consumer projection",
             "exact target obligation inventory",
             "current target-native receipt",
-            "exact scheduled/manual-only skill inventory",
+            "exact scheduled/composite-child/explicit-user-only skill inventory",
             "bounded hash-bound current attempt authority",
             "zero currentness owner executions",
             "exact changed-component to affected-owner plan",
@@ -630,7 +688,7 @@ def _model_report() -> dict[str, Any]:
             "native_completion_blocked",
             "manual_update_current_and_restored",
             "manual_update_failed_survivors_paused",
-            "scheduled_automations_activated_manual_update_unscheduled",
+            "two_scheduled_owners_activated_children_and_update_unscheduled",
             "activation_inventory_blocked",
             "upgrade_attempt_current_authority",
             "upgrade_attempt_current_authority_blocked",
@@ -691,7 +749,7 @@ def _model_report() -> dict[str, Any]:
         },
     )
     summary = run_model_first_checks(plan)
-    return summary.to_dict()
+    return _compact_summary(summary)
 
 
 def _progress_config() -> ProgressCheckConfig:
@@ -990,7 +1048,7 @@ def _lifecycle_model_report() -> dict[str, Any]:
             "model_miss_types": ("state_too_coarse", "evidence_overclaimed"),
         },
     )
-    return run_model_first_checks(plan).to_dict()
+    return _compact_summary(run_model_first_checks(plan))
 
 
 def _lifecycle_scenario_report() -> dict[str, Any]:
@@ -1049,12 +1107,42 @@ def _report_ok(report: dict[str, Any]) -> bool:
     )
 
 
+def _observed_model_system_report() -> dict[str, Any]:
+    completed = subprocess.run(
+        [sys.executable, str(OBSERVED_MODEL_SYSTEM_RUNNER)],
+        cwd=str(REPO_ROOT),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+        timeout=180,
+        env={
+            **os.environ,
+            "PYTHONUTF8": "1",
+            "PYTHONIOENCODING": "utf-8",
+        },
+    )
+    try:
+        payload = json.loads(completed.stdout)
+    except json.JSONDecodeError:
+        payload = {}
+    return {
+        "ok": completed.returncode == 0 and payload.get("ok") is True,
+        "exit_code": completed.returncode,
+        "payload": payload,
+        "stdout_tail": completed.stdout[-2000:],
+        "stderr_tail": completed.stderr[-2000:],
+    }
+
+
 def build_report() -> dict[str, Any]:
     model_report = _model_report()
     scenarios = _scenario_report()
     lifecycle_model = _lifecycle_model_report()
     lifecycle_scenarios = _lifecycle_scenario_report()
     contracts = _contract_report()
+    observed_model_system = _observed_model_system_report()
     scenario_ok = scenarios.get("ok") is True
     report = {
         "schema_version": "khaos-brain.flowguard-convergence.v2",
@@ -1064,6 +1152,7 @@ def build_report() -> dict[str, Any]:
             and _report_ok(lifecycle_model)
             and lifecycle_scenarios.get("ok") is True
             and contracts["ok"]
+            and observed_model_system["ok"]
         ),
         "projection_digest": _projection_digest(),
         "model": model_report,
@@ -1071,10 +1160,11 @@ def build_report() -> dict[str, Any]:
         "lifecycle_model": lifecycle_model,
         "lifecycle_scenarios": lifecycle_scenarios,
         "contracts": contracts,
+        "observed_model_system": observed_model_system,
         "claim_boundary": (
             "Executable FlowGuard evidence for clean consumer distribution, "
             "target-native completion, independent test ownership, and direct "
-            "manual-update closure, exact scheduled/manual-only activation inventory, "
+            "manual-update closure, exact scheduled/child/manual activation inventory, "
             "and bounded pointer-only upgrade currentness. It does not guarantee "
             "third-party skill compatibility or current production recovery."
         ),

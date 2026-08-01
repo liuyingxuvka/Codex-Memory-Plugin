@@ -52,8 +52,6 @@ SURVIVING_SKILLS = {
 }
 SURVIVING_AUTOMATIONS = {
     "kb-sleep",
-    "kb-dream",
-    "kb-org-contribute",
     "kb-org-maintenance",
 }
 
@@ -335,9 +333,9 @@ class CodexInstallTests(unittest.TestCase):
             codex_home = root / ".codex"
             shell_bin, git_real, rg_source = _write_fake_tools(root)
             sleep = codex_home / "automations/kb-sleep/automation.toml"
-            dream = codex_home / "automations/kb-dream/automation.toml"
+            organization = codex_home / "automations/kb-org-maintenance/automation.toml"
             architect = codex_home / "automations/kb-architect/automation.toml"
-            for path, status in ((sleep, "ACTIVE"), (dream, "PAUSED"), (architect, "ACTIVE")):
+            for path, status in ((sleep, "ACTIVE"), (organization, "PAUSED"), (architect, "ACTIVE")):
                 path.parent.mkdir(parents=True)
                 path.write_text(f'status = "{status}"\n', encoding="utf-8")
             with patch(
@@ -363,7 +361,7 @@ class CodexInstallTests(unittest.TestCase):
                 payload["install_transaction"]["transaction_id"],
             )
             self.assertEqual(_automation_status(sleep), "ACTIVE")
-            self.assertEqual(_automation_status(dream), "PAUSED")
+            self.assertEqual(_automation_status(organization), "PAUSED")
             self.assertFalse(architect.parent.exists())
             self.assertEqual(payload["upgrade_attempt"]["status"], "completed")
             persisted = load_install_state(codex_home)
@@ -411,6 +409,9 @@ class CodexInstallTests(unittest.TestCase):
                 "migration_id": "fixture-initial",
             }
             with patch(
+                "local_kb.maintenance_migration.check_migration_current_authority",
+                return_value={"ok": False, "status": "stale"},
+            ), patch(
                 "local_kb.maintenance_migration.run_maintenance_migration",
                 return_value=initial,
             ) as migration, patch(
@@ -462,6 +463,9 @@ class CodexInstallTests(unittest.TestCase):
                 )
 
             with patch(
+                "local_kb.maintenance_migration.check_migration_current_authority",
+                return_value={"ok": False, "status": "stale"},
+            ), patch(
                 "local_kb.maintenance_migration.run_maintenance_migration",
                 side_effect=RuntimeError("fixture migration failed"),
             ):
@@ -645,14 +649,14 @@ class CodexInstallTests(unittest.TestCase):
         self.assertIn("`progress_saved`", sleep)
         self.assertIn("`previous_remaining`", sleep)
         self.assertIn("`closing_remaining`", sleep)
-        self.assertIn("`downstream_stages` as `not_run`", sleep)
+        self.assertIn("record only the Dream phase as `not_run`", sleep)
         self.assertIn("Do not ask a human", sleep)
         sleep_automation = next(
             item["prompt"] for item in REPO_AUTOMATION_SPECS if item["id"] == "kb-sleep"
         )
         self.assertIn("exact open frozen batch", sleep_automation)
         self.assertIn("progress_saved", sleep_automation)
-        self.assertIn("downstream_stages as not_run", sleep_automation)
+        self.assertIn("independent organization task remains untouched", sleep_automation)
         self.assertIn("do not invoke kb_lane_status.py", sleep_automation)
         self.assertIn("no_delta_closed", dream)
         self.assertIn("typed idempotent Sleep handoff", dream)
@@ -1298,8 +1302,8 @@ class CodexInstallTests(unittest.TestCase):
     def test_organization_automation_times_are_stable_and_windowed(self) -> None:
         repo_root = Path(__file__).resolve().parents[1]
         by_id = {item["id"]: item for item in REPO_AUTOMATION_SPECS}
-        first = automation_rrule_for_spec(by_id["kb-org-contribute"], repo_root)
-        second = automation_rrule_for_spec(by_id["kb-org-contribute"], repo_root)
+        first = automation_rrule_for_spec(by_id["kb-org-maintenance"], repo_root)
+        second = automation_rrule_for_spec(by_id["kb-org-maintenance"], repo_root)
         self.assertEqual(first, second)
         self.assertRegex(first, r"BYHOUR=\d+;BYMINUTE=\d+")
 

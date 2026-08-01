@@ -3,19 +3,28 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import shutil
+import tempfile
 from pathlib import Path
 from typing import Any
 
 from local_kb.adoption import card_exchange_hash
 from local_kb.common import normalize_text, safe_float, tokenize, utc_now_iso
 from local_kb.org_sources import validate_organization_repo
+from local_kb.org_source_contract import (
+    authoring_card_from_projection,
+    canonical_digest,
+    load_current_catalog,
+    materialize_current_source,
+)
 from local_kb.store import append_jsonl, load_yaml_file, write_yaml_file
 
 
 ORG_CLEANUP_AUDIT_RELATIVE_PATH = Path("maintenance") / "cleanup_audit.jsonl"
 TARGET_CARD_ROOTS = ("kb/main", "kb/imports")
 CARD_ROOTS = TARGET_CARD_ROOTS
-LOW_RISK_APPLY_ACTIONS = {"confidence-adjust", "status-adjust", "mark-duplicate", "accept-import", "promote-card"}
+LOW_RISK_APPLY_ACTIONS = {"confidence-adjust", "status-adjust", "mark-duplicate", "accept-import", "promote-card", "merge-cards", "split-card"}
+APPLY_PACKET_SCHEMA = "khaos-brain.organization-apply-packet.v1"
 ORGANIZATION_EXCHANGE_SLEEP_MODEL = {
     "role": "organization-exchange-sleep",
     "description": (
@@ -24,7 +33,7 @@ ORGANIZATION_EXCHANGE_SLEEP_MODEL = {
         "and kb/main as the exchange surface. Obsolete organization layouts are rejected "
         "by normal maintenance and can only be rewritten by the one-time upgrade migration."
     ),
-    "local_final_adoption": True,
+    "local_final_assimilation_by_sleep": True,
     "incoming_lane": "kb/imports",
     "exchange_surface": "kb/main",
     "current_layout_only": True,
@@ -58,12 +67,19 @@ def _is_card_payload(payload: dict[str, Any]) -> bool:
 
 
 def _iter_org_card_files(org_root: Path) -> list[Path]:
-    files: list[Path] = []
-    for relative_root in CARD_ROOTS:
-        target = org_root / relative_root
-        if not target.exists():
-            continue
-        for path in sorted(target.rglob("*.yaml")):
+    # kb/main is enumerated by the exact source catalog.  A legitimate card
+    # may itself live under a route segment named ``skills``; substring path
+    # filtering used to hide those cards and produced false full-coverage
+    # reports.  kb/imports remains the separate incoming proposal lane.
+    catalog = load_current_catalog(org_root)
+    files = [
+        org_root / str(row.get("source_path") or "")
+        for row in (catalog.get("cards") or [])
+        if isinstance(row, dict) and str(row.get("source_path") or "")
+    ]
+    imports_root = org_root / "kb" / "imports"
+    if imports_root.is_dir():
+        for path in sorted(imports_root.rglob("*.yaml")):
             if _is_skill_sidecar(path, org_root):
                 continue
             payload = load_yaml_file(path)
@@ -234,9 +250,97 @@ def _overloaded_fields(payload: dict[str, Any]) -> list[str]:
             continue
         if not isinstance(value, dict):
             continue
-        if any(isinstance(item, list) and len(item) > 1 for item in value.values()):
+        if any(
+            key != "alternatives" and isinstance(item, list) and len(item) > 1
+            for key, item in value.items()
+        ):
             overloaded.append(field)
     return overloaded
+
+
+def _packet_digest(packet: dict[str, Any]) -> str:
+    return "sha256:" + canonical_digest({key: value for key, value in packet.items() if key != "packet_digest"})
+
+
+def _attach_merge_split_packets(actions: list[dict[str, Any]], records: list[dict[str, Any]], *, organization_id: str, source_generation_id: str) -> None:
+    by_path = {str(record["relative_path"]): record for record in records}
+    for action in actions:
+        action_type = str(action.get("action_type") or "")
+        if action_type not in {"merge-cards", "split-card"}:
+            continue
+        target_path = str(action.get("target_path") or "")
+        inputs = [target_path]
+        if action_type == "merge-cards":
+            inputs.append(str(action.get("related_path") or ""))
+        input_rows = [by_path[path] for path in inputs if path in by_path]
+        review_fingerprint = "sha256:" + canonical_digest(
+            [{"path": row["relative_path"], "content_hash": row["content_hash"]} for row in input_rows]
+        )
+        missing_roles: list[str] = []
+        outputs: list[dict[str, Any]] = []
+        field_ownership: list[dict[str, str]] = []
+        status = "blocked_evidence"
+        if action_type == "merge-cards" and len(input_rows) == 2:
+            dimensions = action.get("similarity_dimensions") if isinstance(action.get("similarity_dimensions"), dict) else {}
+            exact_semantic = all(float(dimensions.get(key) or 0.0) >= 0.999 for key in ("scenario", "action", "prediction", "route", "evidence"))
+            if exact_semantic:
+                canonical = _preferred_duplicate_record(input_rows)
+                other = input_rows[0] if input_rows[1] is canonical else input_rows[1]
+                output = authoring_card_from_projection(canonical["payload"])
+                related = set(str(item) for item in output.get("related_cards") or [] if str(item))
+                related.update(str(item) for item in other["payload"].get("related_cards") or [] if str(item))
+                related.discard(str(canonical["entry_id"]))
+                related.discard(str(other["entry_id"]))
+                output["related_cards"] = sorted(related)
+                outputs = [{"target_path": canonical["relative_path"], "card": output}]
+                field_ownership = [
+                    {"field": field, "owner_entry_id": str(canonical["entry_id"])}
+                    for field in ("if", "action", "predict", "use", "status", "confidence")
+                ]
+                status = "ready"
+            else:
+                missing_roles = ["field-by-field-merge-ownership", "conflict-resolution-evidence"]
+        elif action_type == "split-card":
+            missing_roles = ["independent-output-boundaries", "per-output-prediction", "field-ownership"]
+        packet = {
+            "schema_version": APPLY_PACKET_SCHEMA,
+            "packet_id": "packet-" + canonical_digest({"action_id": action.get("action_id"), "review_fingerprint": review_fingerprint})[:20],
+            "action_type": action_type,
+            "organization_id": organization_id,
+            "source_generation_id": source_generation_id,
+            "input_digest": review_fingerprint,
+            "builder_identity": {"name": "khaos-brain.organization-cleanup", "version": 1},
+            "inputs": [
+                {"entry_id": row["entry_id"], "path": row["relative_path"], "content_hash": row["content_hash"]}
+                for row in input_rows
+            ],
+            "field_ownership": field_ownership,
+            "provenance": [{"kind": "organization-card", "path": row["relative_path"], "content_hash": row["content_hash"]} for row in input_rows],
+            "identity_map": [
+                {"input_entry_id": row["entry_id"], "output_entry_ids": [str(item["card"]["id"]) for item in outputs]}
+                for row in input_rows
+            ],
+            "outputs": outputs,
+            "model_mesh_rebuild": "required",
+            "rollback_inventory": [row["relative_path"] for row in input_rows],
+            "post_apply_checks": ["current-source-validation", "catalog-exactness", "model-mesh-binding"],
+            "review_status": status,
+            "missing_roles": missing_roles,
+            "reopen": {
+                "review_fingerprint": review_fingerprint,
+                "required_inputs": missing_roles,
+                "prior_evidence_digest": review_fingerprint,
+                "predicate": "new_evidence_digest_and_roles_satisfied",
+                "unchanged_digest_policy": "skip",
+                "changed_but_unsatisfied_policy": "record_once_then_skip",
+            },
+        }
+        packet["packet_digest"] = _packet_digest(packet)
+        action["apply_packet"] = packet
+        action["apply_supported"] = status == "ready"
+        action["review_status"] = status
+        action["review_fingerprint"] = review_fingerprint
+        action["missing_roles"] = missing_roles
 
 
 def _preferred_duplicate_record(records: list[dict[str, Any]]) -> dict[str, Any]:
@@ -382,7 +486,7 @@ def _card_decisions(
         if any(action.get("apply_supported") is not False for action in related):
             decision = "change"
         elif related:
-            decision = "watch"
+            decision = "blocked_evidence" if any(action.get("review_status") == "blocked_evidence" for action in related) else "keep_separate"
         else:
             decision = "keep"
         reasons = list(
@@ -619,6 +723,12 @@ def build_organization_cleanup_proposal(
             )
 
     actions.extend(_skill_version_actions(records))
+    _attach_merge_split_packets(
+        actions,
+        records,
+        organization_id=organization_id,
+        source_generation_id=str(validation.get("source_generation_id") or ""),
+    )
     card_decisions = _card_decisions(records, actions)
     counts: dict[str, int] = {}
     for action in actions:
@@ -667,6 +777,8 @@ def _safe_target_path(org_root: Path, target_path: str) -> Path | None:
     return target
 
 
+# Every accepted change is compiled into a complete schema-2 source generation
+# so card projection, catalog, model, and mesh stay atomic.
 def apply_organization_cleanup_proposal(
     org_root: Path,
     proposal: dict[str, Any],
@@ -678,51 +790,123 @@ def apply_organization_cleanup_proposal(
     allow_promote: bool = False,
     dry_run: bool = False,
 ) -> dict[str, Any]:
+    """Apply selected actions by rebuilding one complete current generation."""
+
     org_root = Path(org_root)
+    validation = validate_organization_repo(org_root)
+    if not validation.get("ok"):
+        return {"ok": False, "dry_run": dry_run, "applied": [], "skipped": [], "errors": list(validation.get("errors") or [])}
+    catalog = load_current_catalog(org_root)
     allowed = allow_actions or LOW_RISK_APPLY_ACTIONS
-    allowed_ids = {str(item) for item in allow_action_ids} if allow_action_ids is not None else None
+    selected = {str(item) for item in allow_action_ids} if allow_action_ids is not None else None
+    cards: dict[str, dict[str, Any]] = {}
+    for row in catalog.get("cards") or []:
+        if not isinstance(row, dict):
+            continue
+        path = str(row.get("source_path") or "")
+        cards[path] = authoring_card_from_projection(load_yaml_file(org_root / path))
     applied: list[dict[str, Any]] = []
     skipped: list[dict[str, Any]] = []
-    errors: list[str] = []
+    tombstones = [dict(item) for item in (catalog.get("tombstones") or []) if isinstance(item, dict)]
+    removed_imports: set[str] = set()
     now = utc_now_iso()
+
+    def skip(action_id: str, action_type: str, reason: str, target_path: str = "") -> None:
+        skipped.append({"action_id": action_id, "action_type": action_type, "reason": reason, "target_path": target_path})
 
     for action in proposal.get("actions") or []:
         if not isinstance(action, dict):
             continue
-        action_type = str(action.get("action_type") or "").strip()
-        action_id = str(action.get("action_id") or "").strip()
-        target_path = str(action.get("target_path") or "").strip()
-        target = _safe_target_path(org_root, target_path)
-        if allowed_ids is not None and action_id not in allowed_ids:
-            skipped.append({"action_id": action_id, "reason": "action was not selected by organization Sleep", "action_type": action_type})
-            continue
-        if action.get("apply_supported") is False:
-            skipped.append({"action_id": action_id, "reason": "proposal action is not implemented for apply", "action_type": action_type})
+        action_id = str(action.get("action_id") or "")
+        action_type = str(action.get("action_type") or "")
+        target_path = str(action.get("target_path") or "").replace("\\", "/")
+        if selected is not None and action_id not in selected:
+            skip(action_id, action_type, "action was not selected by organization Sleep", target_path)
             continue
         if action_type not in allowed:
-            skipped.append({"action_id": action_id, "reason": "action type is not allowed", "action_type": action_type})
-            continue
-        if target is None or not target.exists():
-            skipped.append({"action_id": action_id, "reason": "target path is missing or unsafe", "target_path": target_path})
+            skip(action_id, action_type, "action type is not allowed", target_path)
             continue
         if target_path.startswith("kb/main/") and not allow_trusted:
-            skipped.append({"action_id": action_id, "reason": "main card apply requires allow_trusted", "target_path": target_path})
+            skip(action_id, action_type, "main card apply requires allow_trusted", target_path)
+            continue
+        if action_type in {"merge-cards", "split-card"}:
+            packet = action.get("apply_packet") if isinstance(action.get("apply_packet"), dict) else {}
+            if packet.get("schema_version") != APPLY_PACKET_SCHEMA or str(packet.get("packet_digest") or "") != _packet_digest(packet):
+                skip(action_id, action_type, "apply packet is missing or its digest is invalid", target_path)
+                continue
+            if packet.get("review_status") != "ready":
+                skip(action_id, action_type, "apply packet is blocked until its declared evidence roles are satisfied", target_path)
+                continue
+            current_inputs: list[dict[str, Any]] = []
+            for item in packet.get("inputs") or []:
+                if not isinstance(item, dict):
+                    continue
+                path = str(item.get("path") or "")
+                payload = cards.get(path)
+                if payload is None:
+                    break
+                current_inputs.append({"path": path, "content_hash": card_exchange_hash(payload)})
+            current_fingerprint = "sha256:" + canonical_digest(current_inputs)
+            expected_rows = [
+                {"path": str(item.get("path") or ""), "content_hash": str(item.get("content_hash") or "")}
+                for item in packet.get("inputs") or [] if isinstance(item, dict)
+            ]
+            expected_fingerprint = "sha256:" + canonical_digest(expected_rows)
+            if current_fingerprint != expected_fingerprint:
+                skip(action_id, action_type, "apply packet inputs changed and require reopen", target_path)
+                continue
+            output_paths: set[str] = set()
+            for output in packet.get("outputs") or []:
+                if not isinstance(output, dict):
+                    continue
+                path = str(output.get("target_path") or "")
+                card = output.get("card") if isinstance(output.get("card"), dict) else {}
+                if not path.startswith("kb/main/") or not card:
+                    continue
+                cards[path] = dict(card)
+                output_paths.add(path)
+            if not output_paths:
+                skip(action_id, action_type, "apply packet has no complete current-card outputs", target_path)
+                continue
+            for item in packet.get("inputs") or []:
+                if not isinstance(item, dict):
+                    continue
+                path = str(item.get("path") or "")
+                if path not in output_paths:
+                    retired = cards.pop(path, None)
+                    tombstones.append(
+                        {
+                            "source_path": path,
+                            "old_entry_id": str((retired or {}).get("id") or item.get("entry_id") or ""),
+                            "disposition": "merged" if action_type == "merge-cards" else "split",
+                            "packet_id": str(packet.get("packet_id") or ""),
+                            "retained_entry_ids": [str(cards[path]["id"]) for path in sorted(output_paths)],
+                        }
+                    )
+            applied.append({"action_id": action_id, "action_type": action_type, "target_path": target_path, "updated_path": sorted(output_paths)[0], "packet_id": packet.get("packet_id")})
+            continue
+        payload = cards.get(target_path)
+        from_import = False
+        if payload is None and target_path.startswith("kb/imports/"):
+            target = _safe_target_path(org_root, target_path)
+            if target is not None and target.is_file():
+                raw = load_yaml_file(target)
+                payload = dict(raw) if isinstance(raw, dict) else None
+                from_import = payload is not None
+        if payload is None:
+            skip(action_id, action_type, "target path is missing or unsafe", target_path)
             continue
         if action_type in {"accept-import", "promote-card"}:
             if not allow_promote:
-                skipped.append({"action_id": action_id, "reason": "main transfer requires allow_promote", "target_path": target_path})
+                skip(action_id, action_type, "main transfer requires allow_promote", target_path)
                 continue
-            proposed_path = str(action.get("proposed_path") or "").strip()
-            promoted_target = _safe_target_path(org_root, proposed_path)
-            if promoted_target is None or not proposed_path.startswith("kb/main/"):
-                skipped.append({"action_id": action_id, "reason": "main target path is missing or unsafe", "target_path": target_path})
+            proposed_path = str(action.get("proposed_path") or "").replace("\\", "/")
+            if not proposed_path.startswith("kb/main/") or proposed_path in cards:
+                skip(action_id, action_type, "main target path is missing, unsafe, or occupied", target_path)
                 continue
-            if promoted_target.exists():
-                skipped.append({"action_id": action_id, "reason": "promotion target already exists", "target_path": proposed_path})
-                continue
-            payload = load_yaml_file(target)
-            previous_status = str(payload.get("status") or "")
-            previous_confidence = payload.get("confidence")
+            cards.pop(target_path, None)
+            if from_import:
+                removed_imports.add(target_path)
             payload["status"] = str(action.get("proposed_status") or ("trusted" if action_type == "promote-card" else "candidate"))
             if "proposed_confidence" in action:
                 payload["confidence"] = max(0.0, min(1.0, safe_float(action.get("proposed_confidence"), _confidence(payload))))
@@ -738,85 +922,110 @@ def apply_organization_cleanup_proposal(
                 }
             )
             payload["organization_cleanup"] = cleanup
-            if not dry_run:
-                promoted_target.parent.mkdir(parents=True, exist_ok=True)
-                write_yaml_file(promoted_target, payload)
-                target.unlink()
-                _append_audit(
-                    org_root,
-                    {
-                        "event_type": "organization-cleanup-applied",
-                        "action_id": action_id,
-                        "action_type": action_type,
-                        "target_path": target_path,
-                        "updated_path": proposed_path,
-                        "previous_status": previous_status,
-                        "updated_status": payload.get("status"),
-                        "previous_confidence": previous_confidence,
-                        "updated_confidence": payload.get("confidence"),
-                        "created_at": now,
-                    },
-                )
+            cards[proposed_path] = payload
             applied.append({"action_id": action_id, "action_type": action_type, "target_path": target_path, "updated_path": proposed_path})
             continue
         if action_type == "delete-card":
             if not allow_delete:
-                skipped.append({"action_id": action_id, "reason": "delete requires allow_delete", "target_path": target_path})
+                skip(action_id, action_type, "delete requires allow_delete", target_path)
                 continue
-            if not dry_run:
-                payload = load_yaml_file(target)
-                target.unlink()
-                _append_audit(
-                    org_root,
-                    {
-                        "event_type": "organization-cleanup-applied",
-                        "action_id": action_id,
-                        "action_type": action_type,
-                        "target_path": target_path,
-                        "previous_payload": payload,
-                        "created_at": now,
-                    },
-                )
+            cards.pop(target_path, None)
+            if from_import:
+                removed_imports.add(target_path)
+            tombstones.append({"source_path": target_path, "old_entry_id": str(payload.get("id") or ""), "disposition": "deleted", "action_id": action_id})
             applied.append({"action_id": action_id, "action_type": action_type, "target_path": target_path})
             continue
-
-        payload = load_yaml_file(target)
-        previous_status = str(payload.get("status") or "")
-        previous_confidence = payload.get("confidence")
         if "proposed_status" in action:
-            payload["status"] = str(action.get("proposed_status") or previous_status)
+            payload["status"] = str(action.get("proposed_status") or payload.get("status") or "candidate")
         if "proposed_confidence" in action:
             payload["confidence"] = max(0.0, min(1.0, safe_float(action.get("proposed_confidence"), _confidence(payload))))
         cleanup = payload.get("organization_cleanup") if isinstance(payload.get("organization_cleanup"), dict) else {}
-        cleanup.update(
-            {
-                "last_action_id": action_id,
-                "last_action_type": action_type,
-                "last_reason": str(action.get("reason") or ""),
-                "updated_at": now,
-            }
-        )
+        cleanup.update({"last_action_id": action_id, "last_action_type": action_type, "last_reason": str(action.get("reason") or ""), "updated_at": now})
         if action.get("duplicate_of"):
             cleanup["duplicate_of"] = str(action.get("duplicate_of") or "")
         payload["organization_cleanup"] = cleanup
-        if not dry_run:
-            write_yaml_file(target, payload)
-            _append_audit(
-                org_root,
-                {
-                    "event_type": "organization-cleanup-applied",
-                    "action_id": action_id,
-                    "action_type": action_type,
-                    "target_path": target_path,
-                    "previous_status": previous_status,
-                    "updated_status": payload.get("status"),
-                    "previous_confidence": previous_confidence,
-                    "updated_confidence": payload.get("confidence"),
-                    "created_at": now,
-                },
-            )
+        cards[target_path] = payload
         applied.append({"action_id": action_id, "action_type": action_type, "target_path": target_path})
 
+    errors: list[str] = []
+    changed_paths: list[str] = []
+    if applied and not dry_run:
+        try:
+            with tempfile.TemporaryDirectory(prefix="khaos-org-apply-") as temporary:
+                staged = Path(temporary) / "staged"
+                materialize_current_source(
+                    staged,
+                    organization_id=str(validation.get("organization_id") or ""),
+                    cards=sorted(cards.items()),
+                    source_commit=str(catalog.get("source_commit") or validation.get("commit") or ""),
+                    tombstones=tombstones,
+                )
+                imports_source = org_root / "kb" / "imports"
+                if imports_source.exists():
+                    shutil.copytree(imports_source, staged / "kb" / "imports", dirs_exist_ok=True)
+                for relative in removed_imports:
+                    imported = staged / relative
+                    imported.unlink(missing_ok=True)
+                backup = Path(temporary) / "backup"
+                for relative in ("kb/main", "kb/logicguard", "kb/organization_catalog.json", "kb/imports", "khaos_org_kb.yaml"):
+                    source = org_root / relative
+                    target = backup / relative
+                    if source.is_dir():
+                        shutil.copytree(source, target)
+                    elif source.is_file():
+                        target.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(source, target)
+                try:
+                    for relative in ("kb/main", "kb/logicguard"):
+                        target = org_root / relative
+                        if target.exists():
+                            shutil.rmtree(target)
+                        shutil.copytree(staged / relative, target)
+                    for relative in ("kb/organization_catalog.json", "khaos_org_kb.yaml"):
+                        target = org_root / relative
+                        target.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(staged / relative, target)
+                    if removed_imports:
+                        target = org_root / "kb" / "imports"
+                        if target.exists():
+                            shutil.rmtree(target)
+                        shutil.copytree(staged / "kb" / "imports", target)
+                    post = validate_organization_repo(org_root)
+                    if not post.get("ok"):
+                        raise RuntimeError("; ".join(post.get("errors") or ["post-apply current source validation failed"]))
+                except Exception:
+                    for relative in ("kb/main", "kb/logicguard", "kb/imports"):
+                        target = org_root / relative
+                        if target.exists():
+                            shutil.rmtree(target)
+                        source = backup / relative
+                        if source.exists():
+                            shutil.copytree(source, target)
+                    for relative in ("kb/organization_catalog.json", "khaos_org_kb.yaml"):
+                        source = backup / relative
+                        if source.is_file():
+                            shutil.copy2(source, org_root / relative)
+                    raise
+            for item in applied:
+                _append_audit(org_root, {"event_type": "organization-cleanup-applied", **item, "created_at": now})
+            rebuilt_catalog = load_current_catalog(org_root)
+            changed_paths = sorted(
+                {
+                    "khaos_org_kb.yaml",
+                    "kb/organization_catalog.json",
+                    "maintenance/cleanup_audit.jsonl",
+                    *removed_imports,
+                    *(
+                        str(row.get(field) or "")
+                        for row in (rebuilt_catalog.get("cards") or [])
+                        if isinstance(row, dict)
+                        for field in ("source_path", "model_path", "mesh_path", "projection_path", "bundle_path")
+                    ),
+                }
+            )
+        except Exception as exc:
+            errors.append(f"transactional organization apply failed: {type(exc).__name__}: {exc}")
+            applied = []
     return {
         "ok": not errors,
         "dry_run": dry_run,
@@ -827,5 +1036,6 @@ def apply_organization_cleanup_proposal(
         "applied": applied,
         "skipped": skipped,
         "errors": errors,
+        "changed_paths": changed_paths,
         "audit_path": str(organization_cleanup_audit_path(org_root)),
     }

@@ -3,8 +3,10 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from local_kb.desktop_app import (
+    KbDesktopApp,
     _card_type_value,
     _detail_paragraphs,
     _maintenance_display,
@@ -42,6 +44,25 @@ class KbDesktopUiDataTests(unittest.TestCase):
 
     def tearDown(self) -> None:
         self._tmp.cleanup()
+
+    def test_desktop_detail_records_exact_search_interaction(self) -> None:
+        payload = build_search_payload(
+            self.repo_root,
+            query="retrieval",
+            route_hint="system/knowledge-library/retrieval",
+        )
+        summary = payload["results"][0]
+        app = object.__new__(KbDesktopApp)
+        app.repo_root = self.repo_root
+
+        with patch("local_kb.desktop_app.record_retrieval_interaction") as recorder:
+            KbDesktopApp._record_detail_interaction(app, summary, "viewed")
+
+        recorder.assert_called_once()
+        kwargs = recorder.call_args.kwargs
+        self.assertEqual(kwargs["request_id"], summary["retrieval_request_id"])
+        self.assertEqual(kwargs["result_refs"], [summary["result_ref"]])
+        self.assertEqual(kwargs["interaction"], "viewed")
 
     def test_overview_counts_entries_and_taxonomy_gaps(self) -> None:
         payload = build_overview_payload(self.repo_root)

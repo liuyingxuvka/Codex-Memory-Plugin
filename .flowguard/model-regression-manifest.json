@@ -1,0 +1,210 @@
+{
+  "governed_input_globs": [
+    ".flowguard/behavior_commitment_ledger/*.py",
+    ".flowguard/behavior_commitment_ledger/ledger.json",
+    ".flowguard/khaos_brain_logicguard_system/*.py",
+    ".flowguard/khaos_brain_two_maintenance_cycle_flow.py",
+    "openspec/changes/make-khaos-brain-logicguard-native/proposal.md",
+    "openspec/changes/make-khaos-brain-logicguard-native/design.md",
+    "openspec/changes/make-khaos-brain-logicguard-native/specs/**/*.md",
+    "local_kb/local_cycle.py",
+    "local_kb/org_cycle.py",
+    "local_kb/search.py",
+    "local_kb/org_snapshot.py",
+    "local_kb/adoption.py",
+    "local_kb/lifecycle.py"
+    ,"local_kb/automation_runtime.py"
+  ],
+  "snapshot_only_input_globs": [
+    ".flowguard/model-system/**/*.json",
+    ".flowguard/run_artifacts/**/*",
+    "work/**/*.json"
+  ],
+  "shared_input_groups": [],
+  "models": [
+    {
+      "absence_reason": "",
+      "distribution_policy": "required_public",
+      "exclusion_reason": "",
+      "expected_artifacts": [],
+      "input_globs": [
+        ".flowguard/behavior_commitment_ledger/model.py",
+        ".flowguard/behavior_commitment_ledger/run_checks.py",
+        ".flowguard/behavior_commitment_ledger/ledger.json"
+      ],
+      "model_id": "behavior_commitment_ledger",
+      "model_kind": "executable_workflow",
+      "model_path": ".flowguard/behavior_commitment_ledger/model.py",
+      "mutation_policy": "none",
+      "purpose_closure": {
+        "adoption_scope": "current_candidate_only",
+        "claim_boundary": "Current closure covers only the checked-in behavior commitment ledger structure and ownership review; it does not prove production execution, test currency, installation, Git identity, or release publication.",
+        "closure_fingerprint": "sha256:de2f6802e3556427eb9347b93d3b715f97d91710e6b3e959f3a9ecb376c7767d",
+        "declaration_fingerprint": "sha256:aa35f42bb0205ec514a0096d06e22d2270b7a14ad9c180e55aa365a4f9f06afe",
+        "declaration_phase": "before_candidate",
+        "evidence_check_ids": [
+          "check:model-regression:behavior-commitment-ledger"
+        ],
+        "failure_bindings": [
+          {
+            "failure_id": "behavior-ledger:invalid-or-incomplete-current-inventory",
+            "known_bad_case_id": "native:khaos-brain:bad-incomplete-behavior-ledger",
+            "oracle_id": "native:khaos-brain:behavior-ledger-runner"
+          }
+        ],
+        "guarded_purpose": "Prevent an incomplete, duplicate, unowned, or stale external behavior commitment inventory from being accepted as the current Khaos Brain ownership boundary.",
+        "known_good_case_id": "native:khaos-brain:current-behavior-ledger-review",
+        "model_instance_id": "regression:behavior_commitment_ledger:khaos-current-ledger",
+        "model_sha256": "sha256:7a5cf46a22c0684251c58cbb7ba719e9be880cac3dd0f611d6846a68da058f7d",
+        "protected_failure_ids": [
+          "behavior-ledger:invalid-or-incomplete-current-inventory"
+        ],
+        "reusable_model_type_id": "behavior_commitment_ledger",
+        "runner_sha256": "sha256:d49445e49b4975db731f94e0bb650e4faeb8c588dc6b00004dac1859a02d6406",
+        "schema_version": "flowguard.model_purpose_closure.v1",
+        "task_intent_id": "khaos-brain:current-behavior-commitment-ownership"
+      },
+      "runner": [
+        "{python}",
+        ".flowguard/behavior_commitment_ledger/run_checks.py"
+      ],
+      "shard_safe": true,
+      "tier": "fast",
+      "timeout_seconds": 120
+    },
+    {
+      "absence_reason": "",
+      "distribution_policy": "required_public",
+      "exclusion_reason": "",
+      "expected_artifacts": [],
+      "input_globs": [
+        ".flowguard/khaos_brain_logicguard_system/model.py",
+        ".flowguard/khaos_brain_logicguard_system/run_checks.py",
+        ".flowguard/khaos_brain_two_maintenance_cycle_flow.py",
+        "openspec/changes/make-khaos-brain-logicguard-native/proposal.md",
+        "openspec/changes/make-khaos-brain-logicguard-native/design.md",
+        "openspec/changes/make-khaos-brain-logicguard-native/specs/**/*.md",
+        "local_kb/local_cycle.py",
+        "local_kb/org_cycle.py",
+        "local_kb/search.py",
+        "local_kb/org_snapshot.py",
+        "local_kb/org_migration.py",
+        "local_kb/adoption.py",
+        "local_kb/lifecycle.py"
+        ,"local_kb/automation_runtime.py"
+      ],
+      "model_id": "khaos_brain_logicguard_system",
+      "model_kind": "executable_workflow",
+      "model_path": ".flowguard/khaos_brain_logicguard_system/model.py",
+      "mutation_policy": "none",
+      "purpose_closure": {
+        "adoption_scope": "current_candidate_only",
+        "claim_boundary": "Current closure covers only the finite two-task composition, foreign-card experience boundary, foreground no-replay projection boundary, receipt layering, and Windows-safe organization rollback boundary; it does not prove child lifecycle semantics, organization source mutation outcomes, installation, Git identity, or release publication.",
+        "closure_fingerprint": "sha256:8348d8ccbfdf82c8e73845c6131b71dec697cbc84fd6c625d852fedb93379433",
+        "declaration_fingerprint": "sha256:645fb9c73ea0b39f72714608b3fd967405cd4d610edde056d1ec7a3b2bc652f1",
+        "declaration_phase": "before_candidate",
+        "evidence_check_ids": [
+          "check:model-regression:khaos-brain-logicguard-system"
+        ],
+        "failure_bindings": [
+          {
+            "failure_id": "khaos-cycle:view-counted-as-use",
+            "known_bad_case_id": "native:khaos-brain:bad-view-counted-as-use",
+            "oracle_id": "native:khaos-brain:logicguard-system-runner"
+          },
+          {
+            "failure_id": "khaos-cycle:local-block-suppresses-organization",
+            "known_bad_case_id": "native:khaos-brain:bad-local-block-suppresses-organization",
+            "oracle_id": "native:khaos-brain:logicguard-system-runner"
+          },
+          {
+            "failure_id": "khaos-cycle:dream-publishes-authority",
+            "known_bad_case_id": "native:khaos-brain:bad-dream-publishes-authority",
+            "oracle_id": "native:khaos-brain:logicguard-system-runner"
+          },
+          {
+            "failure_id": "khaos-cycle:task-time-network-or-adoption",
+            "known_bad_case_id": "native:khaos-brain:bad-task-time-network-or-adoption",
+            "oracle_id": "native:khaos-brain:logicguard-system-runner"
+          },
+          {
+            "failure_id": "khaos-cycle:duplicate-scheduled-owner",
+            "known_bad_case_id": "native:khaos-brain:bad-duplicate-scheduled-owner",
+            "oracle_id": "native:khaos-brain:logicguard-system-runner"
+          },
+          {
+            "failure_id": "khaos-cycle:stale-snapshot-activation",
+            "known_bad_case_id": "native:khaos-brain:bad-stale-snapshot-activation",
+            "oracle_id": "native:khaos-brain:logicguard-system-runner"
+          },
+          {
+            "failure_id": "khaos-cycle:dual-global-writer",
+            "known_bad_case_id": "native:khaos-brain:bad-dual-global-writer",
+            "oracle_id": "native:khaos-brain:logicguard-system-runner"
+          },
+          {
+            "failure_id": "khaos-cycle:invalid-delegated-writer",
+            "known_bad_case_id": "native:khaos-brain:bad-invalid-delegated-writer",
+            "oracle_id": "native:khaos-brain:logicguard-system-runner"
+          },
+          {
+            "failure_id": "khaos-cycle:stale-receipt-reuse",
+            "known_bad_case_id": "native:khaos-brain:bad-stale-receipt-reuse",
+            "oracle_id": "native:khaos-brain:logicguard-system-runner"
+          },
+          {
+            "failure_id": "khaos-cycle:partial-result-promotion",
+            "known_bad_case_id": "native:khaos-brain:bad-partial-result-promotion",
+            "oracle_id": "native:khaos-brain:logicguard-system-runner"
+          },
+          {
+            "failure_id": "khaos-cycle:foreground-lifecycle-replay",
+            "known_bad_case_id": "native:khaos-brain:bad-foreground-lifecycle-replay",
+            "oracle_id": "native:khaos-brain:logicguard-system-runner"
+          },
+          {
+            "failure_id": "khaos-cycle:child-receipt-requires-outer-fields",
+            "known_bad_case_id": "native:khaos-brain:bad-child-receipt-requires-outer-fields",
+            "oracle_id": "native:khaos-brain:logicguard-system-runner"
+          },
+          {
+            "failure_id": "khaos-cycle:organization-backup-path-limit",
+            "known_bad_case_id": "native:khaos-brain:bad-organization-backup-path-limit",
+            "oracle_id": "native:khaos-brain:logicguard-system-runner"
+          }
+        ],
+        "guarded_purpose": "Prevent foreign-use ambiguity, cross-task coupling, unauthorized publication or adoption, stale evidence, concurrent writers, partial promotion, foreground lifecycle replay, inverted child/outer receipt validation, and incomplete organization rollback caused by Windows path limits.",
+        "known_good_case_id": "native:khaos-brain:independent-two-task-prefetch-use-outcome-sleep",
+        "model_instance_id": "regression:khaos_brain_logicguard_system:automatic-organization-learning-closure",
+        "model_sha256": "sha256:e0d6bed2b7634b3aa075fb901d7478dbd93ec8f4c7726fd1aaacdd6c460d7082",
+        "protected_failure_ids": [
+          "khaos-cycle:view-counted-as-use",
+          "khaos-cycle:local-block-suppresses-organization",
+          "khaos-cycle:dream-publishes-authority",
+          "khaos-cycle:task-time-network-or-adoption",
+          "khaos-cycle:duplicate-scheduled-owner",
+          "khaos-cycle:stale-snapshot-activation",
+          "khaos-cycle:dual-global-writer",
+          "khaos-cycle:invalid-delegated-writer",
+          "khaos-cycle:stale-receipt-reuse",
+          "khaos-cycle:partial-result-promotion",
+          "khaos-cycle:foreground-lifecycle-replay"
+          ,"khaos-cycle:child-receipt-requires-outer-fields",
+          "khaos-cycle:organization-backup-path-limit"
+        ],
+        "reusable_model_type_id": "khaos_brain_logicguard_system",
+        "runner_sha256": "sha256:f0aacc1ce3a2eca3d5f9f05ae1c33b4b54d05966befef7ef319af3c453180b8a",
+        "schema_version": "flowguard.model_purpose_closure.v1",
+        "task_intent_id": "khaos-brain:logicguard-two-task-organization-learning-repair"
+      },
+      "runner": [
+        "{python}",
+        ".flowguard/khaos_brain_logicguard_system/run_checks.py"
+      ],
+      "shard_safe": true,
+      "tier": "fast",
+      "timeout_seconds": 120
+    }
+  ],
+  "schema_version": "flowguard.model_regression_manifest.v3"
+}

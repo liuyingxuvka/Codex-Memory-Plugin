@@ -10,8 +10,8 @@
 </p>
 <!-- README HERO END -->
 
-- Repository head (`main`) / 仓库主线（`main`）: `v0.7.1`
-- Latest released version / 最新已发布版本: `v0.7.1`
+- Repository head (`main`) / 仓库主线（`main`）: `v0.8.0`
+- Latest released version / 最新已发布版本: `v0.8.0`
 - Project name / 项目名称: `Khaos Brain`
 - English lead content comes first; the full Chinese section follows below. / 英文主内容在前，完整中文部分在后方。
 
@@ -85,12 +85,12 @@ The system follows a brain-like rhythm:
 
 - **Awake work:** the agent retrieves relevant experience before a task and writes one caller-identified observation afterward. Postflight performs one durable append plus an event-bound terminal receipt; it never replays the full lifecycle or publishes models/indexes synchronously.
 - **Sleep consolidation:** `KB Sleep` is the sole canonical writer. It freezes a bounded batch, checkpoints each settled item, resumes only pending work after interruption, and keeps the previous validated generation readable until models, meshes, lifecycle review, projections, and the immutable active-index pointer are ready for one final switch.
-- **Dream verification:** `KB Dream` pins an exact immutable generation and pressures evidence, assumptions, rebuttals/counterexamples, and boundaries. It can only send typed model-gap handoffs to Sleep and must prove canonical authority unchanged.
+- **Dream verification:** the Dream child phase pins an exact immutable generation and pressures evidence, assumptions, rebuttals/counterexamples, and boundaries. It can only send typed model-gap handoffs to Sleep and must prove canonical authority unchanged.
 - **Manual software update:** the desktop reports exact upstream status, and the transactional updater runs only after an explicit user request to AI in the current conversation; there is no scheduled update task.
-- **Organization maintenance:** shared organization sources have their own candidate, review, and maintenance path.
-- **Independent completion:** each of the four scheduled tasks and the separate manual-update Skill owns its own native route, non-overlapping obligations, tests, evidence, and immutable run receipt. SkillGuard checks those five source Skills only in the maintainer repository; installed Skills complete their work without SkillGuard, shared receipts, or external closure.
+- **Organization maintenance:** one independent organization task validates and directly upgrades the shared source, performs maintenance and contribution, then publishes a complete content-addressed foreign snapshot.
+- **Independent completion:** exactly two scheduled owners keep separate task leases and failure domains: local Sleep-then-Dream and organization-maintenance-then-contribution. They share only one exact global writer around overlapping durable mutation. The separate manual-update Skill remains explicit-user-only. SkillGuard checks all five source Skills only in the maintainer repository; installed Skills complete their work without SkillGuard or shared receipts.
 
-After installation, scheduled maintenance runs through four local automations without requiring a human review queue. The installation and operator-activation inventory always names all five maintained Skills, then classifies Sleep, Dream, organization contribution, and organization maintenance as scheduled while classifying only `khaos-brain-update` as manual-only. Task preflight and postflight keep retrieval and evidence write-back close to ordinary work, while Sleep, Dream, and organization maintenance improve the library over time; software update remains user-invoked.
+After installation, scheduled maintenance runs through two automations without a human review queue. The five maintained Skills are classified exactly as two scheduled owners (`kb-sleep-maintenance`, `kb-organization-maintenance`), two composite children (`kb-dream-pass`, `kb-organization-contribute`), and one explicit-user-only updater (`khaos-brain-update`). Task preflight and postflight keep retrieval and bounded evidence write-back close to ordinary work; software update remains user-invoked.
 
 ### Personal Mode And Organization Mode
 
@@ -103,8 +103,8 @@ The boundary is intentional:
 - personal preferences stay local by default;
 - reusable task models and engineering lessons can enter an organization candidate pool;
 - organization cards carry source, author, status, confidence, and read-only metadata;
-- local retrieval remains first;
-- organization cards become local experience only after actual use;
+- local and organization candidates enter one combined ranking, with the source boundary always visible;
+- organization cards remain foreign read-only context; only actual use outcomes may later influence local knowledge through Sleep;
 - meaningful local improvements can flow back as reviewed organization candidates.
 
 ## Organization Sharing Is More Than Skill Sharing
@@ -119,7 +119,7 @@ An organization card can say:
 - who authored it and how confident it is;
 - whether it depends on a Skill bundle.
 
-Candidate Skills are not auto-installed. Only approved Skills with pinned version and content-hash metadata are eligible for installation on another machine.
+Cards never auto-install Skills. An approved Skill with pinned version and content-hash metadata still requires its explicit reviewed installation route; snapshot synchronization, display, selection, or card use is never installation authority.
 
 ## Why GitHub Is Enough For An Organization KB
 
@@ -137,7 +137,7 @@ For many teams, a private repository is already the simplest reliable backend fo
 
 The Python dependency set pins one exact public [ResearchGuard v0.1.2](https://github.com/liuyingxuvka/ResearchGuard/releases/tag/v0.1.2) source commit. Khaos Brain imports only its `researchguard.logic` member, which owns the required ModelStore and ModelMesh APIs and the current `researchguard.logic.model-store.v1` / `researchguard.logic.model-mesh.v1` schemas. The retired standalone LogicGuard package is neither installed nor consulted.
 
-Repository contributors and GitHub Actions use `requirements-dev.txt`, which additionally pins the public [FlowGuard v0.58.5](https://github.com/liuyingxuvka/FlowGuard/releases/tag/v0.58.5) source commit used by model-assurance tests. ResearchGuard and FlowGuard both use one exact public HTTPS source identity; there is no SSH key, private dependency, mirror, alias, compatibility import, fallback, or alternate dependency path. Khaos Brain keeps its FlowGuard project record and executable models but does not vendor a FlowGuard shadow Skill suite, ownership manifest, suite map, or compatibility verifier; Codex uses the current global FlowGuard Skill surface. CI also uses the public SkillGuard source for author-side contract compilation and depth calibration and uses official OpenSpec 1.6.0 for specification verification. Neither tool is copied into Khaos Brain's installed consumer Skills or required by their normal execution. Each native runner uses the current Python identity recorded by its own command contract; a real interpreter change invalidates that runner's evidence.
+Repository contributors and GitHub Actions use `requirements-dev.txt`, which additionally pins the public [FlowGuard v0.68.0](https://github.com/liuyingxuvka/FlowGuard/releases/tag/v0.68.0) source commit used by model-assurance and current model-system authority checks. ResearchGuard and FlowGuard both use one exact public HTTPS source identity; there is no SSH key, private dependency, mirror, alias, compatibility import, fallback, or alternate dependency path. Khaos Brain keeps its FlowGuard project record and executable models but does not vendor a FlowGuard shadow Skill suite, ownership manifest, suite map, or compatibility verifier; Codex uses the current global FlowGuard Skill surface. CI also uses the public SkillGuard source for author-side contract compilation and depth calibration and uses official OpenSpec 1.6.0 for specification verification. Neither tool is copied into Khaos Brain's installed consumer Skills or required by their normal execution. Each native runner uses the current Python identity recorded by its own command contract; a real interpreter change invalidates that runner's evidence.
 
 - **Visible:** cards can be opened directly; source, author, confidence, status, and skill dependencies are visible.
 - **Maintainable:** incremental Sleep, convergent Dream, system update, and organization maintenance treat memory as a living system.
@@ -202,7 +202,7 @@ CHANGELOG.md           Release history
 
 MIT. See [`LICENSE`](./LICENSE).
 
-After the check passes, the machine has the global preflight skill, bounded postflight rules, four scheduled maintenance entries (`KB Sleep`, `KB Dream`, organization contribution, and organization maintenance), plus the manually invoked `khaos-brain-update` Skill. There is no scheduled software-update task. The desktop UI only displays the exact configured Git upstream status; updating starts only when the user explicitly asks AI in the current conversation. Each installed Skill is a self-contained consumer product with its own native checks and receipts; no installed tree contains `.skillguard` or calls SkillGuard. Upgrades remove the retired Architect and system-update surfaces and settle old history, candidate, cache, sandbox, and maintenance debt. Old managed formats are upgrade-only input: the AI-run transaction converts them directly into exact LogicGuard models, scoped ModelMeshes, deterministic projections, and an exact active index, publishes the generation pointer last, deletes retired authority, and requires a residual-zero receipt. Normal operation has no compatibility layer or projection fallback; missing or stale current facts fail visibly. Upgrade-attempt currentness reads one bounded `HEAD.json` and the exact bounded current projection it names; immutable event history and prior attempt directories are never scanned by the ordinary check. The committed lightweight install state binds that same final attempt by exact ID and receipt hash, and an independent post-command check must match both. During a real manual update, all four scheduled automations remain paused while one target-native transaction validates, restores, reads back, runs the normal install check, and marks the update current.
+After the check passes, the machine has the global preflight skill, bounded postflight rules, two scheduled maintenance entries (`KB Sleep` and `KB Organization Maintenance`), two installed composite-child Skills (Dream and organization contribution), and the manually invoked `khaos-brain-update` Skill. There is no scheduled software-update task. The desktop UI only displays the exact configured Git upstream status; updating starts only when the user explicitly asks AI in the current conversation. Each installed Skill is a self-contained consumer product with its own native checks and receipts; no installed tree contains `.skillguard` or calls SkillGuard. Upgrades remove retired Architect/system-update/split-task surfaces and settle old history, candidate, cache, sandbox, and maintenance debt. Old managed formats are upgrade-only input: the AI transaction converts them directly to current LogicGuard/card/source contracts and requires zero residuals. Normal operation has no compatibility or projection fallback. During a real manual update, both scheduled automations remain paused while one target-native transaction validates, restores, reads back, runs the normal install check, and marks the update current.
 
 Release readiness is a closed 17-owner graph, not a list of fallback commands. Each source, data, toolchain, environment, or installed-state component has an explicit owner edge. An unchanged owner consumes its exact immutable terminal-success receipt without execution; a changed component invalidates only its declared owners. Failed, timed-out, tampered, missing, duplicate-owned, unmapped, or ambiguous evidence blocks visibly. Only one frozen release snapshot runs the complete foreground campaign, and full regression retains its exclusive JUnit-validated lane.
 
@@ -212,7 +212,7 @@ The exact migration phases, rollback behavior, pause-state preservation, and suc
 
 | 仓库主线 | 最新发布 | 项目 | 许可证 |
 | --- | --- | --- | --- |
-| `v0.7.1` | `v0.7.1` | `Khaos Brain` | MIT |
+| `v0.8.0` | `v0.8.0` | `Khaos Brain` | MIT |
 
 ## 它是什么
 
@@ -306,12 +306,12 @@ Organization mode 是可选的。Settings 验证 organization KB GitHub reposito
 - **醒着做任务：** agent 在任务前检索相关经验，在任务后用一个稳定事件 ID 写回一条观察。Postflight 只做一次持久写入和事件绑定终态回执，不同步重放完整生命周期，也不发布模型或索引。
 - **睡眠整理：** `KB Sleep` 是唯一正常运行时模型写入者。它先冻结一个有上限的批次，每完成一条就保存断点；中断后只续做未完成项，并让旧的已验证知识库继续可读，直到模型、ModelMesh、生命周期复核、卡片投影和不可变索引都准备好，最后只切换一次当前指针。
 - **快速而守门的检索：** 日常查询先用路线和词法找到入口，再读取精确模型、根 ArgumentBlock、缺口和已验证的 mesh 邻域；`related_cards`、共同出现或 YAML 投影都不能授权扩展。
-- **做梦验证：** `KB Dream` 固定一个不可变 generation，测试移除证据、移除假设、加强反驳/反例和压力边界；它只能把模型缺口交给 Sleep，并且结束前必须证明权威没有被改写。
+- **做梦验证：** Dream 作为本机维护任务的内部阶段，固定一个不可变 generation，测试移除证据、移除假设、加强反驳/反例和压力边界；它只能把模型缺口交给 Sleep，并且结束前必须证明权威没有被改写。
 - **手动软件更新：** 桌面只显示精确上游状态；只有用户在当前对话里明确要求 AI 更新时，事务式更新流程才会运行。系统没有软件自动更新计划任务。
-- **组织维护：** 共享组织来源有自己的 candidate、review 和 maintenance 路径。
-- **独立完成：** 四个计划任务与单独的手动更新 Skill 各自拥有自己的原生路线、不重叠的职责、测试、证据和不可变运行回执。SkillGuard 只在维护者仓库里检查这五个源技能；安装后的技能不依赖 SkillGuard、共享回执或外部闭环。
+- **组织维护：** 一个独立组织任务负责完整同步、直接升级旧组织卡、维护与贡献，并发布内容寻址的只读组织快照。
+- **独立完成：** 系统只有两个定时主任务：本机的 Sleep→Dream，以及组织的维护→贡献。它们各有自己的任务锁和失败边界，只在重叠写入时共享一个全局写入权；手动更新仍只接受当前对话的明确请求。
 
-安装后，四个本地 automations（Sleep、Dream、organization contribution、organization maintenance）全自动运行，不要求人工阅读文件或维护 review queue。任务 preflight/postflight 负责检索与有界证据写回；软件更新保持当前对话显式调用。
+安装后只有两个定时 automations：`KB Sleep` 和 `KB Organization Maintenance`。Dream 与 organization contribution 仍是受维护的独立 Skill，但只作为对应主任务的内部阶段运行；`khaos-brain-update` 只由当前对话显式调用。
 
 ### 个人模式和组织模式
 
@@ -324,8 +324,8 @@ Organization mode 是可选的。Settings 验证 organization KB GitHub reposito
 - personal preferences 默认留在本地；
 - 可复用任务模型和工程经验可以进入 organization candidate pool；
 - organization cards 带有 source、author、status、confidence 和 read-only metadata；
-- local retrieval 仍然优先；
-- organization card 只有在真实使用后才会变成本地经验；
+- 本地卡和组织卡进入同一次统一排序，来源边界始终可见；
+- organization card 始终是只读外部上下文；只有真实使用结果才会在之后由 Sleep 判断是否影响本机知识；
 - 有意义的本地改进可以作为 reviewed organization candidate 回流。
 
 ## 组织共享不只是共享 Skill
@@ -340,7 +340,7 @@ organization card 可以说明：
 - 谁写的、可信度如何；
 - 是否依赖一个 Skill bundle。
 
-Candidate Skills 不会自动安装。只有带 pinned version 和 content-hash metadata 的 approved Skills，才有资格安装到另一台机器。
+卡片永远不会自动安装 Skill。即使是带 pinned version 和 content-hash metadata 的 approved Skill，也必须走显式、受审查的安装路线；同步、查看、选择或使用卡片都不是安装授权。
 
 ## 为什么 GitHub 足够作为组织 KB
 
@@ -358,7 +358,7 @@ Candidate Skills 不会自动安装。只有带 pinned version 和 content-hash 
 
 Python 依赖只固定到一个公开的 [ResearchGuard v0.1.2](https://github.com/liuyingxuvka/ResearchGuard/releases/tag/v0.1.2) 精确源码提交。Khaos Brain 只导入其中的 `researchguard.logic` 成员；当前 ModelStore、ModelMesh API 以及 `researchguard.logic.model-store.v1` / `researchguard.logic.model-mesh.v1` schema 都由它提供。已经退役的独立 LogicGuard 包既不安装，也不参与运行。
 
-仓库开发与 GitHub Actions 使用 `requirements-dev.txt`，其中额外固定了公开的 [FlowGuard v0.58.5](https://github.com/liuyingxuvka/FlowGuard/releases/tag/v0.58.5) 精确源码提交，用于模型保障测试。ResearchGuard 和 FlowGuard 都只走一个公开 HTTPS 身份；没有 SSH 密钥、私有依赖、镜像、别名、兼容导入、fallback 或第二依赖路径。Khaos Brain 只保留 FlowGuard 项目记录和本项目的可执行模型，不再内置 FlowGuard 影子 Skill 套件、ownership manifest、suite map 或兼容验证器；Codex 使用当前全局 FlowGuard Skill 入口。CI 也会使用公开的 SkillGuard 源码做作者侧合同编译与深度校准，并使用官方 OpenSpec 1.6.0 做规格验证。它们都不会被复制进 Khaos Brain 的消费者安装技能，也不是这些技能日常运行的依赖。每个原生运行器只服从自己的命令合同；解释器身份真正变化时，该运行器的证据会失效。
+仓库开发与 GitHub Actions 使用 `requirements-dev.txt`，其中额外固定了公开的 [FlowGuard v0.68.0](https://github.com/liuyingxuvka/FlowGuard/releases/tag/v0.68.0) 精确源码提交，用于模型保障测试和当前模型系统权威检查。ResearchGuard 和 FlowGuard 都只走一个公开 HTTPS 身份；没有 SSH 密钥、私有依赖、镜像、别名、兼容导入、fallback 或第二依赖路径。Khaos Brain 只保留 FlowGuard 项目记录和本项目的可执行模型，不再内置 FlowGuard 影子 Skill 套件、ownership manifest、suite map 或兼容验证器；Codex 使用当前全局 FlowGuard Skill 入口。CI 也会使用公开的 SkillGuard 源码做作者侧合同编译与深度校准，并使用官方 OpenSpec 1.6.0 做规格验证。它们都不会被复制进 Khaos Brain 的消费者安装技能，也不是这些技能日常运行的依赖。每个原生运行器只服从自己的命令合同；解释器身份真正变化时，该运行器的证据会失效。
 
 发布就绪检查是一张封闭的 17-owner 图，不是一串失败后改走别路的命令。源码、数据、工具链、环境和安装状态组件都有明确 owner；未变化的 owner 直接复用自己的精确不可变成功回执，变化只让实际消费该组件的 owner 失效。失败、超时、被篡改、缺失、重复归属、未映射或歧义证据都会明确阻断，绝不会退化成 run-all。只有冻结后的发布快照运行一次完整前台验收，全量回归继续占用独立且经过 JUnit 清单校验的通道。
 
@@ -402,7 +402,7 @@ python scripts/install_codex_kb.py --json
 python scripts/install_codex_kb.py --check --json
 ```
 
-检查通过后，这台机器会安装 global preflight skill、有界 postflight rules、四个计划维护入口（`KB Sleep`、`KB Dream`、organization contribution、organization maintenance），以及只能由当前对话显式调用的 `khaos-brain-update` Skill。系统没有软件自动更新计划任务；桌面 UI 只显示精确配置的 Git 上游是否有新版本，不写入授权，也不启动更新。每个安装技能都是能够独立工作的消费者产品，拥有自己的原生检查与回执；安装树里不含 `.skillguard`，运行时也不调用 SkillGuard。旧电脑升级时会删除已退役的 Architect 与 system-update 精确受管表面，并清理历史经验债务与维护债务。旧受管格式只允许作为升级输入：AI 事务直接生成当前 LogicGuard models、分域 ModelMeshes、确定性卡片投影和精确 active index，最后发布 generation pointer、删除旧权威并要求残留为零。日常运行没有兼容层、YAML 语义 fallback 或浮动 head；缺少或过期的当前事实会明确失败。轻量安装状态还必须用精确 attempt ID 和回执哈希绑定同一个最终升级尝试，独立检查会在安装器退出后重新核对二者。真实手动更新期间，四个计划任务会保持暂停，由一次目标原生事务完成校验、恢复、回读、普通安装检查并把更新状态标记为当前。
+检查通过后，这台机器会安装 global preflight skill、有界 postflight rules、两个计划维护入口（`KB Sleep` 与 `KB Organization Maintenance`）、两个只在主任务内部运行的子技能（Dream 与 organization contribution），以及只能由当前对话显式调用的 `khaos-brain-update` Skill。系统没有软件自动更新计划任务；桌面 UI 只显示精确配置的 Git 上游状态。旧受管格式只允许作为升级输入，AI 事务直接生成当前 LogicGuard/card/organization-source 权威并要求零残留；日常运行没有兼容 fallback。真实手动更新期间，两个计划任务会保持暂停，由一次目标原生事务完成校验、恢复、回读、普通安装检查并把更新状态标记为当前。
 
 完整迁移阶段、失败回滚、暂停状态保留和成功门槛见 [Chaos Brain 升级契约](docs/chaos_brain_upgrade.md)。
 

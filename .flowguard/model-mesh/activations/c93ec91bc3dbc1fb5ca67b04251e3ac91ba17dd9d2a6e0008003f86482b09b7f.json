@@ -1,0 +1,12 @@
+{
+  "candidate_snapshot_fingerprint": "sha256:d7c2a6cd849a787ab77d5504a18206da2aea5bf4a7d88f2f8a49f2c4cb853f07",
+  "expected_head_fingerprint": "sha256:7a418b0012fffec04167c513be240d893054c87314ff1984a4f24da9b6171226",
+  "fingerprint": "sha256:c93ec91bc3dbc1fb5ca67b04251e3ac91ba17dd9d2a6e0008003f86482b09b7f",
+  "next_generation": 7,
+  "previous_snapshot_fingerprint": "sha256:547b8d9ee7bf291cdb8bda1b7d86e7285719bdc5f1d0608fb69e1cb025780dca",
+  "receipt_id": "activation:khaos-v080-windows-path-20260731",
+  "revision_set_fingerprint": "sha256:b511981133c65391f340f82480a03dbb32e7b87f6287f0825ad0d41415ec8e4a",
+  "schema": "flowguard.model_activation_receipt.v1",
+  "subject_revision": "source-inventory:da47b1d4c4428439b7d7affbd71cb830b14586e1ea88c452e6b5549bdd34466c",
+  "system_id": "flowguard"
+}

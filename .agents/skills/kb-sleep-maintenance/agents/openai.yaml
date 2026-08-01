@@ -1,7 +1,7 @@
 interface:
-  display_name: "KB Sleep Maintenance"
-  short_description: "Run the local KB sleep maintenance pass"
-  default_prompt: "Use $kb-sleep-maintenance to run one local KB Sleep maintenance pass for this repository."
+  display_name: "KB Local Maintenance"
+  short_description: "Run the local Sleep then Dream maintenance cycle"
+  default_prompt: "Use $kb-sleep-maintenance to run one local Sleep then Dream maintenance cycle for this repository."
 
 policy:
   allow_implicit_invocation: false

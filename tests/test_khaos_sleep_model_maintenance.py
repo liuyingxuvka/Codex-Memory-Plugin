@@ -15,12 +15,17 @@ from local_kb import model_maintenance
 from local_kb.active_index import load_active_index, rebuild_active_index
 from local_kb.logicguard_models import (
     GroundedModelRelation,
+    build_authority_generation_payload,
     canonical_digest,
     load_authority_generation,
     mesh_store_root,
+    publish_authority_generation,
     read_exact_mesh,
 )
-from local_kb.model_maintenance import publish_sleep_model_generation
+from local_kb.model_maintenance import (
+    publish_sleep_model_generation,
+    recover_interrupted_model_generations,
+)
 from local_kb.model_projection import ProjectionValidationError, binding_from_projection
 from local_kb.store import load_yaml_file
 
@@ -59,6 +64,48 @@ def grounding() -> dict:
 
 
 class KhaosSleepModelMaintenanceTests(unittest.TestCase):
+    def test_sleep_recovers_a_pointer_split_after_interruption(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            baseline = publish_sleep_model_generation(root, reason="test:baseline")
+            self.assertTrue(baseline["ok"], baseline)
+            prior_authority = load_authority_generation(root)
+            prior_index = load_active_index(root)
+            operation_id = "test-interrupted-pointer-split"
+            snapshot = model_maintenance._snapshot_active_authority(root, operation_id)
+            interrupted = build_authority_generation_payload(
+                generation_id="generation-interrupted-pointer-split",
+                scope_meshes=prior_authority["scope_meshes"],
+                projection_manifest_digest=prior_authority["projection_manifest_digest"],
+                projection_count=prior_authority["projection_count"],
+                actor="local_kb.lifecycle.run_incremental_sleep",
+            )
+            publish_authority_generation(
+                root,
+                interrupted,
+                writer="local_kb.lifecycle.run_incremental_sleep",
+            )
+
+            recovered = recover_interrupted_model_generations(root)
+
+            self.assertTrue(recovered["ok"], recovered)
+            self.assertEqual(recovered["status"], "recovered")
+            self.assertEqual(recovered["recovered"][0]["operation_id"], operation_id)
+            self.assertEqual(
+                load_authority_generation(root)["generation_id"],
+                prior_authority["generation_id"],
+            )
+            restored_index = load_active_index(root)
+            self.assertEqual(
+                restored_index["authority_generation_id"],
+                prior_index["authority_generation_id"],
+            )
+            self.assertFalse((root / snapshot["transaction_root"] / "snapshot.json").exists())
+            receipt = root / "kb" / "history" / "model-generations" / (
+                f"{operation_id}-interrupted-recovery.json"
+            )
+            self.assertTrue(receipt.exists())
+
     def test_sleep_writer_explicitly_recovers_a_dead_mesh_writer_lock(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -1,0 +1,12 @@
+{
+  "candidate_snapshot_fingerprint": "sha256:aa531c4a60f70d38c8e5de1b9c517dbc1ee1b9d7ad1f0a32f3dba3c1e4be849e",
+  "expected_head_fingerprint": "sha256:1fd80f6a6d63349e0ee8f211a4aca6e36eff21b2cfbdc01ac0adca5f4d0e0728",
+  "fingerprint": "sha256:33a7ed3f04fc20e7672c70c3153f73f243b317118730f9158e978552e9e5b3e8",
+  "next_generation": 5,
+  "previous_snapshot_fingerprint": "sha256:32185eb57f74cb403443e870b970e19fc12803e8987deb50950f5668b2aedf1d",
+  "receipt_id": "receipt:khaos-logicguard-two-cycle-activation-20260731",
+  "revision_set_fingerprint": "sha256:d1ac9982eb2f411cc0ed0bce25cdbbcb837acd12e94727dab98404d5987aea6f",
+  "schema": "flowguard.model_activation_receipt.v1",
+  "subject_revision": "source-inventory:80e1ccb7e0fed7dd0c530e3fab96245fadc9a54322ddbc15aaeaa016dd4e77fa",
+  "system_id": "flowguard"
+}

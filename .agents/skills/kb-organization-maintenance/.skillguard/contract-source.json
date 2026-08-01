@@ -73,6 +73,8 @@
     "scripts/kb_org_maintainer.py",
     "local_kb/org_automation.py",
     "local_kb/org_maintenance.py",
+    "local_kb/org_cycle.py",
+    "local_kb/org_snapshot.py",
     "tests/test_org_automation.py",
     "tests/test_org_maintenance.py",
     "tests/test_org_cleanup.py",

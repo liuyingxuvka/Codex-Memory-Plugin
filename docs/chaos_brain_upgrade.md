@@ -18,7 +18,7 @@ inventories and snapshots the old surface, rewrites valid material directly
 into current LogicGuard revisions and scoped ModelMeshes, creates deterministic
 projections and the exact active index, publishes the generation pointer last,
 removes old authority, and proves zero residuals. Unknown or incomplete input
-rolls back and keeps all four retained automations paused. It never adds a
+rolls back and keeps both retained composite automations paused. It never adds a
 compatibility reader or fallback.
 
 When one captured old/current conflict cannot be resolved mechanically, the
@@ -77,7 +77,7 @@ not part of the installed payload.
 
 Every surviving automation preserves both its exact previous runtime status and
 its independent `user_paused` value. A failed transaction or assurance step
-restores the last known good files, re-pauses all four automations, records the
+restores the last known good files, re-pauses both automations, records the
 retry point, and leaves the attempt incomplete. Interruption recovery finishes
 or rolls back the old transaction before a new attempt begins.
 
@@ -109,18 +109,21 @@ reusable.
 
 ## Scheduled and manual completion
 
-The four scheduled Skills complete through their own target-native runners.
+The two scheduled composite Skills complete through their own target-native
+cycle runners. Dream and organization contribution remain target-owned child
+Skills and explicit diagnostics, but they have no independent schedules.
 Each runner owns one exact command, one run identity, one non-overlapping
 obligation inventory, and one immutable terminal receipt. Capability regression
 proves that a software version can perform the behavior; it cannot replace the
 receipt of a concrete scheduled run.
 
 Installation and current-machine activation use one current five-member skill
-inventory: the four runners above are `scheduled`, while
-`khaos-brain-update` is the sole `manual-only` member. The operator transaction
-activates and reads back exactly four automation IDs. It does not require or
-invent a fifth scheduler, and its activation receipt is not evidence that a
-future scheduled run completed.
+inventory: `kb-sleep-maintenance` and `kb-organization-maintenance` are
+`scheduled`; `kb-dream-pass` and `kb-organization-contribute` are
+`composite-child`; and `khaos-brain-update` is the sole
+`explicit-user-request` member.
+The partition is disjoint and exhaustive. The operator transaction activates
+and reads back exactly two automation IDs and never invents a child schedule.
 
 The manual `khaos-brain-update` Skill has no scheduler. It begins only after an
 explicit request in the current conversation and completes in one target-native
@@ -128,7 +131,7 @@ transaction:
 
 `check request and topology -> pause/snapshot -> update -> migrate/install -> validate -> build restoration plan -> restore/read back -> normal install check -> native terminal receipt -> CURRENT`
 
-All four automations remain paused until restoration and readback succeed.
+Both automations remain paused until restoration and readback succeed.
 Drift or failure re-pauses the group and marks the update failed. `no-update` is
 the only successful no-op. An open UI, missing request, missing upstream, fetch
 failure, dirty tracked work, local-ahead/diverged topology, concurrent execution,

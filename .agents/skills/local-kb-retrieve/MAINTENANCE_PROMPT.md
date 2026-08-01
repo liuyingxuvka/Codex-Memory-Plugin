@@ -2,7 +2,7 @@
 
 Sleep is the sole knowledge-decision and canonical LogicGuard model-generation lane. It freezes one finite batch, resumes that exact batch before later arrivals, durably checkpoints settled items, calibrates current knowledge, and publishes exact models, scoped ModelMeshes, deterministic card projections, and the active index only as one complete generation.
 
-Run `python .agents/skills/local-kb-retrieve/scripts/kb_sleep.py --json` from the repository root after acquiring the `kb-sleep` lane.
+The local-cycle wrapper invokes `python .agents/skills/local-kb-retrieve/scripts/kb_sleep.py --json` exactly once. It holds an independent local task lease and delegates the sole global writer token only during mutation phases.
 
 Required behavior:
 
@@ -20,10 +20,10 @@ Required behavior:
 - Stop starting new items at the native soft deadline, atomically save progress, release the lane, and return `progress_saved` before the outer hard timeout. `progress_saved` never means generation completion, watermark advancement, or handoff acknowledgement.
 - Commit the input watermark only after every frozen item is settled and lifecycle review, acknowledgements, generation publication, exact index validation, and the final pointer switch are durable. `progress_saved` and failure leave the prior committed watermark unchanged.
 - Report `previous_remaining`, `newly_eligible`, `opening_remaining`, `target_batch_size`, `completed_this_attempt`, `blocked_this_attempt`, `closing_remaining`, `net_reduction`, and `convergence_status` under one counting rule. Later arrivals must not change the frozen batch.
-- For `progress_saved`, failure, an open batch, or `backlog_growing`, record Dream and organization descendants in `downstream_stages` as `not_run`; do not launch them, invoke a second Sleep child, or run a status-helper retry.
-- A malformed frozen item may settle as blocked only with a named owner and executable reopen condition. Publish settled siblings as `completed_with_blocks`, retain the blocked item for governed reopening, and record all three descendants as `not_run` with reason `sleep-completed-with-blocks`.
+- For `progress_saved`, failure, an open batch, or `backlog_growing`, record only the Dream phase as `not_run`; the organization task is independent and its state must remain untouched. Do not launch that task, invoke a second Sleep child, or run a status-helper retry.
+- A malformed frozen item may settle as blocked only with a named owner and executable reopen condition. Publish settled siblings as `completed_with_blocks`, retain the blocked item for governed reopening, and record only Dream as `not_run` with reason `sleep-completed-with-blocks`.
 - Do not ask a human to read candidate or report files or choose ordinary maintenance actions.
 
 Keep the canonical-interface checkpoint: CLI machine JSON, lifecycle fields, automation payloads, and route values remain encoding-stable canonical interfaces; Chinese display belongs in `i18n.zh-CN`, route display labels, and UI view models.
 
-Report the complete Sleep receipt, including `batch_head`, `batch_plan`, `batch_checkpoint`, the canonical remainder counts, exact generation/model/mesh bindings, gap and unresolved-relation counts, `downstream_stages`, and index validation. A valid `progress_saved` receipt closes only this bounded attempt and keeps the batch open; do not claim generation completion when any item, blocker, or required evidence remains.
+Report the complete Sleep phase receipt to the local cycle owner, including `batch_head`, `batch_plan`, `batch_checkpoint`, the canonical remainder counts, exact generation/model/mesh bindings, gap and unresolved-relation counts, Dream phase gate, writer-token disposition, and index validation. A valid `progress_saved` receipt closes only this bounded attempt and keeps the batch open; do not claim generation completion when any item, blocker, or required evidence remains.

@@ -54,3 +54,33 @@ Dream SHALL derive a stable fingerprint from the exact mesh revision, selected r
 #### Scenario: Model evidence changes
 - **WHEN** a bound model/mesh revision or decision-relevant evidence changes
 - **THEN** Dream MAY reopen the opportunity under a new fingerprint while preserving the prior immutable closure
+
+### Requirement: One local maintenance task composes Dream and Sleep phases
+The scheduler SHALL expose one local maintenance owner with permission-separated Sleep and Dream phases. A fresh cycle SHALL run the existing Sleep publisher first and then run bounded Dream only after Sleep reaches a clean terminal; a cycle with an open frozen Sleep batch SHALL resume Sleep and explicitly defer Dream for that trigger. Dream SHALL never become a second canonical publisher.
+
+#### Scenario: Fresh local cycle
+- **WHEN** no open frozen Sleep batch exists and the local maintenance lease is acquired
+- **THEN** the cycle SHALL pin one local generation, run the existing Sleep publisher to a clean terminal state, then run Dream read-only against the published exact generation and seal valid handoffs only for a later Sleep batch
+
+#### Scenario: Resume an open Sleep batch
+- **WHEN** a previous Sleep run left a resumable frozen batch
+- **THEN** the cycle SHALL resume that exact batch, mark Dream deferred, and SHALL NOT attach new Dream opportunities to the frozen batch
+
+#### Scenario: Dream phase fails or times out
+- **WHEN** Dream has an ordinary bounded experiment failure or a hard timeout whose descendants are confirmed cleaned up
+- **THEN** the cycle SHALL keep the failure visible, reject unsealed handoffs, and preserve the already-completed Sleep publication; cleanup uncertainty SHALL block later local descendants without changing organization-cycle eligibility
+
+### Requirement: Local and organization cycles have independent failure domains
+The local and organization scheduled owners SHALL keep separate outer leases,
+requests, receipts, and terminal states. They SHALL share only an owner-token
+global write lease around overlapping durable mutations. A local-cycle blocker
+MUST NOT automatically mark organization work not run, and an organization-cycle
+blocker MUST NOT invalidate a clean local cycle.
+
+#### Scenario: Local Sleep is blocked before publication
+- **WHEN** the organization cycle has an otherwise valid independent request
+- **THEN** the organization cycle SHALL remain eligible to run and SHALL acquire the global write lease only for its own mutation phases
+
+#### Scenario: Both cycles reach a write phase
+- **WHEN** one cycle already owns the live global writer token
+- **THEN** the other SHALL wait or return a visible bounded contention disposition and SHALL NOT steal the token, overlap the write, or falsify completion

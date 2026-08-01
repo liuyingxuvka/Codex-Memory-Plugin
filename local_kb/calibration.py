@@ -4,10 +4,15 @@ import math
 from pathlib import Path
 from typing import Any, Mapping
 
-from local_kb.lifecycle import content_fingerprint, load_lifecycle_state, outcome_receipts_path
+from local_kb.lifecycle import (
+    OUTCOME_RECEIPT_SCHEMA,
+    content_fingerprint,
+    load_lifecycle_state,
+    outcome_receipts_path,
+)
 
 
-CALIBRATION_POLICY_VERSION = 1
+CALIBRATION_POLICY_VERSION = 2
 GRADE_WEIGHTS = {"strong": 1.0, "medium": 0.5, "weak": 0.0}
 POSITIVE_OUTCOMES = {"success", "no-card-success"}
 NEGATIVE_OUTCOMES = {"failure", "misleading", "rework"}
@@ -29,7 +34,11 @@ def _outcomes(repo_root: Path) -> list[dict[str, Any]]:
                 payload = json.loads(text)
             except json.JSONDecodeError:
                 continue
-            if isinstance(payload, dict):
+            if (
+                isinstance(payload, dict)
+                and str(payload.get("schema_version") or "")
+                == OUTCOME_RECEIPT_SCHEMA
+            ):
                 rows.append(payload)
     return rows
 
@@ -48,11 +57,20 @@ def build_calibration_evidence_index(
         else load_lifecycle_state(repo_root, repair_projection=False)
     )
     outcomes_by_entry: dict[str, list[dict[str, Any]]] = {}
+    foreign_outcomes_by_knowledge_ref: dict[str, list[dict[str, Any]]] = {}
     for item in outcomes:
-        for value in item.get("used_entry_ids", []):
-            entry_id = str(value).strip()
-            if entry_id:
+        for result in item.get("used_results", []):
+            if not isinstance(result, Mapping):
+                continue
+            source_kind = str(result.get("source_kind") or "")
+            entry_id = str(result.get("entry_id") or "").strip()
+            knowledge_ref = str(result.get("knowledge_ref") or "").strip()
+            if source_kind == "local" and entry_id:
                 outcomes_by_entry.setdefault(entry_id, []).append(item)
+            elif source_kind == "organization" and knowledge_ref:
+                foreign_outcomes_by_knowledge_ref.setdefault(
+                    knowledge_ref, []
+                ).append(item)
     observations_by_entry: dict[str, list[dict[str, Any]]] = {}
     for observation in lifecycle.get("observations", {}).values():
         if not isinstance(observation, Mapping):
@@ -64,6 +82,7 @@ def build_calibration_evidence_index(
             )
     return {
         "outcomes_by_entry": outcomes_by_entry,
+        "foreign_outcomes_by_knowledge_ref": foreign_outcomes_by_knowledge_ref,
         "observations_by_entry": observations_by_entry,
         "outcome_count": len(outcomes),
         "observation_count": sum(
@@ -71,6 +90,117 @@ def build_calibration_evidence_index(
         ),
         "lifecycle_event_digest": str(lifecycle.get("event_digest") or ""),
     }
+
+
+def plan_foreign_calibration(
+    observation: Mapping[str, Any],
+    *,
+    current_foreign_entries: Mapping[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    """Turn an exact organization-card outcome into bounded local policy deltas.
+
+    The returned plan never edits the foreign card. Sleep owns publication of
+    these local score/eligibility decisions and may separately admit a local
+    candidate when the evidence contains a complete predictive triplet.
+    """
+
+    target = (
+        observation.get("target", {})
+        if isinstance(observation.get("target"), Mapping)
+        else {}
+    )
+    context = (
+        observation.get("context", {})
+        if isinstance(observation.get("context"), Mapping)
+        else {}
+    )
+    predictive = (
+        context.get("predictive_observation", {})
+        if isinstance(context.get("predictive_observation"), Mapping)
+        else {}
+    )
+    source = (
+        observation.get("source", {})
+        if isinstance(observation.get("source"), Mapping)
+        else {}
+    )
+    source_kind = str(source.get("kind") or "")
+    outcome = str(context.get("outcome") or "unknown").strip().lower()
+    suggested = str(context.get("suggested_action") or "none").strip().lower()
+    has_triplet = all(
+        str(predictive.get(key) or "").strip()
+        for key in ("scenario", "action_taken", "observed_result")
+    )
+    if (
+        source_kind in {"user", "user-correction", "verified-test", "test", "verification"}
+        or bool(context.get("verified"))
+        or bool(context.get("user_correction"))
+    ):
+        grade = "strong"
+    elif has_triplet or outcome not in {"", "unknown", "none"}:
+        grade = "medium"
+    else:
+        grade = "weak"
+    current = current_foreign_entries or {}
+    plans: list[dict[str, Any]] = []
+    for result in target.get("retrieval_results", []):
+        if not isinstance(result, Mapping):
+            continue
+        if str(result.get("source_kind") or "") != "organization":
+            continue
+        knowledge_ref = str(result.get("knowledge_ref") or "").strip()
+        if not knowledge_ref:
+            continue
+        prior = current.get(knowledge_ref, {}) if isinstance(current, Mapping) else {}
+        prior_adjustment = (
+            float(prior.get("score_adjustment") or 0.0)
+            if isinstance(prior, Mapping)
+            else 0.0
+        )
+        disposition = "no_delta"
+        score_adjustment = prior_adjustment
+        retrieval_eligible = bool(
+            prior.get("retrieval_eligible", True)
+            if isinstance(prior, Mapping)
+            else True
+        )
+        reason = "Outcome has no calibrated retrieval effect."
+        if outcome in NEGATIVE_OUTCOMES and grade == "strong":
+            disposition = "suppress"
+            score_adjustment = min(prior_adjustment, -4.0)
+            retrieval_eligible = False
+            reason = "Strong contradictory evidence suppresses this foreign card locally."
+        elif outcome in NEGATIVE_OUTCOMES:
+            disposition = "dampen"
+            score_adjustment = max(-3.0, prior_adjustment - 0.75)
+            reason = "Weak contradictory evidence lowers local ranking without rewriting authority."
+        elif suggested == "update-card" and grade == "strong":
+            disposition = "organization_update_candidate"
+            reason = "Correction is retained for a separately governed organization update."
+        elif suggested == "new-candidate" and has_triplet and grade in {"strong", "medium"}:
+            disposition = "localize_candidate"
+            reason = "Complete predictive evidence is eligible for a new local candidate."
+        elif outcome in POSITIVE_OUTCOMES:
+            disposition = "reinforce"
+            score_adjustment = min(2.0, prior_adjustment + (0.5 if grade == "strong" else 0.2))
+            retrieval_eligible = True
+            reason = "Successful use modestly raises this foreign card's local ranking."
+        plans.append(
+            {
+                "knowledge_ref": knowledge_ref,
+                "result_ref": str(result.get("result_ref") or ""),
+                "source_id": str(result.get("source_id") or ""),
+                "source_entry_id": str(result.get("entry_id") or ""),
+                "disposition": disposition,
+                "score_adjustment": round(score_adjustment, 4),
+                "retrieval_eligible": retrieval_eligible,
+                "evidence_grade": grade,
+                "evidence_ids": [str(context.get("outcome_id") or observation.get("event_id") or "")],
+                "reason": reason,
+                "candidate_eligible": disposition == "localize_candidate",
+            }
+        )
+    return plans
 
 
 def calibrate_entry(

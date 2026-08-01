@@ -10,7 +10,7 @@ FLOWGUARD_MODEL_MARKER = "flowguard-executable-model"
 def export_contract_model():
     return build_contract_model(
         "kb-organization-maintenance",
-        "Maintain shared organization knowledge while preserving local adoption and executable-safety authority.",
+        "Upgrade and maintain current organization card bundles, publish one immutable local snapshot, and preserve each machine's direct-use weighting and executable-safety authority.",
     )
 
 

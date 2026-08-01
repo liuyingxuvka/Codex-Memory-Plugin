@@ -54,8 +54,8 @@ Fresh install, upgrade, repair, and repeated install SHALL keep the exact manage
 
 #### Scenario: Fresh installation
 - **WHEN** Khaos Brain is installed into a Codex home with no prior managed update task
-- **THEN** the installer creates only the four retained background automations
-- **AND** it installs the manual update skill without an automation binding
+- **THEN** the installer creates only the two retained composite background automations
+- **AND** it installs both child skills plus the explicit-user-only update skill without separate automation bindings
 
 #### Scenario: Upgrade from an installation with the old task
 - **WHEN** the installer finds the exact managed `khaos-brain-system-update` task
@@ -66,16 +66,16 @@ Fresh install, upgrade, repair, and repeated install SHALL keep the exact manage
 - **THEN** the old task remains absent and absence is reported as healthy
 
 #### Scenario: Current machine returns maintenance to normal operation
-- **WHEN** the current aggregate, exact five-skill activation inventory, clean installed state, and four scheduled-skill classifications are valid and the user explicitly requires the retained maintenance tasks to run normally
-- **THEN** one hash-bound operator transaction activates exactly Sleep, Dream, organization contribution, and organization maintenance with no user-pause bit
-- **AND** the installed `khaos-brain-update` skill remains classified as manual-only and receives no automation binding
+- **WHEN** the current aggregate, exact five-skill activation inventory, clean installed state, and two scheduled-owner classifications are valid and the user explicitly requires the retained maintenance tasks to run normally
+- **THEN** one hash-bound operator transaction activates exactly the local Sleep-then-Dream owner and the organization-maintenance-then-contribution owner with no user-pause bit
+- **AND** Dream and organization contribution remain composite children and the installed `khaos-brain-update` skill remains explicit-user-only, all without separate automation bindings
 - **AND** the exact Architect and system-update tasks remain absent
-- **AND** any partial activation or final health failure re-pauses all four retained tasks
+- **AND** any partial activation or final health failure re-pauses both retained tasks
 
 #### Scenario: All five maintained skills appear in assurance
-- **WHEN** readiness reports the four scheduled skills and the manual-only update skill
+- **WHEN** readiness reports two scheduled owners, two composite children, and the explicit-user-only update skill
 - **THEN** the five-member report is accepted as the complete maintained inventory
-- **AND** only the four scheduled members are required in automation activation and readback
+- **AND** only the two scheduled owners are required in automation activation and readback
 
 ### Requirement: Former authorization state is directly migrated
 The installer-owned upgrade path SHALL convert the exact former update-state schema directly to the current status-only schema and SHALL leave no normal-runtime legacy reader.

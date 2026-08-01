@@ -6,6 +6,7 @@ from pathlib import Path
 
 from local_kb.org_checks import check_organization_repository
 from local_kb.org_cleanup import apply_organization_cleanup_proposal, build_organization_cleanup_proposal
+from local_kb.org_source_contract import materialize_current_source
 from local_kb.store import load_yaml_file, write_yaml_file
 from local_kb.ui_data import build_search_payload
 from tests.org_helpers import activate_current_kb_runtime, base_card, write_valid_org_repo
@@ -13,7 +14,6 @@ from tests.org_helpers import activate_current_kb_runtime, base_card, write_vali
 
 class OrganizationCleanupTests(unittest.TestCase):
     def _write_cleanup_repo(self, root: Path) -> None:
-        write_valid_org_repo(root, include_sandbox_cards=False)
         trusted_low = base_card(
             "trusted-low",
             "Old trusted route",
@@ -73,14 +73,20 @@ class OrganizationCleanupTests(unittest.TestCase):
             confidence=0.7,
         )
         smoke["tags"] = ["organization-kb", "auto-merge", "smoke-test"]
-        write_yaml_file(root / "kb" / "main" / "trusted" / "trusted-low.yaml", trusted_low)
-        write_yaml_file(root / "kb" / "main" / "candidates" / "duplicate-a.yaml", duplicate_a)
-        write_yaml_file(root / "kb" / "main" / "candidates" / "duplicate-b.yaml", duplicate_b)
-        write_yaml_file(root / "kb" / "main" / "candidates" / "weak-card.yaml", weak)
-        write_yaml_file(root / "kb" / "main" / "candidates" / "strong-card.yaml", strong)
-        write_yaml_file(root / "kb" / "main" / "candidates" / "stale-rejected.yaml", stale)
-        write_yaml_file(root / "kb" / "main" / "candidates" / "similar-card.yaml", similar)
-        write_yaml_file(root / "kb" / "main" / "candidates" / "auto-merge-smoke.yaml", smoke)
+        materialize_current_source(
+            root,
+            organization_id="sandbox",
+            cards=[
+                ("kb/main/trusted/trusted-low.yaml", trusted_low),
+                ("kb/main/candidates/duplicate-a.yaml", duplicate_a),
+                ("kb/main/candidates/duplicate-b.yaml", duplicate_b),
+                ("kb/main/candidates/weak-card.yaml", weak),
+                ("kb/main/candidates/strong-card.yaml", strong),
+                ("kb/main/candidates/stale-rejected.yaml", stale),
+                ("kb/main/candidates/similar-card.yaml", similar),
+                ("kb/main/candidates/auto-merge-smoke.yaml", smoke),
+            ],
+        )
         write_yaml_file(root / "kb" / "imports" / "alice" / "incoming-card.yaml", incoming)
         activate_current_kb_runtime(root)
 
@@ -98,7 +104,8 @@ class OrganizationCleanupTests(unittest.TestCase):
         self.assertEqual(proposal["maintenance_model"]["exchange_surface"], "kb/main")
         self.assertEqual(proposal["maintenance_model"]["exchange_surface_content_maintenance"], "in-scope")
         self.assertEqual(proposal["maintenance_model"]["trusted_card_content_maintenance"], "in-scope")
-        self.assertTrue(proposal["maintenance_model"]["local_final_adoption"])
+        self.assertTrue(proposal["maintenance_model"]["local_final_assimilation_by_sleep"])
+        self.assertNotIn("local_final_adoption", proposal["maintenance_model"])
         self.assertEqual(proposal["lane_policy"]["contribution_writes"], ["kb/imports"])
         self.assertEqual(proposal["lane_policy"]["maintenance_moves_reviewed_cards_to"], "kb/main")
         self.assertEqual(proposal["lane_policy"]["local_download_excluded_paths"], ["kb/imports"])
@@ -211,7 +218,6 @@ class OrganizationCleanupTests(unittest.TestCase):
     def test_maintenance_enforces_skill_author_hash_version_and_fork_policy(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            write_valid_org_repo(root, include_sandbox_cards=False)
             older = base_card("older", "Older bundle card", "Use the original Skill lineage.", status="candidate")
             latest = base_card("latest", "Latest bundle card", "Use the newest original-author version.", status="candidate")
             newer = base_card("newer", "Newer bundle card", "A different author must fork.", status="candidate")
@@ -235,9 +241,15 @@ class OrganizationCleanupTests(unittest.TestCase):
                         }
                     ]
                 }
-            write_yaml_file(root / "kb" / "main" / "candidates" / "older.yaml", older)
-            write_yaml_file(root / "kb" / "main" / "candidates" / "latest.yaml", latest)
-            write_yaml_file(root / "kb" / "main" / "candidates" / "newer.yaml", newer)
+            materialize_current_source(
+                root,
+                organization_id="sandbox",
+                cards=[
+                    ("kb/main/candidates/older.yaml", older),
+                    ("kb/main/candidates/latest.yaml", latest),
+                    ("kb/main/candidates/newer.yaml", newer),
+                ],
+            )
 
             proposal = build_organization_cleanup_proposal(root)
             action_types = [str(item.get("action_type") or "") for item in proposal["actions"]]
@@ -249,6 +261,63 @@ class OrganizationCleanupTests(unittest.TestCase):
         self.assertEqual(fork["lineage_original_author"], "author-a")
         self.assertEqual(fork["conflicting_original_author"], "author-b")
         self.assertFalse(fork["apply_supported"])
+
+    def test_catalog_coverage_includes_a_card_under_a_skills_route(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            materialize_current_source(
+                root,
+                organization_id="sandbox",
+                cards=[
+                    (
+                        "kb/main/codex/workflow/skills/skill-observation.yaml",
+                        base_card("skill-observation", "Skill observation", "Use observed Skill evidence."),
+                    )
+                ],
+            )
+            proposal = build_organization_cleanup_proposal(root)
+
+        self.assertTrue(proposal["ok"], proposal)
+        self.assertEqual(proposal["card_count"], 1)
+        self.assertEqual(proposal["card_decisions"][0]["entry_id"], "skill-observation")
+
+    def test_prediction_alternatives_are_not_misclassified_as_a_split(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            card = base_card("alternatives", "Bounded alternatives", "Choose by the declared boundary.")
+            card["predict"]["alternatives"] = [
+                {"when": "A", "result": "Use A"},
+                {"when": "B", "result": "Use B"},
+            ]
+            materialize_current_source(root, organization_id="sandbox", cards=[("kb/main/alternatives.yaml", card)])
+            proposal = build_organization_cleanup_proposal(root)
+
+        self.assertFalse(any(item["action_type"] == "split-card" for item in proposal["actions"]), proposal)
+
+    def test_ready_merge_packet_rebuilds_catalog_model_and_mesh(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            left = base_card("left", "Same route", "Use same.", status="candidate", confidence=0.7)
+            right = base_card("right", "Same route!", "Use same.", status="candidate", confidence=0.7)
+            for card in (left, right):
+                card["evidence"] = ["shared-evidence"]
+            materialize_current_source(root, organization_id="sandbox", cards=[("kb/main/left.yaml", left), ("kb/main/right.yaml", right)])
+            proposal = build_organization_cleanup_proposal(root)
+            merge = next(item for item in proposal["actions"] if item["action_type"] == "merge-cards")
+            result = apply_organization_cleanup_proposal(
+                root,
+                proposal,
+                allow_actions={"merge-cards"},
+                allow_action_ids={merge["action_id"]},
+                allow_trusted=True,
+            )
+            check = check_organization_repository(root)
+
+        self.assertEqual(merge["review_status"], "ready", merge)
+        self.assertTrue(merge["apply_packet"]["packet_digest"])
+        self.assertTrue(result["ok"], result)
+        self.assertEqual(result["applied_count"], 1)
+        self.assertTrue(check["ok"], check)
 
 
 if __name__ == "__main__":

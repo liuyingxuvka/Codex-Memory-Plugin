@@ -15,12 +15,15 @@ from local_kb.automation_contracts import (
     obligation_id,
 )
 from local_kb.automation_runtime import (
+    _real_artifact_issues,
+    _sleep_downstream_not_run,
     build_fixture_payload,
     build_native_receipt,
     evaluate_native_payload,
     validate_native_receipt,
     write_native_receipt,
 )
+from tests.current_runtime_helpers import activate_current_kb_runtime
 from local_kb.lifecycle import run_incremental_sleep
 from scripts.run_kb_automation import native_command, run_automation
 
@@ -45,6 +48,24 @@ def _refresh_sleep_batch_head(payload: dict[str, object]) -> None:
         "settled": checkpoint["settled"],
         "updated_at": checkpoint["updated_at"],
     }
+
+
+def test_sleep_downstream_gate_is_local_only() -> None:
+    reason = "sleep-progress-saved"
+    local_only = {
+        "downstream_stages": {
+            "dream": {"status": "not_run", "reason": reason},
+        }
+    }
+    cross_task = {
+        "downstream_stages": {
+            "dream": {"status": "not_run", "reason": reason},
+            "organization-cycle": {"status": "not_run", "reason": reason},
+        }
+    }
+
+    assert _sleep_downstream_not_run(local_only, reason=reason)
+    assert not _sleep_downstream_not_run(cross_task, reason=reason)
 
 
 def _assert_only_gate_performed(
@@ -158,16 +179,14 @@ def _progress_saved_sleep_payload() -> dict[str, object]:
             "reason": "sleep-progress-saved",
         }
         for stage_id in (
-            "kb-dream",
-            "kb-organization-contribute",
-            "kb-organization-maintenance",
+        "dream",
         )
     }
     _refresh_sleep_batch_head(payload)
     return payload
 
 
-def test_sleep_progress_saved_receipt_binds_frozen_batch_and_not_run_descendants() -> None:
+def test_sleep_progress_saved_receipt_binds_frozen_batch_and_local_dream_gate() -> None:
     payload = _progress_saved_sleep_payload()
 
     result = evaluate_native_payload(
@@ -230,7 +249,7 @@ def test_sleep_progress_saved_receipt_rejects_expanded_frozen_batch() -> None:
 def test_sleep_progress_saved_receipt_rejects_downstream_stage_that_ran() -> None:
     payload = _progress_saved_sleep_payload()
     payload = copy.deepcopy(payload)
-    payload["downstream_stages"]["kb-dream"] = {
+    payload["downstream_stages"]["dream"] = {
         "status": "completed",
         "reason": "",
     }
@@ -251,7 +270,7 @@ def test_sleep_progress_saved_receipt_rejects_downstream_stage_that_ran() -> Non
     ]["ok"]
 
 
-def test_sleep_completed_with_blocks_is_a_valid_published_terminal_with_not_run_descendants() -> None:
+def test_sleep_completed_with_blocks_gates_only_local_dream() -> None:
     payload = build_fixture_payload(
         "kb-sleep-maintenance",
         run_id="sleep-completed-with-blocks",
@@ -281,9 +300,7 @@ def test_sleep_completed_with_blocks_is_a_valid_published_terminal_with_not_run_
             "reason": "sleep-completed-with-blocks",
         }
         for stage_id in (
-            "kb-dream",
-            "kb-organization-contribute",
-            "kb-organization-maintenance",
+        "dream",
         )
     }
     _refresh_sleep_batch_head(payload)
@@ -343,7 +360,7 @@ def test_sleep_wrapper_binds_the_cooperative_deadline_once() -> None:
     assert command[index + 1] == str(SLEEP_NATIVE_SOFT_DEADLINE_SECONDS)
 
 
-def test_sleep_hard_timeout_records_every_descendant_as_not_run() -> None:
+def test_sleep_hard_timeout_records_local_dream_as_not_run() -> None:
     timeout = subprocess.TimeoutExpired(
         cmd=["sleep-native"],
         timeout=900,
@@ -377,9 +394,7 @@ def test_sleep_hard_timeout_records_every_descendant_as_not_run() -> None:
             "reason": "sleep-native-hard-timeout",
         }
         for stage_id in (
-            "kb-dream",
-            "kb-organization-contribute",
-            "kb-organization-maintenance",
+            "dream",
         )
     }
 
@@ -387,6 +402,7 @@ def test_sleep_hard_timeout_records_every_descendant_as_not_run() -> None:
 def test_sleep_native_entrypoint_accepts_cooperative_deadline_and_emits_canonical_json() -> None:
     repo = Path(__file__).resolve().parents[1]
     with tempfile.TemporaryDirectory() as tmp:
+        activate_current_kb_runtime(Path(tmp))
         completed = subprocess.run(
             [
                 sys.executable,
@@ -424,6 +440,51 @@ def test_sleep_native_entrypoint_accepts_cooperative_deadline_and_emits_canonica
         "updated_at",
     }
     assert "progress saved" not in completed.stdout.lower()
+
+
+def test_sleep_wrapper_accepts_outer_writer_evidence_not_present_in_inner_sleep_receipt() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        run_dir = (
+            root
+            / ".local"
+            / "automation-runs"
+            / "kb-sleep-maintenance"
+            / "receipt-layering"
+        )
+        run_dir.mkdir(parents=True)
+        native_receipt = run_dir / "sleep-native.json"
+        native_receipt.write_text(
+            json.dumps(
+                {
+                    "run_id": "receipt-layering",
+                    "status": "completed",
+                    "ok": True,
+                    "input_watermark": 4,
+                    "output_watermark": 4,
+                }
+            ),
+            encoding="utf-8",
+        )
+        outer_payload = {
+            "run_id": "receipt-layering",
+            "status": "completed",
+            "ok": True,
+            "input_watermark": 4,
+            "output_watermark": 4,
+            "receipt_path": str(native_receipt),
+            "global_writer": {"owner": "kb-sleep-maintenance"},
+            "idempotent_reuse": False,
+            "local_cycle": {},
+        }
+
+        issues = _real_artifact_issues(
+            "kb-sleep-maintenance",
+            outer_payload,
+            receipt_path=run_dir / "wrapper-receipt.json",
+        )
+
+    assert issues == []
 
 
 def test_organization_contribution_noop_performs_only_settings_gate() -> None:
