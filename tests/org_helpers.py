@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from local_kb.org_sources import _run_git, connect_organization_source
+from local_kb.org_source_contract import materialize_current_source
 from local_kb.logicguard_models import authority_generation_pointer_path
 from local_kb.model_maintenance import publish_sleep_model_generation
 from local_kb.settings import ORGANIZATION_MODE, load_desktop_settings, organization_sources_from_settings, save_desktop_settings
@@ -103,36 +104,20 @@ def organization_sandbox_cards() -> dict[str, dict[str, Any]]:
 
 
 def write_valid_org_repo(root: Path, *, include_sandbox_cards: bool = True) -> None:
-    write_yaml_file(
-        root / "khaos_org_kb.yaml",
-        {
-            "kind": "khaos-organization-kb",
-            "schema_version": 1,
-            "organization_id": ORGANIZATION_ID,
-            "kb": {
-                "main_path": "kb/main",
-                "imports_path": "kb/imports",
-            },
-            "skills": {
-                "registry_path": "skills/registry.yaml",
-                "candidates_path": "skills/candidates",
-            },
-        },
-    )
+    card_rows: list[tuple[str, dict[str, Any]]] = []
     if include_sandbox_cards:
         cards = organization_sandbox_cards()
-        write_yaml_file(root / "kb" / "main" / "trusted" / "overlap-scan.yaml", cards["overlap_scan"])
-        write_yaml_file(root / "kb" / "main" / "trusted" / "overlap-release.yaml", cards["overlap_release"])
-        write_yaml_file(root / "kb" / "main" / "candidates" / "unique-merge.yaml", cards["unique_merge"])
-        write_yaml_file(root / "kb" / "main" / "candidates" / "unique-skill.yaml", cards["unique_skill"])
+        card_rows.extend(
+            [
+                ("kb/main/trusted/overlap-scan.yaml", cards["overlap_scan"]),
+                ("kb/main/trusted/overlap-release.yaml", cards["overlap_release"]),
+                ("kb/main/candidates/unique-merge.yaml", cards["unique_merge"]),
+                ("kb/main/candidates/unique-skill.yaml", cards["unique_skill"]),
+            ]
+        )
     else:
-        write_yaml_file(root / "kb" / "main" / "seed.yaml", {"id": "seed", "status": "trusted"})
-    (root / "kb" / "main" / ".gitkeep").write_text("", encoding="utf-8")
-    (root / "kb" / "imports").mkdir(parents=True, exist_ok=True)
-    (root / "kb" / "imports" / ".gitkeep").write_text("", encoding="utf-8")
-    write_yaml_file(root / "skills" / "registry.yaml", {"skills": []})
-    (root / "skills" / "candidates").mkdir(parents=True, exist_ok=True)
-    (root / "skills" / "candidates" / ".gitkeep").write_text("", encoding="utf-8")
+        card_rows.append(("kb/main/seed.yaml", base_card("seed", "Seed card", "Use the seed card.")))
+    materialize_current_source(root, organization_id=ORGANIZATION_ID, cards=card_rows)
 
 
 def write_legacy_org_repo(root: Path, *, include_sandbox_cards: bool = True) -> None:

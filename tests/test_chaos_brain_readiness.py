@@ -886,7 +886,16 @@ class ChaosBrainReadinessTests(unittest.TestCase):
         ), mock.patch.object(
             readiness,
             "_alignment_from_manifest",
-            return_value={"ok": True, "consumed_receipt_ids": []},
+            return_value={
+                "ok": True,
+                "consumed_receipt_ids": [],
+                "test_mesh": {
+                    "ok": True,
+                    "terminal_status": "passed",
+                    "required_node_ids": [],
+                    "passed_node_ids": [],
+                },
+            },
         ):
             root = Path(temp_dir)
             report = readiness.build_report(

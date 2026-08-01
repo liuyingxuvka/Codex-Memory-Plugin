@@ -3,10 +3,9 @@ from __future__ import annotations
 import copy
 import os
 from pathlib import Path
-import re
 from typing import Any
 
-from local_kb.adoption import ADOPTION_KEY, adoption_state, card_exchange_hash, recorded_exchange_hashes
+from local_kb.adoption import card_exchange_hash, recorded_exchange_hashes
 from local_kb.org_checks import validate_shareable_payload
 from local_kb.org_sources import utc_timestamp
 from local_kb.model_maintenance import load_current_model_entries
@@ -20,6 +19,7 @@ from local_kb.store import load_organization_entries, write_yaml_file
 
 SHAREABLE_CARD_TYPES = {"model", "heuristic"}
 SHAREABLE_SCOPES = {"public"}
+RETIRED_ADOPTION_KEY = "organization_adoption"
 
 
 def organization_outbox_dir(repo_root: Path, organization_id: str) -> Path:
@@ -77,19 +77,14 @@ def share_eligibility(
     )
     reasons.extend(payload_safety.get("errors") or [])
 
-    adoption = entry_data.get(ADOPTION_KEY) if isinstance(entry_data.get(ADOPTION_KEY), dict) else {}
-    adoption_status = ""
-    if adoption:
-        adoption_status = adoption_state(entry_data)
-        if adoption_status == "clean":
-            reasons.append("clean adopted organization card does not need feedback")
-        if adoption_status == "locally_rejected":
-            reasons.append("locally rejected adopted card is not shared automatically")
+    if RETIRED_ADOPTION_KEY in entry_data:
+        reasons.append(
+            "retired organization_adoption metadata requires direct upgrade"
+        )
 
     return {
         "eligible": not reasons,
         "reasons": reasons,
-        "adoption_state": adoption_status,
         "payload_safety": payload_safety,
     }
 
@@ -132,18 +127,6 @@ def skill_dependency_evidence(entry_data: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _shareable_source_repo(value: Any) -> str:
-    """Keep portable remote repository identities, never local clone paths."""
-
-    text = str(value or "").strip()
-    lowered = text.lower()
-    if lowered.startswith(("https://", "http://", "ssh://", "git://")):
-        return text
-    if re.match(r"^[^/@\s]+@[^:\s]+:[^\s]+$", text):
-        return text
-    return ""
-
-
 def build_organization_proposal_payload(
     entry_data: dict[str, Any],
     *,
@@ -152,7 +135,6 @@ def build_organization_proposal_payload(
     created_at: str,
 ) -> dict[str, Any]:
     payload = copy.deepcopy(entry_data)
-    adoption = payload.pop(ADOPTION_KEY, None)
     original_status = str(payload.get("status") or "").strip()
     payload["status"] = "candidate"
     payload["organization_proposal"] = {
@@ -160,13 +142,10 @@ def build_organization_proposal_payload(
         "source_path": source_path,
         "created_at": created_at,
         "content_hash": card_exchange_hash(entry_data),
-        "proposal_kind": "adopted-feedback" if isinstance(adoption, dict) else "new-card",
-        "adoption_state": adoption_state(entry_data) if isinstance(adoption, dict) else "",
-        "source_entry_id": str((adoption or {}).get("source_entry_id") or entry_data.get("id") or "").strip()
-        if isinstance(adoption, dict)
-        else str(entry_data.get("id") or "").strip(),
-        "source_commit": str((adoption or {}).get("source_commit") or "").strip() if isinstance(adoption, dict) else "",
-        "source_repo": _shareable_source_repo((adoption or {}).get("source_repo")) if isinstance(adoption, dict) else "",
+        "proposal_kind": "local-card",
+        "source_entry_id": str(entry_data.get("id") or "").strip(),
+        "source_commit": "",
+        "source_repo": "",
         "original_status": original_status,
     }
     return payload
@@ -196,7 +175,9 @@ def build_organization_outbox(
     skill_bundle_errors: list[str] = []
     skill_dependency_evidence_reviewed_count = 0
     skill_dependency_evidence_blocked_count = 0
-    prior_exchange_hashes = recorded_exchange_hashes(repo_root, {"downloaded", "used", "absorbed", "exported", "uploaded"})
+    prior_exchange_hashes = recorded_exchange_hashes(
+        repo_root, {"exported", "uploaded"}
+    )
     organization_hashes = _organization_exchange_hashes(organization_sources, organization_id=organization_id)
 
     for entry in load_current_model_entries(repo_root)[0]:

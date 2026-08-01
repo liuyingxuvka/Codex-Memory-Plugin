@@ -12,7 +12,7 @@ from local_kb.store import load_yaml_file
 
 ORG_KB_MANIFEST = "khaos_org_kb.yaml"
 ORG_KB_KIND = "khaos-organization-kb"
-SUPPORTED_SCHEMA_VERSION = 1
+SUPPORTED_SCHEMA_VERSION = 2
 ORG_MAIN_ACTIVE_STATUSES = {"trusted", "candidate"}
 ORG_TARGET_LAYOUT = "main-imports"
 ORG_RECOMMENDED_MAIN_PATH = "kb/main"
@@ -345,19 +345,17 @@ def validate_organization_repo(repo_path: Path) -> dict[str, Any]:
         else:
             errors.append(f"skills registry does not exist: {registry_path_text}")
 
-    main_count = 0
-    main_active_count = 0
-    trusted_count = 0
-    candidate_count = 0
-    main_status_counts: dict[str, int] = {}
+    from local_kb.org_source_contract import validate_current_source
+
+    contract = validate_current_source(repo_path, manifest)
+    errors.extend(str(item) for item in contract.get("errors") or [])
+    main_count = int(contract.get("card_count") or 0)
+    main_active_count = int(contract.get("active_count") or 0)
+    main_status_counts = dict(contract.get("status_counts") or {})
+    trusted_count = int(main_status_counts.get("trusted", 0))
+    candidate_count = int(main_status_counts.get("candidate", 0))
     imports_count = 0
     imports_status_counts: dict[str, int] = {}
-    if main_path_text and (repo_path / main_path_text).exists():
-        main_count, main_status_counts = _yaml_status_counts(repo_path / main_path_text)
-        main_active_count = sum(main_status_counts.get(status, 0) for status in ORG_MAIN_ACTIVE_STATUSES)
-        trusted_count = main_status_counts.get("trusted", 0) + main_status_counts.get("approved", 0)
-        candidate_count = main_status_counts.get("candidate", 0)
-
     if imports_path_text:
         imports_count, imports_status_counts = _yaml_status_counts(repo_path / imports_path_text)
 
@@ -382,6 +380,9 @@ def validate_organization_repo(repo_path: Path) -> dict[str, Any]:
         "skill_candidates_path": skill_candidates_path_text,
         "main_count": main_count,
         "main_active_count": main_active_count,
+        "main_active_entry_ids": list(contract.get("active_entry_ids") or []),
+        "source_generation_id": str((contract.get("catalog") or {}).get("source_generation_id") or ""),
+        "source_catalog_digest": str((contract.get("catalog") or {}).get("catalog_digest") or ""),
         "main_status_counts": main_status_counts,
         "imports_count": imports_count,
         "imports_status_counts": imports_status_counts,

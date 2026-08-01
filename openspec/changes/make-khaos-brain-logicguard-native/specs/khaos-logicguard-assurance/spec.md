@@ -79,3 +79,29 @@ The installer SHALL project one local maintenance automation and one organizatio
 #### Scenario: Local Git parity is checked
 - **WHEN** the stable integration snapshot is ready for closure
 - **THEN** the final report SHALL identify the source revision, installed projection digest, FlowGuard adoption revision, and local Git commit separately and SHALL keep remote publication outside the claim unless explicitly requested
+
+### Requirement: Planning evidence cannot masquerade as execution evidence
+Final Model-Test Alignment and TestMesh SHALL consume the current terminal
+readiness evidence graph, exact source/tool identities, and JUnit/model receipt
+inventory. A planning artifact whose execution state is `frozen_not_run`, whose
+`current_runs` is empty, or whose required child is missing or stale MUST remain
+blocked even when its static plan validator exits zero.
+
+#### Scenario: Static alignment is complete but no current runs are bound
+- **WHEN** readiness evaluates the alignment owner
+- **THEN** it SHALL report planning complete and execution not run separately and SHALL fail the release gate
+
+### Requirement: Cycle receipts are immutable and input-bound
+Local and organization cycle schema-v3 receipts SHALL bind normalized request,
+source/tool digests, pinned generations, lease ownership, child receipt digests,
+outputs, cleanup evidence, and strict terminal status. Reuse SHALL require exact
+identity equality and terminal success.
+
+#### Scenario: A run id is repeated after source or snapshot input changes
+- **WHEN** the previous receipt does not bind the current decision inputs
+- **THEN** the cycle SHALL reject stale reuse and SHALL create no false completed result
+
+#### Scenario: An outer cycle adds orchestration evidence after a child receipt is sealed
+- **WHEN** the Sleep child receipt is immutable and the local cycle later adds Dream, writer-lease, reuse, timeout, or cycle-terminal fields
+- **THEN** validation SHALL require every child-owned field to remain exactly equal in the outer payload
+- **AND** it SHALL accept the outer payload as a strict superset without requiring outer-only fields to exist retroactively in the child receipt

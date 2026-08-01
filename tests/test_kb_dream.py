@@ -11,6 +11,7 @@ import yaml
 from local_kb.active_index import active_index_corruption_path, active_index_path, mark_active_index_corruption
 from local_kb.dream import (
     _logicguard_dream_probe,
+    dream_run_dir,
     run_dream_maintenance as _run_dream_maintenance,
 )
 from local_kb.logicguard_models import GroundedModelRelation, canonical_digest
@@ -64,6 +65,32 @@ def write_dream_process_entry(repo_root: Path) -> None:
 
 
 class DreamMaintenanceTests(unittest.TestCase):
+    def test_dream_rejects_canonical_write_request_before_creating_run_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            repo_root = Path(tmp_dir)
+
+            result = run_dream_maintenance(
+                repo_root=repo_root,
+                run_id="dream-write-rejected",
+                canonical_write_requested=True,
+            )
+
+            self.assertEqual(result["status"], "blocked")
+            self.assertEqual(result["reason"], "dream-canonical-write-forbidden")
+            self.assertEqual(
+                result["canonical_write_policy"],
+                {
+                    "allowed": False,
+                    "performed": False,
+                    "global_writer_required": False,
+                    "noncanonical_outputs": [
+                        "immutable-simulation-artifacts",
+                        "typed-sleep-gap-handoffs",
+                    ],
+                },
+            )
+            self.assertFalse(dream_run_dir(repo_root, "dream-write-rejected").exists())
+
     def test_dream_fails_closed_before_downstream_work_when_index_is_invalidated(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             repo_root = Path(tmp_dir)

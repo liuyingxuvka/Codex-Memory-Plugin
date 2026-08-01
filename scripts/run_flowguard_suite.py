@@ -65,10 +65,23 @@ def _run_json(command: list[str]) -> dict[str, Any]:
 
 def _watched_fingerprints() -> dict[str, str]:
     paths = (
+        Path(__file__).resolve(),
+        REPO_ROOT / "requirements-dev.txt",
+        REPO_ROOT / ".flowguard" / "project.toml",
+        REPO_ROOT / ".flowguard" / "model-regression-manifest.json",
         REPO_ROOT / ".flowguard" / "kb_convergence_upgrade_model.py",
         REPO_ROOT / ".flowguard" / "run_kb_convergence_checks.py",
         REPO_ROOT / ".flowguard" / "kb_skill_contract_model_common.py",
         REPO_ROOT / ".flowguard" / "khaos_brain_update_field_lifecycle.py",
+        REPO_ROOT / ".flowguard" / "khaos_brain_two_maintenance_cycle_flow.py",
+        REPO_ROOT
+        / ".flowguard"
+        / "khaos_brain_logicguard_system"
+        / "model.py",
+        REPO_ROOT
+        / ".flowguard"
+        / "khaos_brain_logicguard_system"
+        / "run_checks.py",
         REPO_ROOT / "local_kb" / "automation_contracts.py",
         REPO_ROOT / "local_kb" / "automation_runtime.py",
         REPO_ROOT / "local_kb" / "install.py",
@@ -88,6 +101,17 @@ def _watched_fingerprints() -> dict[str, str]:
 def build_report() -> dict[str, Any]:
     convergence_report = convergence.build_report()
     field_report = flowguard.review_field_lifecycle(update_fields.build_plan())
+    model_system_authority = _run_json(
+        [
+            sys.executable,
+            "-m",
+            "flowguard",
+            "model-system-audit",
+            "--root",
+            str(REPO_ROOT),
+            "--json",
+        ]
+    )
     conformance_report = _run_json(
         [
             sys.executable,
@@ -96,19 +120,40 @@ def build_report() -> dict[str, Any]:
     )
     current_runtime = check_current_runtime_only(REPO_ROOT)
     watched = _watched_fingerprints()
+    authority_payload = model_system_authority.get("payload")
+    if not isinstance(authority_payload, dict):
+        authority_payload = {}
+    fingerprint_inputs = {
+        "watched_fingerprints": watched,
+        "convergence_projection_digest": str(
+            convergence_report.get("projection_digest") or ""
+        ),
+        "model_system_head_fingerprint": str(
+            authority_payload.get("head_fingerprint") or ""
+        ),
+        "model_system_snapshot_fingerprint": str(
+            authority_payload.get("observed_snapshot_fingerprint") or ""
+        ),
+        "current_runtime_governed_digest": str(
+            current_runtime.get("governed_digest") or ""
+        ),
+    }
     input_fingerprint = hashlib.sha256(
-        json.dumps(watched, sort_keys=True, separators=(",", ":")).encode(
-            "utf-8"
-        )
+        json.dumps(
+            fingerprint_inputs,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
     ).hexdigest()
     ok = bool(
         convergence_report.get("ok")
         and field_report.ok
+        and model_system_authority.get("ok")
         and conformance_report.get("ok")
         and current_runtime.get("ok")
     )
     return {
-        "schema_version": "khaos-brain.flowguard-suite.v2",
+        "schema_version": "khaos-brain.flowguard-suite.v3",
         "suite": "khaos-brain-consumer-independence",
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "flowguard_schema_version": str(flowguard.SCHEMA_VERSION),
@@ -117,11 +162,14 @@ def build_report() -> dict[str, Any]:
         "ok": ok,
         "consumer_independence": convergence_report,
         "field_lifecycle": field_report.to_dict(),
+        "model_system_authority": model_system_authority,
         "production_conformance": conformance_report,
         "current_runtime": current_runtime,
+        "fingerprint_inputs": fingerprint_inputs,
         "watched_fingerprints": watched,
         "claim_boundary": (
-            "Current FlowGuard model, scenarios, progress, field lifecycle, "
+            "Current FlowGuard model-system authority audit, two-task composition, "
+            "scenarios, progress, field lifecycle, "
             "production conformance, and clean consumer runtime evidence. "
             "Author-side SkillGuard certification and publication remain separate."
         ),

@@ -148,7 +148,7 @@ def run_automation(
                         "status": "not_run",
                         "reason": "sleep-native-hard-timeout",
                     }
-                    for stage_id in ("organization-cycle",)
+                    for stage_id in ("dream",)
                 },
             }
         )

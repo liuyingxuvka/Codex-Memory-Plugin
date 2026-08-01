@@ -42,7 +42,7 @@ Dream is the immutable model-verification researcher.
 - It never creates or edits models, meshes, card projections, candidates,
   ordinary observations, or the central history/lifecycle ledger.
 
-System update is a narrow software-maintenance lane.
+System update is a narrow explicit-user software-maintenance action.
 
 - It checks the canonical software-update state and invokes the recovery-
   oriented update workflow only when authorized.
@@ -50,15 +50,30 @@ System update is a narrow software-maintenance lane.
   replace explicit development work.
 - The former Architect Skill and automation are retired and removed on every
   supported upgrade.
+- It has no scheduled task and runs only after an explicit request in the
+  current conversation.
 
-Organization maintenance is an exchange-layer Sleep.
+Organization maintenance owns the independent organization scheduled task.
 
 - The organization KB is a shared exchange surface, not central truth.
+- It synchronizes and validates the complete current source, directly upgrades
+  recognized older managed cards, and publishes one immutable
+  content-addressed local foreign snapshot.
 - It may repair, merge, split, promote, demote, reject, deprecate, or replace
-  shared candidates and cards under the same evidence discipline.
+  shared candidates and cards under the same evidence discipline, with exact
+  apply packets, reopen contracts, and rollback material.
 - Privacy, credentials, machine identifiers, local absolute paths, private
   preferences, and unsafe or unpinned Skill bundles never cross the boundary.
-- Local machines retain the final adoption and retrieval decision.
+- Ordinary tasks may use a relevant cached organization card directly as
+  foreign read-only context. They never adopt/copy it or install a Skill merely
+  because it is present; only exact use outcomes may be assimilated later by
+  Sleep.
+
+There are exactly two scheduled owners: the local Sleep-then-Dream task and the
+organization maintenance-then-contribution task. Their task leases and failure
+domains are independent. They share only one global writer protocol for
+overlapping durable mutation, and a child phase may use only the exact delegated
+parent token.
 
 ## Evidence Strength
 

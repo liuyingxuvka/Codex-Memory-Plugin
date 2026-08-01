@@ -649,14 +649,14 @@ class CodexInstallTests(unittest.TestCase):
         self.assertIn("`progress_saved`", sleep)
         self.assertIn("`previous_remaining`", sleep)
         self.assertIn("`closing_remaining`", sleep)
-        self.assertIn("`downstream_stages` as `not_run`", sleep)
+        self.assertIn("record only the Dream phase as `not_run`", sleep)
         self.assertIn("Do not ask a human", sleep)
         sleep_automation = next(
             item["prompt"] for item in REPO_AUTOMATION_SPECS if item["id"] == "kb-sleep"
         )
         self.assertIn("exact open frozen batch", sleep_automation)
         self.assertIn("progress_saved", sleep_automation)
-        self.assertIn("organization cycle as not_run", sleep_automation)
+        self.assertIn("independent organization task remains untouched", sleep_automation)
         self.assertIn("do not invoke kb_lane_status.py", sleep_automation)
         self.assertIn("no_delta_closed", dream)
         self.assertIn("typed idempotent Sleep handoff", dream)

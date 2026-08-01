@@ -10,7 +10,7 @@ FLOWGUARD_MODEL_MARKER = "flowguard-executable-model"
 def export_contract_model():
     return build_contract_model(
         "kb-organization-contribute",
-        "Contribute only policy-eligible, privacy-safe, content-hash-bound organization knowledge.",
+        "Run as the unscheduled organization-cycle child and contribute only policy-eligible, privacy-safe, content-hash-bound current organization knowledge.",
     )
 
 

@@ -1,23 +1,254 @@
 from __future__ import annotations
 
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
 from local_kb.maintenance_lanes import (
+    acquire_cycle_lease,
+    acquire_global_write_lease,
     acquire_lane_lock,
     build_lane_guard,
+    delegate_global_write_lease,
+    heartbeat_global_write_lease,
     lane_lock_group,
+    read_global_write_lease,
     read_lane_lock,
     read_lane_status,
     reconcile_stale_lane_statuses,
+    release_cycle_lease,
+    release_delegated_write_lease,
+    release_global_write_lease,
     release_lane_lock,
+    validate_global_write_delegation,
     write_lane_status,
 )
 
 
 class MaintenanceLaneLockTests(unittest.TestCase):
+    def test_local_and_organization_task_leases_are_independent(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            repo_root = Path(tmp_dir)
+            local = acquire_cycle_lease(
+                repo_root,
+                cycle_kind="local-maintenance-cycle",
+                run_id="local-1",
+            )
+            organization = acquire_cycle_lease(
+                repo_root,
+                cycle_kind="organization-maintenance-cycle",
+                run_id="org-1",
+            )
+
+            self.assertTrue(local["acquired"])
+            self.assertTrue(organization["acquired"])
+            self.assertNotEqual(local["group"], organization["group"])
+            self.assertTrue(
+                release_cycle_lease(
+                    repo_root,
+                    cycle_kind="local-maintenance-cycle",
+                    run_id="local-1",
+                )["released"]
+            )
+            self.assertTrue(
+                release_cycle_lease(
+                    repo_root,
+                    cycle_kind="organization-maintenance-cycle",
+                    run_id="org-1",
+                )["released"]
+            )
+
+    def test_same_task_run_is_not_reentrant_from_another_thread(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            repo_root = Path(tmp_dir)
+            first = acquire_cycle_lease(
+                repo_root,
+                cycle_kind="local-maintenance-cycle",
+                run_id="same-run",
+            )
+            observed: list[dict] = []
+
+            def contend() -> None:
+                observed.append(
+                    acquire_cycle_lease(
+                        repo_root,
+                        cycle_kind="local-maintenance-cycle",
+                        run_id="same-run",
+                    )
+                )
+
+            thread = threading.Thread(target=contend)
+            thread.start()
+            thread.join(timeout=5)
+
+            self.assertTrue(first["acquired"])
+            self.assertEqual(len(observed), 1)
+            self.assertFalse(observed[0]["acquired"])
+            release_cycle_lease(
+                repo_root,
+                cycle_kind="local-maintenance-cycle",
+                run_id="same-run",
+            )
+
+    def test_global_writer_serializes_independent_tasks_and_delegates_exactly(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            repo_root = Path(tmp_dir)
+            local = acquire_global_write_lease(
+                repo_root,
+                cycle_kind="local-maintenance-cycle",
+                run_id="local-1",
+                scope="sleep",
+                wait=False,
+            )
+            organization = acquire_global_write_lease(
+                repo_root,
+                cycle_kind="organization-maintenance-cycle",
+                run_id="org-1",
+                scope="organization-maintenance",
+                wait=True,
+                max_wait_seconds=0,
+            )
+
+            self.assertTrue(local["acquired"])
+            self.assertFalse(organization["acquired"])
+            self.assertEqual(organization["reason"], "global-writer-active")
+            delegation = delegate_global_write_lease(
+                repo_root,
+                lease_id=local["lease_id"],
+                lease_token=local["lease_token"],
+                child_phase_id="sleep",
+                child_run_id="local-1",
+                scope="sleep",
+            )
+            self.assertTrue(delegation["ok"])
+            heartbeats: list[dict] = []
+            heartbeat_thread = threading.Thread(
+                target=lambda: heartbeats.append(
+                    heartbeat_global_write_lease(
+                        repo_root,
+                        lease_id=local["lease_id"],
+                        lease_token=local["lease_token"],
+                    )
+                )
+            )
+            heartbeat_thread.start()
+            heartbeat_thread.join(timeout=5)
+            self.assertEqual(len(heartbeats), 1)
+            self.assertTrue(heartbeats[0]["ok"])
+            self.assertTrue(
+                validate_global_write_delegation(
+                    repo_root,
+                    lease_id=local["lease_id"],
+                    child_phase_id="sleep",
+                    child_run_id="local-1",
+                    delegation_token=delegation["delegation_token"],
+                )["ok"]
+            )
+            self.assertFalse(
+                validate_global_write_delegation(
+                    repo_root,
+                    lease_id=local["lease_id"],
+                    child_phase_id="sleep",
+                    child_run_id="local-1",
+                    delegation_token="wrong-token",
+                )["ok"]
+            )
+            self.assertFalse(
+                release_global_write_lease(
+                    repo_root,
+                    lease_id=local["lease_id"],
+                    lease_token=delegation["delegation_token"],
+                )["released"]
+            )
+            self.assertFalse(
+                release_global_write_lease(
+                    repo_root,
+                    lease_id=local["lease_id"],
+                    lease_token=local["lease_token"],
+                )["released"]
+            )
+            self.assertTrue(
+                release_delegated_write_lease(
+                    repo_root,
+                    lease_id=local["lease_id"],
+                    lease_token=local["lease_token"],
+                    child_phase_id="sleep",
+                    child_run_id="local-1",
+                    delegation_token=delegation["delegation_token"],
+                )["ok"]
+            )
+            self.assertTrue(
+                release_global_write_lease(
+                    repo_root,
+                    lease_id=local["lease_id"],
+                    lease_token=local["lease_token"],
+                )["released"]
+            )
+            next_owner = acquire_global_write_lease(
+                repo_root,
+                cycle_kind="organization-maintenance-cycle",
+                run_id="org-1",
+                scope="organization-maintenance",
+                wait=False,
+            )
+            self.assertTrue(next_owner["acquired"])
+            self.assertNotEqual(local["lease_id"], next_owner["lease_id"])
+            self.assertTrue(
+                release_global_write_lease(
+                    repo_root,
+                    lease_id=next_owner["lease_id"],
+                    lease_token=next_owner["lease_token"],
+                )["released"]
+            )
+
+    def test_expired_global_writer_requires_explicit_cleanup_confirmation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            repo_root = Path(tmp_dir)
+            first = acquire_global_write_lease(
+                repo_root,
+                cycle_kind="local-maintenance-cycle",
+                run_id="local-1",
+                scope="sleep",
+                wait=False,
+            )
+            self.assertTrue(first["acquired"])
+            with patch(
+                "local_kb.maintenance_lanes._global_lease_expired",
+                return_value=True,
+            ):
+                blocked = acquire_global_write_lease(
+                    repo_root,
+                    cycle_kind="organization-maintenance-cycle",
+                    run_id="org-1",
+                    scope="organization-maintenance",
+                    wait=False,
+                )
+                recovered = acquire_global_write_lease(
+                    repo_root,
+                    cycle_kind="organization-maintenance-cycle",
+                    run_id="org-1",
+                    scope="organization-maintenance",
+                    wait=False,
+                    cleanup_evidence={
+                        "cleanup_confirmed": True,
+                        "remaining_process_count": 0,
+                    },
+                )
+
+            self.assertFalse(blocked["acquired"])
+            self.assertEqual(blocked["reason"], "cleanup-confirmation-required")
+            self.assertTrue(recovered["acquired"])
+            self.assertEqual(
+                read_global_write_lease(repo_root)["root_owner_run_id"], "org-1"
+            )
+            release_global_write_lease(
+                repo_root,
+                lease_id=recovered["lease_id"],
+                lease_token=recovered["lease_token"],
+            )
+
     def test_local_maintenance_lanes_share_one_waiting_lock(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             repo_root = Path(tmp_dir)

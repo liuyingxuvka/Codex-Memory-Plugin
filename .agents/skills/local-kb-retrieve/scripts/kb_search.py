@@ -17,7 +17,6 @@ from local_kb.search import (
     format_search_output,
     render_search_payload,
     search_multi_source_result,
-    search_with_receipt,
 )
 from local_kb.settings import load_desktop_settings, organization_sources_from_settings
 from local_kb.store import resolve_repo_root
@@ -40,31 +39,16 @@ def main() -> None:
     repo_root = resolve_repo_root(args.repo_root)
     settings = load_desktop_settings(repo_root)
     organization_sources = organization_sources_from_settings(settings)
-    if organization_sources:
-        multi = search_multi_source_result(
-            repo_root,
-            query=args.query,
-            path_hint=args.route_hint,
-            top_k=args.top_k,
-            organization_sources=organization_sources,
-        )
-        entries = multi["results"]
-        _local_entries, receipt = search_with_receipt(
-            repo_root,
-            query=args.query,
-            path_hint=args.route_hint,
-            top_k=args.top_k,
-            record_receipt=True,
-        )
-        receipt["organization_status"] = multi.get("organization_status", [])
-    else:
-        entries, receipt = search_with_receipt(
-            repo_root,
-            query=args.query,
-            path_hint=args.route_hint,
-            top_k=args.top_k,
-            record_receipt=True,
-        )
+    multi = search_multi_source_result(
+        repo_root,
+        query=args.query,
+        path_hint=args.route_hint,
+        top_k=args.top_k,
+        organization_sources=organization_sources,
+        record_receipt=True,
+    )
+    entries = multi["results"]
+    receipt = dict(multi.get("retrieval_receipt") or {})
     payload = render_search_payload(entries, repo_root)
 
     if args.json:

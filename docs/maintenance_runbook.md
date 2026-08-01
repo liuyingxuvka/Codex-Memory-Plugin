@@ -87,6 +87,10 @@ contradicted entries.
 
 Foreground queries validate the compact activation receipt plus only indexed
 exact model/projection bindings. They do not scan all inactive cards or replay lifecycle history.
+Local-only queries read no foreign calibration. When organization results are
+eligible, retrieval reads one compact foreign-calibration projection bound to
+the current lifecycle event-file identity. A stale or missing projection blocks
+foreign results visibly; only Sleep or the versioned upgrade may rebuild it.
 Observation-only intake leaves entry authority current. Every entry transition
 durably invalidates before event commit; a full validated rebuild is the only
 way to clear that marker. Missing or changed indexed source files also fail the
@@ -98,10 +102,11 @@ root ArgumentBlock, typed nodes and edges, explicit gaps, and the grounded mesh
 neighborhood. It never expands retired `related_cards`; only current canonical
 ModelMesh edges may widen the context.
 
-Read-only organization candidates may be visible to an organization-source
-search as clearly labeled untrusted input. Visibility does not put them in the
-local active index. An adopted local identity must pass the same local evidence
-gate as any other candidate.
+Current organization cards may be returned from the complete local foreign
+snapshot as clearly labeled read-only context. Visibility, selection, or use
+does not put them in the local active index. Only an exact `used` plus outcome
+record may enter Sleep as source-qualified evidence; any resulting local
+candidate must pass the same local evidence gate as every other candidate.
 
 ## Sleep and Dream boundary
 
@@ -110,6 +115,9 @@ may write only bounded simulation artifacts and one typed model-gap handoff per
 evidence fingerprint. Sleep validates that handoff, chooses the disposition,
 acknowledges it once, and publishes any resulting model generation. Unchanged
 Dream evidence is a no-op, and Dream must prove the pinned generation unchanged.
+Dream is an internal phase of the one local scheduled task, not an independent
+timer. If Sleep does not reach the required terminal, only Dream is marked
+`not_run`; the independent organization task is untouched.
 
 ## Canonical and display boundary
 
@@ -128,9 +136,14 @@ for closure.
 - Sleep never edits product code, installer logic, Skills, automation specs, or
   system architecture. A reusable mechanism issue becomes a structured
   development observation owned by a later explicit software task.
-- Sleep does not run concurrently with Dream or another local maintenance
-  writer.
+- Sleep and Dream share one local task lease. The organization task has a
+  separate lease. Overlapping durable mutation is serialized by one global
+  writer; an internal child uses only the parent's exact delegated token.
 - Every state-changing operation is idempotent or carries a rollback reference.
+- Organization-source migration keeps its repo-local rollback receipt path, but
+  Windows copy/restore operations use the native extended-length path form. A
+  deep card is never dropped merely because the rollback prefix takes the full
+  destination beyond 260 characters.
 - Every parked item has a machine-evaluable reopen condition and decision due
   boundary.
 - Every skipped, failed, stale, missing, or running hard check remains visible
@@ -142,7 +155,9 @@ for closure.
 
 The final machine receipt must include:
 
-- run id, policy/schema versions, input range, watermark, and input digest;
+- receipt-v3 identity, normalized request, run id, policy/schema versions,
+  source/tool/environment digests, task lease and delegated/global writer
+  identity, input range, watermark, and input digest;
 - opening, admitted, disposed, terminal, parked, and closing backlog counts;
 - candidate create/reuse, promotion, merge, rejection, parking, reopen, and
   downgrade decisions with evidence ids;
@@ -152,7 +167,14 @@ The final machine receipt must include:
   relation proposals, projection manifest, and rollback status;
 - active-index generation, digest, exact bindings, eligible/excluded counts, and validation;
 - failed, skipped, stale, or missing checks and exact blockers;
-- committed or failed lane state.
+- ordered Sleep/Dream child receipt paths and hashes, cleanup evidence, and
+  committed or strict non-success lane state.
 
 The automation reports success only when this receipt is complete and all hard
 checks pass. No human-readable review artifact substitutes for the receipt.
+The sealed Sleep receipt remains the child authority. The outer local-cycle
+payload may later add Dream, writer-lease, reuse, timeout, and cycle-terminal
+evidence. Validation therefore requires every child-owned field to remain
+exactly equal in the outer payload while accepting those outer-only fields as a
+strict superset; it never requires the child to predict evidence created after
+the child was sealed.

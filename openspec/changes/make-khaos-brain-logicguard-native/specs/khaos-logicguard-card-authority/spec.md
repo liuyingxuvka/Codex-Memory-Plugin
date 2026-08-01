@@ -69,3 +69,23 @@ An organization-enabled machine SHALL materialize the exact active organization 
 #### Scenario: Synchronized card is used in a task
 - **WHEN** local retrieval selects an applicable foreign organization card
 - **THEN** it SHALL make the card available directly as read-only task context, record its foreign generation/binding, and SHALL defer any permanent localization decision to a later Sleep observation
+
+### Requirement: Organization source cards cut over directly to the current portable contract
+The versioned organization maintenance upgrade SHALL replace legacy source-card
+authority with current deterministic projections and validated portable
+LogicGuard bundles. Snapshot construction MAY reuse content-addressed current
+bundles but MUST NOT keep a normal-runtime legacy wrapper or invent missing
+support. Duplicate source ids SHALL receive one evidence-bound direct disposition
+before current source activation.
+
+#### Scenario: Legacy organization source contains sparse and duplicate cards
+- **WHEN** the upgrade freezes the complete source inventory
+- **THEN** it SHALL preserve each card's provenance and explicit gaps, assign stable unique current identities, publish one complete upgraded source generation, and prove zero unresolved legacy identity authority
+
+#### Scenario: Merge or split is warranted
+- **WHEN** review evidence satisfies an exact merge or split action contract
+- **THEN** organization maintenance SHALL apply one reversible packet with old/new identity mapping, model/mesh reconstruction, rollback inventory, and current post-apply validation
+
+#### Scenario: An import carries a card-bound Skill bundle
+- **WHEN** an organization proposal contains nested Skill content and bundle metadata below the contributor import lane
+- **THEN** card validation SHALL inspect only the proposal card as a card, SHALL keep the nested metadata under path, privacy, hash, author, version, and dependency checks, and SHALL NOT reject Skill metadata merely because it has no card id

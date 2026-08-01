@@ -2470,3 +2470,329 @@ This entry proves the current model/test/install/runtime recovery and automation
 ### Next Actions
 - python -m flowguard project-audit --root . --json
 - Rerun affected FlowGuard model checks and focused tests before broad confidence.
+
+
+## flowguard-project-upgrade - FlowGuard project upgrade record update
+
+- Project: Knowledge_20260419
+- Trigger reason: target project requires current semantic adoption and version records
+- Status: completed
+- Skill decision: used_flowguard
+- Started: 2026-07-25T11:16:15+00:00
+- Ended: 2026-07-25T11:16:15+00:00
+- Duration seconds: 0.000
+- Commands OK: True
+
+### Model Files
+- none recorded
+
+### Commands
+- OK (0.000s): `managed adoption rule-set preflight` - generated block contains every required stable rule
+- OK (0.000s): `package-authority/global-consumer validation` - pass
+- OK (0.000s): `post-write project adoption audit` - semantic and version parity after write
+
+### Findings
+- model_authority_missing: The project has no authoritative observed model-system snapshot yet.
+- adoption_record_written: FlowGuard project AGENTS block and manifest were written or refreshed.
+
+### Counterexamples
+- none recorded
+
+### Friction Points
+- none recorded
+
+### Skipped Steps
+- Project adoption does not replace executable model checks, tests, replay, or closure evidence.
+
+### Risk Evidence Summary
+- none recorded
+
+### Next Actions
+- python -m flowguard project-audit --root . --json
+- Rerun affected FlowGuard model checks and focused tests before broad confidence.
+
+
+## flowguard-project-upgrade - FlowGuard project upgrade record update
+
+- Project: Knowledge_20260419
+- Trigger reason: target project requires current semantic adoption and version records
+- Status: completed
+- Skill decision: used_flowguard
+- Started: 2026-07-31T09:20:17+00:00
+- Ended: 2026-07-31T09:20:17+00:00
+- Duration seconds: 0.000
+- Commands OK: True
+
+### Model Files
+- none recorded
+
+### Commands
+- OK (0.000s): `managed adoption rule-set preflight` - generated block contains every required stable rule
+- OK (0.000s): `package-authority/global-consumer validation` - pass
+- OK (0.000s): `post-write project adoption audit` - semantic and version parity after write
+
+### Findings
+- model_authority_missing: The project has no authoritative observed model-system snapshot yet.
+- artifact_upgrade_scan_scoped_out: Artifact/model/test upgrade scanning was scoped out by records-only mode.
+- adoption_record_written: FlowGuard project AGENTS block and manifest were written or refreshed.
+
+### Counterexamples
+- none recorded
+
+### Friction Points
+- none recorded
+
+### Skipped Steps
+- Project adoption does not replace executable model checks, tests, replay, or closure evidence.
+- Artifact/model/test upgrade scanning was scoped out by records-only mode.
+
+### Risk Evidence Summary
+- none recorded
+
+### Next Actions
+- python -m flowguard project-audit --root . --json
+- Rerun affected FlowGuard model checks and focused tests before broad confidence.
+
+
+## flowguard-project-upgrade - FlowGuard project upgrade record update
+
+- Project: Knowledge_20260419
+- Trigger reason: target project requires current semantic adoption and version records
+- Status: completed
+- Skill decision: used_flowguard
+- Started: 2026-07-31T09:20:47+00:00
+- Ended: 2026-07-31T09:20:47+00:00
+- Duration seconds: 0.000
+- Commands OK: True
+
+### Model Files
+- none recorded
+
+### Commands
+- OK (0.000s): `managed adoption rule-set preflight` - generated block contains every required stable rule
+- OK (0.000s): `package-authority/global-consumer validation` - pass
+- OK (0.000s): `post-write project adoption audit` - semantic and version parity after write
+
+### Findings
+- model_authority_missing: The project has no authoritative observed model-system snapshot yet.
+- adoption_record_written: FlowGuard project AGENTS block and manifest were written or refreshed.
+
+### Counterexamples
+- none recorded
+
+### Friction Points
+- none recorded
+
+### Skipped Steps
+- Project adoption does not replace executable model checks, tests, replay, or closure evidence.
+
+### Risk Evidence Summary
+- none recorded
+
+### Next Actions
+- python -m flowguard project-audit --root . --json
+- Rerun affected FlowGuard model checks and focused tests before broad confidence.
+
+
+## flowguard-project-upgrade - FlowGuard project upgrade record update
+
+- Project: Knowledge_20260419
+- Trigger reason: target project requires current semantic adoption and version records
+- Status: completed
+- Skill decision: used_flowguard
+- Started: 2026-07-31T17:34:50+00:00
+- Ended: 2026-07-31T17:34:50+00:00
+- Duration seconds: 0.000
+- Commands OK: True
+
+### Model Files
+- none recorded
+
+### Commands
+- OK (0.000s): `managed adoption rule-set preflight` - generated block contains every required stable rule
+- OK (0.000s): `package-authority/global-consumer validation` - pass
+- OK (0.000s): `post-write project adoption audit` - semantic and version parity after write
+
+### Findings
+- model_authority_missing: The project has no authoritative observed model-system snapshot yet.
+- adoption_record_written: FlowGuard project AGENTS block and manifest were written or refreshed.
+
+### Counterexamples
+- none recorded
+
+### Friction Points
+- none recorded
+
+### Skipped Steps
+- Project adoption does not replace executable model checks, tests, replay, or closure evidence.
+
+### Risk Evidence Summary
+- none recorded
+
+### Next Actions
+- python -m flowguard project-audit --root . --json
+- Rerun affected FlowGuard model checks and focused tests before broad confidence.
+
+
+## flowguard-project-upgrade - FlowGuard project upgrade record update
+
+- Project: Knowledge_20260419
+- Trigger reason: target project requires current semantic adoption and version records
+- Status: completed
+- Skill decision: used_flowguard
+- Started: 2026-07-31T19:44:20+00:00
+- Ended: 2026-07-31T19:44:20+00:00
+- Duration seconds: 0.000
+- Commands OK: True
+
+### Model Files
+- none recorded
+
+### Commands
+- OK (0.000s): `managed adoption rule-set preflight` - generated block contains every required stable rule
+- OK (0.000s): `package-authority/global-consumer validation` - pass
+- OK (0.000s): `post-write project adoption audit` - semantic and version parity after write
+
+### Findings
+- model_authority_coverage_gaps: The current model-system authority is valid but retains explicit coverage gaps.
+- artifact_upgrade_scan_scoped_out: Artifact/model/test upgrade scanning was scoped out by records-only mode.
+- adoption_record_written: FlowGuard project AGENTS block and manifest were written or refreshed.
+
+### Counterexamples
+- none recorded
+
+### Friction Points
+- none recorded
+
+### Skipped Steps
+- Project adoption does not replace executable model checks, tests, replay, or closure evidence.
+- Artifact/model/test upgrade scanning was scoped out by records-only mode.
+
+### Risk Evidence Summary
+- none recorded
+
+### Next Actions
+- python -m flowguard project-audit --root . --json
+- Rerun affected FlowGuard model checks and focused tests before broad confidence.
+
+
+## flowguard-project-upgrade - FlowGuard project upgrade record update
+
+- Project: Knowledge_20260419
+- Trigger reason: target project requires current semantic adoption and version records
+- Status: completed
+- Skill decision: used_flowguard
+- Started: 2026-07-31T19:44:58+00:00
+- Ended: 2026-07-31T19:44:58+00:00
+- Duration seconds: 0.000
+- Commands OK: True
+
+### Model Files
+- none recorded
+
+### Commands
+- OK (0.000s): `managed adoption rule-set preflight` - generated block contains every required stable rule
+- OK (0.000s): `package-authority/global-consumer validation` - pass
+- OK (0.000s): `post-write project adoption audit` - semantic and version parity after write
+
+### Findings
+- model_authority_coverage_gaps: The current model-system authority is valid but retains explicit coverage gaps.
+- adoption_record_written: FlowGuard project AGENTS block and manifest were written or refreshed.
+
+### Counterexamples
+- none recorded
+
+### Friction Points
+- none recorded
+
+### Skipped Steps
+- Project adoption does not replace executable model checks, tests, replay, or closure evidence.
+
+### Risk Evidence Summary
+- none recorded
+
+### Next Actions
+- python -m flowguard project-audit --root . --json
+- Rerun affected FlowGuard model checks and focused tests before broad confidence.
+
+
+## khaos-v080-logicguard-native-organization-repair - Khaos Brain LogicGuard-native organization card exchange and two-cycle closure
+
+- Project: Knowledge_20260419
+- Trigger reason: Existing modeled behavior changed across retrieval, Sleep/Dream, organization upgrade, receipts, scheduling, installation, and release gates.
+- Status: completed
+- Skill decision: used_flowguard
+- Started: 2026-08-01T00:11:43+00:00
+- Ended: 2026-08-01T00:11:43+00:00
+- Duration seconds: 0.000
+- Commands OK: False
+
+### Model Files
+- .flowguard/khaos_brain_two_maintenance_cycle_flow.py
+- .flowguard/khaos_brain_logicguard_runtime_model_miss.py
+- .flowguard/khaos_brain_logicguard_system/model.py
+
+### Commands
+- OK (0.000s): `FlowGuard generation 7 activated`
+- OK (0.000s): `22 focused tests and 7 subtests passed`
+- OK (0.000s): `FlowGuard suite passed`
+- FAIL (0.000s): `Final readiness exposed stale khaos-brain-update generated contracts`
+
+### Findings
+- A real organization cycle exposed a 268-character Windows rollback path miss; native extended-length copy/restore and same-class regression now close it.
+
+### Counterexamples
+- A source path below 260 characters can still fail after the rollback prefix raises the destination above 260.
+
+### Friction Points
+- The first final readiness correctly blocked on a stale author-side generated contract after late OpenSpec and FlowGuard changes.
+
+### Skipped Steps
+- none recorded
+
+### Risk Evidence Summary
+- The real organization run remains an immutable failed pre-fix receipt and was not retried; the repair is covered by the exact long-path regression and model-miss closure.
+
+### Next Actions
+- Run the new-source final readiness owner after deterministic contract refresh, then publish v0.8.0.
+
+
+## khaos-v080-logicguard-native-organization-repair - Khaos Brain LogicGuard-native organization card exchange and two-cycle closure
+
+- Project: Knowledge_20260419
+- Trigger reason: Existing modeled behavior changed across retrieval, Sleep/Dream, organization upgrade, receipts, scheduling, installation, and release gates.
+- Status: completed
+- Skill decision: used_flowguard
+- Started: 2026-08-01T00:12:05+00:00
+- Ended: 2026-08-01T00:12:05+00:00
+- Duration seconds: 0.000
+- Commands OK: True
+
+### Model Files
+- .flowguard/khaos_brain_two_maintenance_cycle_flow.py
+- .flowguard/khaos_brain_logicguard_runtime_model_miss.py
+- .flowguard/khaos_brain_logicguard_system/model.py
+
+### Commands
+- OK (0.000s): `FlowGuard generation 7 activated`
+- OK (0.000s): `22 focused tests and 7 subtests passed`
+- OK (0.000s): `FlowGuard suite passed`
+- OK (0.000s): `Author-side SkillGuard contracts refreshed and source-only assurance passed`
+
+### Findings
+- A real organization cycle exposed a 268-character Windows rollback path miss; native extended-length copy/restore and same-class regression now close it.
+
+### Counterexamples
+- A source path below 260 characters can still fail after the rollback prefix raises the destination above 260.
+
+### Friction Points
+- The first final readiness blocked on a stale author-side generated contract; refreshing only the affected Khaos update unit restored parity.
+
+### Skipped Steps
+- none recorded
+
+### Risk Evidence Summary
+- The immutable pre-fix organization failure was not retried; current model/test evidence covers the corrected same class while live post-fix organization acceptance remains deferred to the next scheduled owner.
+
+### Next Actions
+- Run the new-source final readiness owner, KB postflight, then publish v0.8.0.

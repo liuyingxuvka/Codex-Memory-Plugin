@@ -6,6 +6,7 @@ from pathlib import Path
 
 from local_kb.org_checks import check_organization_repository
 from local_kb.org_maintenance import build_organization_maintenance_report
+from local_kb.org_source_contract import materialize_current_source
 from local_kb.skill_sharing import (
     consolidate_imported_skill_bundles,
     install_imported_skill_bundle_version,
@@ -16,52 +17,26 @@ from local_kb.store import load_yaml_file, write_yaml_file
 
 class OrganizationMaintenanceCleanupE2ETests(unittest.TestCase):
     def _write_org_repo(self, root: Path) -> None:
-        write_yaml_file(
-            root / "khaos_org_kb.yaml",
-            {
-                "kind": "khaos-organization-kb",
-                "schema_version": 1,
-                "organization_id": "sandbox",
-                "kb": {
-                    "main_path": "kb/main",
-                    "imports_path": "kb/imports",
-                },
-                "skills": {
-                    "registry_path": "skills/registry.yaml",
-                    "candidates_path": "skills/candidates",
-                },
-            },
+        materialize_current_source(
+            root,
+            organization_id="sandbox",
+            cards=[
+                (
+                    "kb/main/trusted/canonical.yaml",
+                    self._card("canonical-card", status="trusted", title="Canonical organization card"),
+                ),
+                (
+                    "kb/main/candidates/weak-random.yaml",
+                    self._card(
+                        "weak-random",
+                        status="candidate",
+                        title="Random weak candidate",
+                        guidance="Random unreviewed text with no durable predictive value.",
+                        confidence=0.2,
+                    ),
+                ),
+            ],
         )
-        write_yaml_file(
-            root / "kb" / "main" / "trusted" / "canonical.yaml",
-            self._card("canonical-card", status="trusted", title="Canonical organization card"),
-        )
-        write_yaml_file(
-            root / "kb" / "main" / "candidates" / "weak-random.yaml",
-            self._card(
-                "weak-random",
-                status="candidate",
-                title="Random weak candidate",
-                guidance="Random unreviewed text with no durable predictive value.",
-                confidence=0.2,
-            ),
-        )
-        (root / "kb" / "imports").mkdir(parents=True)
-        write_yaml_file(
-            root / "skills" / "registry.yaml",
-            {
-                "skills": [
-                    {
-                        "id": "approved-review-skill",
-                        "status": "approved",
-                        "version": "1.0.0",
-                        "source_repo": "https://example.invalid/skills.git",
-                        "content_hash": "sha256:" + "a" * 64,
-                    }
-                ]
-            },
-        )
-        (root / "skills" / "candidates").mkdir(parents=True)
 
     def _card(
         self,

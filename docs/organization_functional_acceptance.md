@@ -1,304 +1,196 @@
-# Organization Functional Acceptance Plan
+# Organization Functional Acceptance
 
-This document defines the functional acceptance plan for Khaos Brain
-organization mode. It is intentionally test-first: before broad cleanup or
-module reshaping, each important behavior should have an executable test or an
-explicit manual verification checklist.
+This is the current acceptance contract for organization mode. It replaces the
+retired download/adoption/automatic-Skill-install flow.
 
-## Acceptance Strategy
+## Acceptance Model
 
-Use three validation layers:
-
-1. Unit and module tests keep small rules stable.
-2. End-to-end tests simulate realistic user and repository flows with temporary
-   local directories.
-3. Manual UI checks confirm the desktop experience is understandable and does
-   not expose technical metadata in the wrong place.
-
-Do not start large structural cleanup until the end-to-end acceptance suite
-locks the intended behavior. Small local fixes are allowed while adding tests.
-Large design problems should be recorded in a validation report before
-architecture changes are made.
-
-## Core Functional Areas
-
-### 1. Personal Mode Baseline
-
-Purpose: organization mode must not damage the single-user local KB workflow.
-
-Acceptance checks:
-
-- A fresh or default settings file opens in personal mode.
-- Missing organization settings do not show organization sources or organization
-  navigation.
-- Local search returns local cards only.
-- Local route, status, type, and source filters still work.
-- Local card detail opens and shows if/action/predict/use sections.
-- Language switching does not change canonical card content or hide data.
-- Cards with Skill dependencies show a compact cover badge and detail still
-  shows the exact dependency list.
-
-Recommended tests:
-
-- `tests/test_e2e_personal_mode.py`
-- Existing supporting tests: `test_kb_desktop_ui.py`,
-  `test_desktop_settings.py`, `test_search_rejected_candidates.py`.
-
-### 2. Organization Source Connection
-
-Purpose: organization mode should activate only after a valid organization KB
-source is configured and mirrored.
-
-Acceptance checks:
-
-- A repository without `khaos_org_kb.yaml` is rejected.
-- A repository with invalid kind, schema, or missing required KB paths is
-  rejected.
-- A valid local or Git-backed organization repo is mirrored and validated.
-- Existing mirrors are synchronized into the local organization cache before
-  organization browsing uses them.
-- GitHub identity discovery and maintainer controls are gated behind validated
-  organization mode.
-- Switching back to personal mode removes organization search and browsing
-  sources without deleting local KB data.
-
-Recommended tests:
-
-- `tests/test_e2e_organization_connection.py`
-- Existing supporting tests: `test_org_sources.py`,
-  `test_desktop_settings.py`, `test_org_automation.py`.
-
-### 3. Multi-Source Search And Read-Only Browsing
-
-Purpose: local and organization cards should appear in one usable browsing
-surface with clear source labels.
-
-Organization browsing uses synchronized local mirrors as the organization
-cache pool. Runtime search should read that local cache, not reach out to the
-remote repository for every query.
-
-Acceptance checks:
-
-- Local results rank before organization results for equal relevance.
-- Organization cards are marked read-only.
-- Source labels distinguish local public/private/candidate from organization
-  trusted/candidate cards.
-- Author display falls back clearly when organization author metadata is absent.
-- Exact same-hash organization cards are hidden when the content already exists
-  locally.
-- Same card id with different content hash can surface as a new organization
-  version.
-
-Recommended tests:
-
-- `tests/test_e2e_multi_source_browsing.py`
-- Existing supporting tests: `test_multi_source_search.py`,
-  `test_organization_adoption.py`.
-
-### 4. Organization Card Adoption On Use
-
-Purpose: an organization card becomes local maintenance material only after it
-is actually used.
-
-Acceptance checks:
-
-- Merely viewing or searching an organization card does not create a local
-  adopted copy.
-- Using an organization card creates one adopted candidate if its exchange hash
-  is new locally.
-- If the same exchange hash already exists locally, no duplicate adopted file
-  is created.
-- Reusing the same organization card updates local usage metadata rather than
-  creating another copy.
-- Deleting a local adopted copy does not make the same downloaded hash reappear
-  as new organization content.
-- A later organization card with a different exchange hash can surface again.
-
-Recommended tests:
-
-- `tests/test_e2e_organization_adoption.py`
-- Existing supporting tests: `test_organization_adoption.py`.
-
-### 5. Card-Bound Skill Bundle Lifecycle
-
-Purpose: Skills should follow cards, but Skill identity and deduplication should
-remain stable across machines.
-
-Acceptance checks:
-
-- A local card that depends on a local Skill exports a card-bound Skill bundle
-  in the organization outbox.
-- The bundle records `bundle_id`, `content_hash`, `version_time`,
-  `original_author`, read-only import behavior, and update policy.
-- Multiple local cards pointing to the same `bundle_id` export the local latest
-  version, not an older card-carried copy.
-- An organization card with a card-bound Skill bundle installs that bundle into
-  local organization Skill storage when the card is adopted.
-- Local imported organization Skill storage keeps only the latest approved
-  version per `bundle_id`.
-- Duplicate Skill names or ids do not define identity.
-- Approved Skill auto-install requires an approved status, pinned version or
-  version time, pinned sha256 content hash, and local policy permission.
-- Candidate, rejected, unknown, or unpinned Skills are not silently installed.
-
-Recommended tests:
-
-- `tests/test_e2e_skill_bundle_lifecycle.py`
-- Existing supporting tests: `test_skill_sharing.py`,
-  `test_organization_adoption.py`, `test_org_checks.py`.
-
-### 6. Local-To-Organization Contribution Flow
-
-Purpose: local machines should contribute only reusable public knowledge and
-avoid duplicate exchange payloads.
-
-Acceptance checks:
-
-- Public model and heuristic cards can be exported as organization candidates.
-- Private cards, preference cards, user-specific cards, and clean adopted
-  organization cards are skipped.
-- The same exchange hash is exported at most once in one outbox.
-- Hashes already exported from this installation are skipped.
-- Hashes already present in the current organization repository are skipped.
-- Outbox files can be copied into an organization repo import branch with nested
-  Skill bundle files preserved.
-- Low-risk import paths can pass organization checks.
-- Protected trusted-card changes are blocked by low-risk checks.
-
-Recommended tests:
-
-- `tests/test_e2e_org_contribution_flow.py`
-- Existing supporting tests: `test_org_outbox.py`,
-  `test_org_contribution.py`, `test_org_checks.py`,
-  `test_org_multi_machine.py`.
-
-### 7. Organization Maintenance Cleanup
-
-Purpose: organization maintenance must make the shared library cleaner, not only
-validate file formats.
-
-Acceptance checks:
-
-- Exact duplicate card content hashes across trusted, candidate, and import
-  paths are detected.
-- A duplicate of local or organization trusted content is not promoted as a new
-  organization experience.
-- Weak or random candidate cards are marked as not recommended, rejected, or
-  kept out of the trusted path.
-- Similar candidate cards produce a merge proposal or a consolidated card
-  proposal.
-- Overloaded candidate cards produce a split proposal or an explicit
-  skip-with-reason decision.
-- Superseded cards are marked deprecated/superseded or folded into the stronger
-  replacement.
-- Trusted cards may receive confidence adjustments, status adjustments,
-  rewrites, merges, splits, or deletion proposals when evidence supports the
-  change.
-- Deletion is allowed in the long-term organization maintenance model, but it
-  must be proposal-driven, audited, and recoverable through Git history or a
-  tombstone/audit record.
-- Confidence adjustments are first-class maintenance actions. They should move
-  gradually unless the evidence is strong enough for a larger status change.
-- Merging cards preserves source evidence, authorship metadata, history, and
-  Skill dependencies.
-- If merged cards depend on the same Skill bundle, the merged result points at
-  one latest approved bundle version.
-- If a card is rejected, its unapproved card-bound Skill bundle is not promoted
-  to approved.
-
-Recommended tests:
-
-- `tests/test_e2e_organization_maintenance_cleanup.py`
-- Existing supporting tests: `test_org_checks.py`,
-  `test_org_maintenance.py`, `test_kb_consolidate_apply_worker1.py`,
-  `test_kb_semantic_review.py`.
-
-## Multi-Machine Scenario
-
-The main end-to-end scenario should simulate:
-
-```text
-tmp/
-  org_repo/
-  machine_a/
-  machine_b/
+```mermaid
+flowchart TD
+    A["Current organization source"] --> B{"Schema 2, exact catalog and bundles valid?"}
+    B -- "No, recognized managed input" --> C["Direct upgrade transaction"]
+    B -- "No, cannot resolve" --> X["Visible blocker; keep previous snapshot"]
+    C --> B
+    B -- Yes --> D["Content-addressed complete snapshot"]
+    D --> E["One combined local + organization ranking"]
+    E --> F{"Actually used?"}
+    F -- No --> G["Viewed/selected only; no learning side effect"]
+    F -- Yes --> H["Exact used + outcome record"]
+    H --> I["Sleep calibrates local knowledge"]
 ```
 
-Flow:
+## 1. Source And Direct Upgrade
 
-1. Create a valid organization KB repository.
-2. Create machine A with a public reusable card and a local Skill.
-3. Connect machine A and machine B to the organization repo.
-4. Machine A exports an organization outbox item with the card-bound Skill
-   bundle.
-5. Copy the outbox into the organization repo import path.
-6. Run organization checks.
-7. Machine B searches organization content.
-8. Machine B finds organization content from its synchronized local
-   organization cache pool.
-9. Machine B adopts one organization card only after use.
-10. Machine B receives the card-bound Skill bundle locally.
-11. Machine B modifies the adopted card into reusable feedback.
-12. Machine B exports feedback only if the new exchange hash is not already
-    known.
-13. Organization maintenance detects duplicates, weak candidates, and merge
-    opportunities before any promotion.
+Pass conditions:
 
-This scenario should stay local and deterministic. A live private GitHub
-sandbox test can be run later as a manual or integration smoke test, but local
-temporary repos should be the default automated acceptance path.
+- normal runtime accepts only a complete current schema-2 source;
+- every active catalog identity has an exact card and LogicGuard bundle;
+- `kb/imports` remains review input and is not exposed as the active download
+  surface;
+- recognized schema-1 cards upgrade directly to current models/bundles/catalog;
+- deterministic duplicate identities produce the same disposition on replay;
+- exact duplicates retire without losing provenance;
+- a failed current validation rolls the owned tree back;
+- obsolete roots and uncataloged cards remain visible failures in normal
+  runtime.
 
-## Manual UI Acceptance
+Evidence owner: `tests/test_org_sources.py`.
 
-Manual checks should be run after the e2e tests pass:
+## 2. Complete Foreign Snapshot
 
-- Settings dialog: personal/organization mode dropdowns are readable.
-- Organization repo field is disabled in personal mode and enabled in
-  organization mode.
-- Organization validation status is clear.
-- Main card board shows local/organization source labels clearly.
-- Cards with Skill dependencies show a small `1 Skill` / `2 Skills` or
-  `1 个技能` / `2 个技能` badge.
-- Card detail shows exact Skill dependencies and registry/install status.
-- Organization panel opens once, shows a loading state immediately, and does
-  not open duplicate windows on repeated clicks.
-- Chinese and English displays show corresponding information with no missing
-  fields.
-- Mouse wheel scrolling feels fast enough for dense card boards.
+Pass conditions:
 
-## Structure Review Gate
+- the snapshot copies the exact active catalog/card/bundle identity set;
+- its directory and pointer are content-addressed;
+- an unchanged source reuses the same immutable generation;
+- a changed but invalid source cannot replace the prior pointer;
+- a legacy raw card cannot enter snapshot runtime;
+- ordinary retrieval reads the current snapshot only and performs no network
+  operation.
 
-After the acceptance tests exist, run a structure review before refactoring.
+Evidence owner: `tests/test_org_snapshot.py` plus the no-network cases in the
+multi-source retrieval suite.
 
-Record findings in `docs/organization_structure_audit.md`.
+## 3. Unified Retrieval
 
-Review areas:
+Pass conditions:
 
-- `local_kb/org_*` module boundaries.
-- `local_kb/skill_sharing.py` size and responsibilities.
-- `local_kb/desktop_app.py` UI responsibilities.
-- repeated organization repository fixture setup in tests.
-- reusable e2e test helpers.
-- scripts that duplicate library behavior.
+- local and organization candidates enter one global ranking before the result
+  limit is applied;
+- one request returns one combined receipt with exact result references;
+- every organization result keeps foreign/read-only, generation, revision,
+  LogicGuard binding, freshness, and source metadata;
+- a high-quality organization result may rank above a weaker local result;
+- the same visible card id from two sources remains distinguishable by exact
+  result reference;
+- current organization results come only from active catalog statuses;
+- obsolete organization roots fail visibly instead of activating a second
+  reader.
 
-Only apply low-risk cleanup immediately. Larger changes should be listed with:
+Evidence owner: `tests/test_multi_source_search.py`.
 
-- problem;
-- affected files;
-- risk;
-- proposed target shape;
-- tests required before/after;
-- whether the cleanup is blocking functional acceptance.
+## 4. Interaction And Outcome
 
-## Done Criteria
+Pass conditions:
 
-Organization mode is functionally accepted when:
+- `viewed`, `selected`, `used`, and `outcome_recorded` are distinct monotonic
+  interaction stages;
+- opening a card detail records at most `viewed` and never `used`;
+- an outcome must reference a result returned by the exact combined receipt;
+- a foreign use is source-qualified and cannot be confused with a same-id local
+  result;
+- required interaction failures remain visible to the caller;
+- no result view/use creates a local adopted copy, directly publishes a local
+  model, or installs a Skill;
+- removed adoption and automatic-install entrypoints fail visibly rather than
+  silently falling back.
 
-- all existing unit/module tests pass;
-- all new e2e acceptance tests pass;
-- installer `--check --json` reports `ok: true`;
-- manual UI checklist has been run and recorded;
-- organization maintenance cleanup has deterministic coverage for duplicate,
-  weak, similar, and Skill-linked candidates;
-- structure audit exists and distinguishes small safe cleanup from larger
-  architectural work.
+Evidence owners: `tests/test_multi_source_search.py`,
+`tests/test_organization_adoption.py`, and
+`tests/test_kb_retrieval_calibration.py`.
+
+## 5. Sleep Calibration
+
+Pass conditions:
+
+- only an exact foreign `used` record with an exact outcome can enter Sleep
+  calibration;
+- useful, harmful, stale, and irrelevant outcomes remain source-qualified;
+- Sleep may change local applicability/weight, create a candidate, or retain an
+  observation, but the foreign card never becomes local authority by copying;
+- only the authorized Sleep publisher may rebuild the local generation;
+- Dream observes the pinned generation and cannot publish it.
+
+Evidence owner: the calibration, lifecycle, local-cycle, and Dream suites.
+
+## 6. Two Scheduled Owners
+
+Pass conditions:
+
+- maintained inventory = five Skills;
+- scheduled inventory = `kb-sleep-maintenance` and
+  `kb-organization-maintenance` only;
+- composite children = `kb-dream-pass` and
+  `kb-organization-contribute` only;
+- explicit-user-only inventory = `khaos-brain-update` only;
+- Dream and contribution have no independent scheduled automation;
+- local and organization task leases are independent;
+- Sleep failure marks only Dream `not_run` and does not write organization task
+  status;
+- organization failure marks only its own later child phases `not_run`;
+- overlapping durable mutation is serialized by one global writer;
+- delegated child writers bind the exact parent token;
+- expired ownership requires explicit cleanup confirmation.
+
+Evidence owners: `tests/test_current_automation_runtime.py`,
+`tests/test_maintenance_lanes.py`, `tests/test_local_maintenance_cycle.py`, and
+`tests/test_organization_cycle.py`.
+
+## 7. Cycle Receipts
+
+Pass conditions:
+
+- both cycles use the current immutable receipt-v3 contract;
+- local phase order is Sleep, then Dream only after the required Sleep terminal;
+- organization phase order is source sync/upgrade/validation, maintenance,
+  contribution, and complete snapshot publication;
+- a receipt binds normalized request, source/tool identity, generations, task
+  lease, global/delegated writer token, ordered child receipts and hashes,
+  outputs, cleanup evidence, and terminal status;
+- reuse requires exact terminal success and exact identity match;
+- same run id with a changed request, tampered receipt, stale source, partial
+  phase, failed/blocked/timed-out result, or missing cleanup evidence is rejected;
+- strict statuses are preserved and never promoted to generic completion.
+
+Evidence owners: the local-cycle and organization-cycle suites.
+
+## 8. Maintenance, Merge And Split
+
+Pass conditions:
+
+- maintenance coverage compares exact active catalog identities, not only card
+  counts;
+- every merge/split candidate has either a complete apply packet or a concrete
+  reopen contract;
+- exact selected decision ids are the only mutations applied;
+- evidence-insufficient merge/split remains unresolved without falsely failing
+  an otherwise complete audit cycle;
+- applied changes rebuild current cards, bundles, and catalog together;
+- rollback material preserves exact prior identities and content hashes;
+- contribution respects privacy, duplicate, author, hash/version, fork, and
+  protected-branch policy.
+
+Evidence owners: `tests/test_org_cleanup.py`,
+`tests/test_org_maintenance.py`, organization contribution/check suites, and the
+full organization-cycle integration case.
+
+## 9. UI And Human Inspection
+
+Pass conditions:
+
+- source labels clearly distinguish local authority from foreign organization
+  context;
+- organization details show generation, revision, contributor, freshness, and
+  read-only state;
+- UI detail-open never records use;
+- there is no adoption button or implied adoption queue;
+- there is no card-triggered Skill install action;
+- snapshot/organization-cycle errors and interaction-write errors are visible.
+
+Evidence owner: retrieval/UI focused tests and the runnable desktop UI check.
+
+## 10. Frozen Release Gate
+
+The release is accepted only when one frozen source snapshot has:
+
+- passing current FlowGuard model-system, two-task model, FieldLifecycleMesh,
+  ModelMesh, behavior commitment ledger, Model-Test Alignment, and TestMesh;
+- strict OpenSpec validation with every implemented task reconciled;
+- current source-only SkillGuard supervision for all five maintained Skills;
+- one terminal full-regression owner with complete JUnit node inventory and no
+  failed, errored, skipped, unparsed, missing, or stale required child;
+- successful transactional install and independent `--check` projection audit;
+- exactly one real local wrapper run and one real organization wrapper run, each
+  reported by its own immutable receipt (including `not_applicable` honestly);
+- separately reported source, install, runtime, Git/main CI, tag CI, and GitHub
+  release identities.

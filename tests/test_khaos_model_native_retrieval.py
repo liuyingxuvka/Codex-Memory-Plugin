@@ -255,9 +255,9 @@ class KhaosModelNativeRetrievalTests(unittest.TestCase):
                 self.assertTrue(context["binding"]["logicguard_mesh_revision_id"])
                 self.assertTrue(context["neighborhood"]["materialization_fingerprint"])
                 self.assertEqual(context["evaluation"]["authority"], "production")
-            self.assertTrue(receipt["returned_entries"][0]["logicguard_binding"])
+            self.assertTrue(receipt["returned_results"][0]["logicguard_binding"])
             self.assertTrue(
-                receipt["returned_entries"][0]["materialization_fingerprint"]
+                receipt["returned_results"][0]["materialization_fingerprint"]
             )
             self.assertEqual(
                 results[0].source["logicguard_ranking"]["distance"],
@@ -276,7 +276,7 @@ class KhaosModelNativeRetrievalTests(unittest.TestCase):
                 ["supports"],
             )
             self.assertTrue(
-                receipt["returned_entries"][1]["logicguard_ranking"]
+                receipt["returned_results"][1]["logicguard_ranking"]
             )
 
             model_id = results[0].data["logicguard_model_id"]

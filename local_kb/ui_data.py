@@ -70,6 +70,13 @@ def summarize_entry(
     cross_index = normalize_string_list(data.get("cross_index", []))
     summary = {
         "id": _entry_id(entry),
+        "knowledge_ref": str(getattr(entry, "source", {}).get("knowledge_ref") or ""),
+        "result_ref": str(getattr(entry, "source", {}).get("result_ref") or ""),
+        "retrieval_request_id": str(
+            getattr(entry, "source", {}).get("retrieval_request_id") or ""
+        ),
+        "source_kind": str(getattr(entry, "source", {}).get("source_kind") or ""),
+        "source_id": str(getattr(entry, "source", {}).get("source_id") or ""),
         "title": data.get("title") or _entry_id(entry),
         "type": data.get("type") or "",
         "scope": data.get("scope") or "",
@@ -499,4 +506,5 @@ def build_search_payload(
         "route_hint": parse_route_segments(route_hint),
         "results": results,
         "organization_status": search_result.get("organization_status", []),
+        "retrieval_receipt": search_result.get("retrieval_receipt", {}),
     }

@@ -5,114 +5,106 @@ import unittest
 from pathlib import Path
 
 from local_kb.org_snapshot import load_current_organization_snapshot, stage_organization_snapshot
+from local_kb.org_source_contract import materialize_current_source
 from local_kb.store import load_current_organization_entries, write_yaml_file
+from tests.org_helpers import base_card
 
 
 class OrganizationSnapshotTests(unittest.TestCase):
-    def _card(self, path: Path, entry_id: str, status: str = "trusted") -> None:
-        write_yaml_file(
-            path,
-            {
-                "id": entry_id,
-                "title": entry_id,
-                "type": "model",
-                "scope": "public",
-                "status": status,
-                "confidence": 0.8,
-                "domain_path": ["organization", "snapshot"],
-                "tags": ["organization"],
-                "trigger_keywords": ["snapshot"],
-                "if": {"notes": "snapshot input"},
-                "action": {"description": "use"},
-                "predict": {"expected_result": "usable"},
-                "use": {"guidance": "direct read-only use"},
-            },
+    def _current_source(self, root: Path) -> Path:
+        org = root / "org"
+        materialize_current_source(
+            org,
+            organization_id="sandbox",
+            cards=[
+                ("kb/main/a.yaml", base_card("a", "A", "Use A.")),
+                ("kb/main/candidate.yaml", base_card("candidate", "Candidate", "Use candidate.", status="candidate")),
+                ("kb/main/rejected.yaml", base_card("rejected", "Rejected", "Do not use.", status="rejected")),
+            ],
         )
+        return org
 
-    def test_snapshot_contains_exact_active_ids_and_is_readable_without_mirror_scan(self) -> None:
+    def test_snapshot_copies_exact_current_active_bundles(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            org = root / "org"
-            self._card(org / "kb" / "main" / "a.yaml", "a")
-            self._card(org / "kb" / "main" / "candidate.yaml", "candidate", status="candidate")
-            self._card(org / "kb" / "main" / "rejected.yaml", "rejected", status="rejected")
-
-            result = stage_organization_snapshot(
-                root,
-                org,
-                "sandbox",
-                source_repo="remote",
-                source_commit="commit-1",
-            )
-            self.assertTrue(result["ok"], result)
-            self.assertEqual(result["active_entry_ids"], ["a", "candidate"])
+            org = self._current_source(root)
+            result = stage_organization_snapshot(root, org, "sandbox", source_repo="remote", source_commit="commit-1")
             snapshot = load_current_organization_snapshot(root, "sandbox")
-            self.assertTrue(snapshot["ok"], snapshot)
             entries = load_current_organization_entries(root, "sandbox")
-            row = snapshot["manifest"]["cards"][0]
 
-        self.assertEqual([entry.data["id"] for entry in entries], ["a", "candidate"])
-        self.assertTrue(all(entry.source["foreign_state"] == "eligible_external" for entry in entries))
-        self.assertEqual(snapshot["schema_version"], 2)
-        self.assertTrue(row["bundle_digest"])
-        self.assertTrue(row["binding"]["logicguard_model_id"])
-        self.assertEqual(entries[0].data["projection_schema_version"], "khaos-brain.card-projection.v1")
-        self.assertTrue(entries[0].source["logicguard_bundle"]["model_path"])
+        self.assertTrue(result["ok"], result)
+        self.assertTrue(snapshot["ok"], snapshot)
+        self.assertEqual(result["active_entry_ids"], ["a", "candidate"])
+        self.assertEqual({entry.data["id"] for entry in entries}, {"a", "candidate"})
+        self.assertEqual(snapshot["schema_version"], 3)
+        self.assertTrue(all(row["bundle_digest"] for row in snapshot["manifest"]["cards"]))
 
-    def test_legacy_card_is_structurally_upgraded_without_fabricating_evidence(self) -> None:
+    def test_raw_legacy_card_is_rejected_by_normal_snapshot_runtime(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             org = root / "org"
-            write_yaml_file(
-                org / "kb" / "main" / "legacy.yaml",
-                {"id": "legacy", "title": "Legacy", "status": "trusted", "action": "use carefully"},
-            )
+            write_yaml_file(org / "kb" / "main" / "legacy.yaml", base_card("legacy", "Legacy", "Use."))
             result = stage_organization_snapshot(root, org, "sandbox")
-            self.assertTrue(result["ok"], result)
-            entries = load_current_organization_entries(root, "sandbox")
 
-        upgraded = entries[0].data
-        self.assertEqual(upgraded["id"], "legacy")
-        self.assertIn("expected_result", upgraded["predict"])
-        self.assertTrue(upgraded["legacy_upgrade"]["structural_defaults_applied"])
-        self.assertFalse(upgraded["legacy_upgrade"]["evidence_fabricated"])
-        self.assertIn("evidence", upgraded["logicguard_open_role_gaps"])
+        self.assertFalse(result["ok"])
+        self.assertIn("exact current source contract", " ".join(result["errors"]))
 
-    def test_duplicate_ids_receive_deterministic_legacy_ids_and_both_survive(self) -> None:
+    def test_unchanged_source_reuses_content_addressed_generation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            org = root / "org"
-            self._card(org / "kb" / "main" / "a.yaml", "same")
-            self._card(org / "kb" / "main" / "b.yaml", "same")
-            result = stage_organization_snapshot(root, org, "sandbox")
-            self.assertTrue(result["ok"], result)
-            entries = load_current_organization_entries(root, "sandbox")
-            snapshot = load_current_organization_snapshot(root, "sandbox")
-
-            self.assertEqual(len(entries), 2)
-            self.assertEqual(entries[0].data["id"], "same")
-            self.assertTrue(entries[1].data["id"].startswith("same-legacy-"))
-            self.assertEqual(entries[1].data["legacy_upgrade"]["duplicate_of"], "same")
-            duplicate_row = next(row for row in snapshot["manifest"]["cards"] if row.get("duplicate_of"))
-            self.assertEqual(entries[1].data["id"], duplicate_row["entry_id"])
-            self.assertEqual(entries[1].data["id"], entries[1].source["logicguard_bundle"]["entry_id"])
-
-    def test_malformed_active_card_does_not_replace_previous_complete_snapshot(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            org = root / "org"
-            card = org / "kb" / "main" / "a.yaml"
-            self._card(card, "a")
+            org = self._current_source(root)
             first = stage_organization_snapshot(root, org, "sandbox", source_commit="commit-1")
-            self.assertTrue(first["ok"], first)
+            second = stage_organization_snapshot(root, org, "sandbox", source_commit="commit-1")
+
+        self.assertTrue(first["ok"], first)
+        self.assertTrue(second["ok"], second)
+        self.assertEqual(first["generation_id"], second["generation_id"])
+        self.assertEqual(second["status"], "reused")
+
+    def test_invalid_changed_source_does_not_replace_previous_pointer(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            org = self._current_source(root)
+            first = stage_organization_snapshot(root, org, "sandbox", source_commit="commit-1")
             pointer_before = load_current_organization_snapshot(root, "sandbox")
-            card.write_text("id: [broken\n", encoding="utf-8")
+            (org / "kb" / "main" / "a.yaml").write_text("id: [broken\n", encoding="utf-8")
             second = stage_organization_snapshot(root, org, "sandbox", source_commit="commit-2")
             pointer_after = load_current_organization_snapshot(root, "sandbox")
 
+        self.assertTrue(first["ok"], first)
         self.assertFalse(second["ok"])
         self.assertEqual(pointer_after["generation_id"], pointer_before["generation_id"])
-        self.assertEqual(pointer_after["source_commit"], pointer_before["source_commit"])
+        self.assertEqual(pointer_after["source_commit"], "commit-1")
+
+    def test_pointer_cas_rejects_a_stale_expected_predecessor(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            org = self._current_source(root)
+            first = stage_organization_snapshot(root, org, "sandbox", source_commit="commit-1")
+            conflict = stage_organization_snapshot(
+                root,
+                org,
+                "sandbox",
+                source_commit="commit-1",
+                expected_pointer_digest="sha256:stale",
+            )
+
+        self.assertTrue(first["ok"], first)
+        self.assertFalse(conflict["ok"])
+        self.assertEqual(conflict["status"], "pointer-conflict")
+
+    def test_existing_content_addressed_generation_is_never_overwritten(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            org = self._current_source(root)
+            first = stage_organization_snapshot(root, org, "sandbox", source_commit="commit-1")
+            generation = Path(first["generation_root"])
+            bundle = next((generation / "logicguard" / "b").glob("*.json"))
+            bundle.write_text("{}\n", encoding="utf-8")
+            second = stage_organization_snapshot(root, org, "sandbox", source_commit="commit-1")
+
+        self.assertFalse(second["ok"])
+        self.assertEqual(second["status"], "immutable-generation-conflict")
 
 
 if __name__ == "__main__":

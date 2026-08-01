@@ -7,30 +7,12 @@ from pathlib import Path
 from local_kb.org_contribution import github_compare_url, prepare_organization_import_branch
 from local_kb.org_sources import _run_git
 from local_kb.store import write_yaml_file
+from tests.org_helpers import write_valid_org_repo
 
 
 class OrganizationContributionTests(unittest.TestCase):
     def _write_org_repo(self, root: Path) -> None:
-        write_yaml_file(
-            root / "khaos_org_kb.yaml",
-            {
-                "kind": "khaos-organization-kb",
-                "schema_version": 1,
-                "organization_id": "sandbox",
-                "kb": {
-                    "main_path": "kb/main",
-                    "imports_path": "kb/imports",
-                },
-                "skills": {
-                    "registry_path": "skills/registry.yaml",
-                    "candidates_path": "skills/candidates",
-                },
-            },
-        )
-        write_yaml_file(root / "kb" / "main" / "model.yaml", {"id": "trusted", "status": "trusted"})
-        (root / "kb" / "imports").mkdir(parents=True)
-        write_yaml_file(root / "skills" / "registry.yaml", {"skills": []})
-        (root / "skills" / "candidates").mkdir(parents=True)
+        write_valid_org_repo(root, include_sandbox_cards=False)
 
     def test_prepare_organization_import_branch_copies_outbox_to_imports_and_commits(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

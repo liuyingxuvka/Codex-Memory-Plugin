@@ -26,6 +26,7 @@ AUTHORITY = "khaos_brain_logicguard_authority_cutover"
 INTERFACE = "kb_canonical_interface_flow.CanonicalDataBlock"
 VISUAL = "card_visual_merge_flow.ProductionVisualMergeBlock"
 LOGICGUARD = "logicguard-p0-p2-runtime"
+CYCLES = "khaos_brain_two_maintenance_cycle_flow.TwoMaintenanceCycleBlock"
 
 
 def children() -> tuple[ChildModelEvidence, ...]:
@@ -226,6 +227,69 @@ def children() -> tuple[ChildModelEvidence, ...]:
             risk_classes=("argument_store_corruption", "mesh_head_drift", "ungrounded_cross_model_edge"),
             validation_evidence=("P0:177 pass", "P1:265 pass", "P2:35 pass", "scale receipt:pass"),
         ),
+        ChildModelEvidence(
+            model_id=CYCLES,
+            evidence_id="executable:khaos-two-maintenance-cycles:current",
+            risk_boundary=(
+                "two independent scheduled task leases, one global mutation lease, delegated child writes, "
+                "strict cycle terminal states, receipt-v3 identity, and viewed/selected/used/outcome separation"
+            ),
+            inputs_accepted=(
+                "local_scheduled_trigger",
+                "organization_scheduled_trigger",
+                "current_organization_snapshot",
+                "retrieval_interaction",
+            ),
+            outputs_emitted=(
+                "local_cycle_receipt_v3",
+                "organization_cycle_receipt_v3",
+                "global_writer_serialized",
+                "foreign_use_outcome_handoff",
+            ),
+            state_owned=(
+                "local_task_lease",
+                "organization_task_lease",
+                "global_writer_lease",
+                "delegated_child_write_token",
+                "cycle_receipt_identity",
+                "retrieval_interaction_stage",
+            ),
+            side_effects_owned=(
+                "global_writer_lease_delegation",
+                "local_cycle_receipt_commit",
+                "organization_cycle_receipt_commit",
+                "retrieval_interaction_commit",
+            ),
+            functional_areas=("maintenance_cycle_composition",),
+            contracts_in=("contract:authority.model_retrieval", "contract:lifecycle.current_index"),
+            contracts_out=(
+                "contract:cycles.local_terminal_receipt",
+                "contract:cycles.organization_terminal_receipt",
+                "contract:cycles.foreign_outcome_handoff",
+            ),
+            depends_on=(LIFECYCLE, AUTHORITY),
+            evidence_tier="hazard_green",
+            functions_owned=("TwoMaintenanceCycleBlock",),
+            invariants_owned=(
+                "local_and_organization_failures_are_independent",
+                "one_global_writer",
+                "delegated_writer_required",
+                "cycle_receipt_matches_frozen_inputs",
+                "view_is_not_use",
+                "dream_never_publishes_authority",
+            ),
+            risk_classes=(
+                "cross_task_cancellation",
+                "dual_global_writer",
+                "stale_cycle_receipt_reuse",
+                "partial_result_promotion",
+                "view_counted_as_use",
+            ),
+            validation_evidence=(
+                "accepted:independent-two-task-flow",
+                "known_bad:cross-task-writer-receipt-and-interaction-variants-rejected",
+            ),
+        ),
     )
 
 
@@ -254,6 +318,11 @@ def coverage_items() -> tuple[HierarchyCoverageItem, ...]:
         ("item:argument-model-semantics", "shared_kernel", LOGICGUARD),
         ("item:revision-pinned-model-mesh", "shared_kernel", LOGICGUARD),
         ("item:structural-evaluation-simulation", "shared_kernel", LOGICGUARD),
+        ("item:two-independent-task-leases", "state", CYCLES),
+        ("item:single-global-mutation-lease", "side_effect", CYCLES),
+        ("item:delegated-child-write-token", "state", CYCLES),
+        ("item:cycle-receipt-v3", "side_effect", CYCLES),
+        ("item:retrieval-interaction-stages", "function", CYCLES),
     )
     return tuple(
         HierarchyCoverageItem(
@@ -287,11 +356,38 @@ def closure_model(models: tuple[ChildModelEvidence, ...]) -> MeshClosureModel:
     all_outputs = tuple(output for child in models for output in child.outputs_emitted)
     return MeshClosureModel(
         parent_model_id=PARENT_ID,
-        root_entries=("observation_or_versioned_legacy_input",),
+        root_entries=(
+            "observation_or_versioned_legacy_input",
+            "local_scheduled_trigger",
+            "organization_scheduled_trigger",
+            "current_organization_snapshot",
+            "retrieval_interaction",
+        ),
         transitions=(
             MeshClosureTransition(
+                "cycles_serialize_writes_and_commit_terminal_receipts",
+                consumes=(
+                    "local_scheduled_trigger",
+                    "organization_scheduled_trigger",
+                    "current_organization_snapshot",
+                    "retrieval_interaction",
+                ),
+                emits=(
+                    "local_cycle_receipt_v3",
+                    "organization_cycle_receipt_v3",
+                    "global_writer_serialized",
+                    "foreign_use_outcome_handoff",
+                ),
+                consumer_model_id=CYCLES,
+                code_contract_id="contract:cycles.foreign_outcome_handoff",
+                rationale=(
+                    "Independent scheduled roots may overlap read-only work, while a single delegated writer "
+                    "serializes mutations and each root commits its own exact terminal receipt."
+                ),
+            ),
+            MeshClosureTransition(
                 "lifecycle_selects_delta",
-                consumes=("observation_or_versioned_legacy_input",),
+                consumes=("observation_or_versioned_legacy_input", "foreign_use_outcome_handoff"),
                 emits=(
                     "lifecycle_delta_selected",
                     "retrieval_eligibility_snapshot",
@@ -458,8 +554,9 @@ def broken_partition() -> HierarchyPartitionMap:
 
 
 def main() -> int:
-    current = review_hierarchical_mesh(build_partition(), model_count=6)
-    broken = review_hierarchical_mesh(broken_partition(), model_count=6)
+    expected_count = len(build_partition().child_models)
+    current = review_hierarchical_mesh(build_partition(), model_count=expected_count)
+    broken = review_hierarchical_mesh(broken_partition(), model_count=expected_count)
     payload = {
         "artifact_type": "khaos_brain_logicguard_native_flowguard_model_mesh",
         "current": current.to_dict(),

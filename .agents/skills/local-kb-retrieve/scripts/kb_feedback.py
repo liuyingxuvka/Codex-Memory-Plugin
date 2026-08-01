@@ -48,7 +48,11 @@ def main() -> None:
     parser.add_argument("--project-ref", default="")
     parser.add_argument("--workspace-root", default="")
     parser.add_argument("--retrieval-request-id", default="")
-    parser.add_argument("--used-entry-ids", default="")
+    parser.add_argument(
+        "--used-result-refs",
+        default="",
+        help="Comma-separated exact result_ref values from the retrieval receipt.",
+    )
     parser.add_argument("--evidence-kind", default="task")
     parser.add_argument("--evidence-ref", default="")
     parser.add_argument("--verified", action="store_true")
@@ -66,7 +70,10 @@ def main() -> None:
         inspect_observation_postflight,
         record_observation_result,
     )
-    from local_kb.lifecycle import record_outcome_receipt
+    from local_kb.lifecycle import (
+        record_outcome_receipt,
+        record_retrieval_interaction,
+    )
     from local_kb.store import history_events_path, resolve_repo_root
 
     repo_root = resolve_repo_root(args.repo_root)
@@ -86,14 +93,20 @@ def main() -> None:
         return
     if not args.task_summary.strip():
         parser.error("--task-summary is required unless --inspect-event-id is used")
+    used_result_refs = csv_to_list(args.used_result_refs)
+    if args.retrieval_request_id and not used_result_refs:
+        parser.error("--retrieval-request-id requires --used-result-refs")
+    if used_result_refs and not args.retrieval_request_id:
+        parser.error("--used-result-refs requires --retrieval-request-id")
+    exact_retrieval_feedback = bool(args.retrieval_request_id)
     event = build_observation(
         task_summary=args.task_summary,
         route_hint=args.route_hint,
-        entry_ids=args.entry_ids,
+        entry_ids="" if exact_retrieval_feedback else args.entry_ids,
         hit_quality=args.hit_quality,
         outcome=args.outcome,
         comment=args.comment,
-        suggested_action=args.suggested_action,
+        suggested_action="none" if exact_retrieval_feedback else args.suggested_action,
         exposed_gap=args.exposed_gap,
         scenario=args.scenario,
         action_taken=args.action_taken,
@@ -114,12 +127,13 @@ def main() -> None:
     postflight = record_observation_result(repo_root, event)
     if not postflight.get("ok"):
         payload = {
-            "schema_version": "khaos-brain.feedback-result.v1",
+            "schema_version": "khaos-brain.feedback-result.v2",
             "ok": False,
             "status": str(postflight.get("status") or "failed"),
             "event": event,
             "history_path": str(history_events_path(repo_root)),
             "postflight": postflight,
+            "interaction_receipt": None,
             "outcome_receipt": None,
         }
         if args.json:
@@ -130,29 +144,63 @@ def main() -> None:
                 f"{payload['status']}"
             )
         raise SystemExit(2)
+    interaction_receipt = None
     outcome_receipt = None
     if args.retrieval_request_id:
-        used_entry_ids = csv_to_list(args.used_entry_ids or args.entry_ids)
+        interaction_receipt = record_retrieval_interaction(
+            repo_root,
+            request_id=args.retrieval_request_id,
+            result_refs=used_result_refs,
+            interaction="used",
+            event_id=(
+                f"feedback:{event['event_id']}:{args.retrieval_request_id}:used"
+            ),
+            actor=args.agent_name,
+            context={
+                "observation_event_id": str(event.get("event_id") or ""),
+                "task_summary": args.task_summary,
+            },
+        )
         outcome_receipt = record_outcome_receipt(
             repo_root,
             request_id=args.retrieval_request_id,
-            used_entry_ids=used_entry_ids,
+            used_result_refs=used_result_refs,
             outcome=args.outcome or "unknown",
             evidence_kind=args.evidence_kind,
             evidence_ref=args.evidence_ref,
             verified=args.verified,
             user_correction=args.user_correction,
+            observation_context={
+                "task_summary": args.task_summary,
+                "route_hint": args.route_hint,
+                "hit_quality": args.hit_quality,
+                "suggested_action": args.suggested_action,
+                "predictive_observation": {
+                    "scenario": args.scenario,
+                    "action_taken": args.action_taken,
+                    "observed_result": args.observed_result,
+                    "contrastive_evidence": {
+                        "previous_action": args.previous_action,
+                        "previous_result": args.previous_result,
+                        "revised_action": args.revised_action,
+                        "revised_result": args.revised_result,
+                    },
+                    "operational_use": args.operational_use,
+                    "reuse_judgment": args.reuse_judgment,
+                },
+            },
         )
 
     if args.json:
         print_json(
             {
-                "schema_version": "khaos-brain.feedback-result.v1",
+                "schema_version": "khaos-brain.feedback-result.v2",
                 "ok": True,
                 "status": "success",
                 "event": event,
                 "history_path": str(history_events_path(repo_root)),
                 "postflight": postflight,
+                "interaction_receipt": interaction_receipt,
                 "outcome_receipt": outcome_receipt,
             }
         )

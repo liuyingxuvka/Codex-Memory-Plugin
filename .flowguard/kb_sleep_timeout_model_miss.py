@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from flowguard import (
     FALSE_NEGATIVE_CAUSE_SCOPE_OVERCLAIM,
     MODEL_MATURATION_SIGNAL_CODE_BOUNDARY_MISMATCH,
     MODEL_MATURATION_SIGNAL_SAME_CLASS_MISSING,
+    MODEL_MATURATION_RECEIPT_STATUS_PASS,
+    MODEL_MATURATION_RESOLUTION_MODEL_EDIT,
     MODEL_MISS_BACKFEED_REUSE_EXISTING,
     FalseNegativeBackpropagationPlan,
     FalseNegativeCase,
@@ -47,6 +51,80 @@ INDEX_AUTHORITY_TEST_ID = (
     "test:tests/test_kb_retrieval_calibration.py::"
     "KbRetrievalCalibrationTests::test_rebuild_requires_authorized_publisher"
 )
+
+
+def _closed_maturation_report() -> object:
+    coverage_ids = (
+        f"{MISS_ID}:coverage:state-boundary",
+        f"{MISS_ID}:coverage:same-class",
+    )
+    probe_ids = (
+        f"{MISS_ID}:probe:state-boundary",
+        f"{MISS_ID}:probe:same-class",
+    )
+    plan = ModelMaturationPlan(
+        plan_id="plan:kb-sleep-timeout:maturation",
+        task_id="task:kb-sleep-timeout:closure",
+        task_purpose="Close the bounded Sleep lifecycle/index timeout false-negative class.",
+        model_id=OWNER_MODEL_ID,
+        risk_id=MISS_ID,
+        coverage_universe_id=f"{MISS_ID}:coverage-universe:v1",
+        coverage_owner="flowguard-model-miss-review",
+        coverage_source_refs=(
+            f"model:{OWNER_MODEL_ID}",
+            "ledger:commitment:sleep-no-delta-single-owner",
+        ),
+        coverage_ids=coverage_ids,
+        required_probe_ids=probe_ids,
+        base_model_fingerprint="base:sleep-timeout-before-bounded-lifecycle",
+        candidate_model_fingerprint="candidate:sleep-bounded-lifecycle-index-recovery:v1",
+        evidence_fingerprint=MODEL_PROOF_ID,
+    )
+    plan = replace(plan, coverage_universe_fingerprint=plan.expected_coverage_fingerprint())
+    specs = (
+        (
+            "signal:sleep-timeout-state-boundary",
+            MODEL_MATURATION_SIGNAL_CODE_BOUNDARY_MISMATCH,
+            MODEL_PROOF_ID,
+            "LifecycleConvergenceBlock models bounded batch settlement and pointer/watermark terminal states.",
+        ),
+        (
+            "signal:sleep-transition-family-same-class",
+            MODEL_MATURATION_SIGNAL_SAME_CLASS_MISSING,
+            SAME_CLASS_TEST_ID,
+            "Create, park, reopen, promote, downgrade, calibration, and observation transitions share bounded batch evidence.",
+        ),
+    )
+    signals = tuple(
+        ModelMaturationSignal(
+            signal_id=signal_id,
+            signal_type=signal_type,
+            source_route="model_miss_review",
+            model_id=OWNER_MODEL_ID,
+            risk_id=MISS_ID,
+            evidence_id=evidence_id,
+            description=description,
+            coverage_id=coverage_ids[index],
+            probe_id=probe_ids[index],
+            resolution_class=MODEL_MATURATION_RESOLUTION_MODEL_EDIT,
+            prediction=description,
+            falsifier=f"The same-class probe {probe_ids[index]} fails against the candidate model.",
+            evidence_fingerprint=evidence_id,
+            resolved=True,
+            current=True,
+            receipt_id=f"receipt:{MISS_ID}:{index}",
+            receipt_fingerprint=f"receipt-fingerprint:{MISS_ID}:{index}",
+            receipt_status=MODEL_MATURATION_RECEIPT_STATUS_PASS,
+            receipt_task_id=plan.task_id,
+            receipt_probe_id=probe_ids[index],
+            receipt_candidate_fingerprint=plan.candidate_model_fingerprint,
+            receipt_coverage_fingerprint=plan.coverage_universe_fingerprint,
+            receipt_evidence_fingerprint=evidence_id,
+            receipt_owner_route="model_miss_review",
+        )
+        for index, (signal_id, signal_type, evidence_id, description) in enumerate(specs)
+    )
+    return review_model_maturation_loop(replace(plan, signals=signals))
 
 
 def build_report() -> dict[str, object]:
@@ -145,47 +223,7 @@ def build_report() -> dict[str, object]:
         )
     )
 
-    maturation = review_model_maturation_loop(
-        ModelMaturationPlan(
-            plan_id="plan:kb-sleep-timeout:maturation",
-            model_id=OWNER_MODEL_ID,
-            risk_id=MISS_ID,
-            signals=(
-                ModelMaturationSignal(
-                    signal_id="signal:sleep-timeout-state-boundary",
-                    signal_type=MODEL_MATURATION_SIGNAL_CODE_BOUNDARY_MISMATCH,
-                    source_route="model_miss_review",
-                    model_id=OWNER_MODEL_ID,
-                    risk_id=MISS_ID,
-                    evidence_id=MODEL_PROOF_ID,
-                    description=(
-                        "LifecycleConvergenceBlock now models frozen batch identity, per-item "
-                        "settlement, scoped retrieval impact, progress_saved, prior-generation "
-                        "availability, remainder comparison, and pointer/watermark terminal states."
-                    ),
-                    resolved=True,
-                    current=True,
-                ),
-                ModelMaturationSignal(
-                    signal_id="signal:sleep-transition-family-same-class",
-                    signal_type=MODEL_MATURATION_SIGNAL_SAME_CLASS_MISSING,
-                    source_route="model_miss_review",
-                    model_id=OWNER_MODEL_ID,
-                    risk_id=MISS_ID,
-                    evidence_id=SAME_CLASS_TEST_ID,
-                    description=(
-                        "Create, park, reopen, promote, downgrade, calibration, and "
-                        "observation transitions share bounded batch evidence."
-                    ),
-                    resolved=True,
-                    current=True,
-                ),
-            ),
-            claim_scope="release",
-            require_full_closure=True,
-            allow_scoped_claim=False,
-        )
-    )
+    maturation = _closed_maturation_report()
 
     same_class = SameClassMissClosure(
         miss_id=MISS_ID,

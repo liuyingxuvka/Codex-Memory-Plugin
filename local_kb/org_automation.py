@@ -10,7 +10,15 @@ from local_kb.adoption import record_exchange_hash, recorded_exchange_hashes
 from local_kb.card_ids import installation_short_label
 from local_kb.feedback import build_observation, record_observation
 from local_kb.github_repo_config import create_github_pull_request_for_branch
-from local_kb.maintenance_lanes import acquire_lane_lock, release_lane_lock, write_lane_status
+from local_kb.maintenance_lanes import (
+    acquire_global_write_lease,
+    acquire_lane_lock,
+    redact_lease_secrets,
+    release_global_write_lease,
+    release_lane_lock,
+    validate_global_write_delegation,
+    write_lane_status,
+)
 from local_kb.org_checks import check_organization_repository
 from local_kb.org_contribution import current_git_branch, prepare_organization_import_branch, push_organization_branch
 from local_kb.org_maintenance import build_organization_maintenance_report
@@ -36,6 +44,48 @@ ORG_LANE_POLICY = {
     "maintenance_moves_reviewed_cards_to": "kb/main",
     "current_layout_only": True,
 }
+
+
+def _enter_organization_writer(
+    repo_root: Path,
+    *,
+    run_id: str,
+    phase_id: str,
+    writer_lease_id: str = "",
+    writer_delegation_token: str = "",
+    writer_phase_id: str = "",
+) -> dict[str, Any]:
+    provided = [bool(str(value or "").strip()) for value in (writer_lease_id, writer_delegation_token, writer_phase_id)]
+    if any(provided) and not all(provided):
+        return {"ok": False, "status": "writer-delegation-incomplete", "mode": "blocked"}
+    if all(provided):
+        if str(writer_phase_id) != phase_id:
+            return {"ok": False, "status": "writer-phase-mismatch", "mode": "blocked"}
+        validation = validate_global_write_delegation(
+            repo_root,
+            lease_id=str(writer_lease_id),
+            child_phase_id=phase_id,
+            child_run_id=run_id,
+            delegation_token=str(writer_delegation_token),
+        )
+        return {"ok": bool(validation.get("ok")), "mode": "delegated", **validation}
+    lease = acquire_global_write_lease(
+        repo_root,
+        cycle_kind="organization-standalone",
+        run_id=run_id,
+        scope=phase_id,
+    )
+    return {"ok": bool(lease.get("acquired")), "mode": "independent", **lease}
+
+
+def _leave_organization_writer(repo_root: Path, writer: dict[str, Any]) -> dict[str, Any]:
+    if writer.get("mode") != "independent" or writer.get("acquired") is not True:
+        return {"ok": True, "released": False, "mode": str(writer.get("mode") or "")}
+    return release_global_write_lease(
+        repo_root,
+        lease_id=str(writer.get("lease_id") or ""),
+        lease_token=str(writer.get("lease_token") or ""),
+    )
 
 
 def _canonical_hash(payload: object) -> str:
@@ -270,6 +320,14 @@ def _sync_first_organization_source(
         )
     sync_result["base_checkout"] = base_checkout
 
+    from local_kb.org_migration import migrate_organization_repo_to_current
+
+    migration = migrate_organization_repo_to_current(org_root)
+    sync_result["migration"] = migration
+    if not migration.get("ok"):
+        sync_result["ok"] = False
+        sync_result.setdefault("errors", []).append(str(migration.get("error") or "organization source upgrade failed"))
+        return source, sources, settings, sync_result
     validation = validate_organization_repo(org_root)
     if validation.get("ok"):
         updated = dict(settings)
@@ -481,8 +539,8 @@ def _maintenance_pr_auto_merge_eligible(changed_files: list[str]) -> bool:
     if not changed_files:
         return False
     has_audit = "maintenance/cleanup_audit.jsonl" in changed_files
-    allowed_prefixes = ("kb/imports/", "kb/main/")
-    allowed_exact = {"maintenance/cleanup_audit.jsonl"}
+    allowed_prefixes = ("kb/imports/", "kb/main/", "kb/logicguard/bundles/")
+    allowed_exact = {"maintenance/cleanup_audit.jsonl", "kb/organization_catalog.json", "khaos_org_kb.yaml"}
     return has_audit and all(path.startswith(allowed_prefixes) or path in allowed_exact for path in changed_files)
 
 
@@ -494,7 +552,7 @@ def _outbox_proposal_files(
     outbox_dir = organization_outbox_dir(repo_root, organization_id)
     if not outbox_dir.exists():
         return []
-    blocked_hashes = recorded_exchange_hashes(repo_root, {"downloaded", "used", "absorbed", "exported", "uploaded"})
+    blocked_hashes = recorded_exchange_hashes(repo_root, {"exported", "uploaded"})
     blocked_hashes.update(_organization_exchange_hashes(organization_sources, organization_id=organization_id))
     pending: list[Path] = []
     for path in sorted(outbox_dir.glob("*.yaml")):
@@ -556,6 +614,9 @@ def _record_contributed_proposals(
 
 
 def _maintenance_stage_paths(apply_result: dict[str, Any]) -> list[str]:
+    declared = [str(item).replace("\\", "/") for item in apply_result.get("changed_paths") or [] if str(item)]
+    if declared:
+        return sorted(set(declared))
     paths: set[str] = set()
     for item in apply_result.get("applied") or []:
         if not isinstance(item, dict):
@@ -589,6 +650,9 @@ def run_organization_contribution(
     record_postflight: bool = True,
     run_id: str = "",
     sync_context: dict[str, Any] | None = None,
+    writer_lease_id: str = "",
+    writer_delegation_token: str = "",
+    writer_phase_id: str = "",
 ) -> dict[str, Any]:
     repo_root = Path(repo_root)
     resolved_run_id = str(run_id or f"org-contribute-{utc_timestamp()}")
@@ -620,6 +684,16 @@ def run_organization_contribution(
             "postflight_recorded": False,
         }
 
+    writer = _enter_organization_writer(
+        repo_root,
+        run_id=resolved_run_id,
+        phase_id="organization-contribution",
+        writer_lease_id=writer_lease_id,
+        writer_delegation_token=writer_delegation_token,
+        writer_phase_id=writer_phase_id,
+    )
+    if writer.get("ok") is not True:
+        return {"ok": False, "skipped": False, "status": "blocked", "run_id": resolved_run_id, "reason": "global-writer-unavailable", "writer_gate": redact_lease_secrets(writer)}
     lane_lock = acquire_lane_lock(repo_root, "kb-org-contribute", run_id=resolved_run_id)
     lock_released = False
     try:
@@ -826,6 +900,7 @@ def run_organization_contribution(
     finally:
         if not lock_released:
             release_lane_lock(repo_root, "kb-org-contribute", run_id=resolved_run_id)
+        _leave_organization_writer(repo_root, writer)
 
 
 def run_organization_maintenance(
@@ -837,6 +912,9 @@ def run_organization_maintenance(
     record_postflight: bool = True,
     run_id: str = "",
     sync_context: dict[str, Any] | None = None,
+    writer_lease_id: str = "",
+    writer_delegation_token: str = "",
+    writer_phase_id: str = "",
 ) -> dict[str, Any]:
     repo_root = Path(repo_root)
     resolved_run_id = str(run_id or f"org-maintenance-{utc_timestamp()}")
@@ -877,6 +955,16 @@ def run_organization_maintenance(
             "postflight_recorded": False,
         }
 
+    writer = _enter_organization_writer(
+        repo_root,
+        run_id=resolved_run_id,
+        phase_id="organization-maintenance",
+        writer_lease_id=writer_lease_id,
+        writer_delegation_token=writer_delegation_token,
+        writer_phase_id=writer_phase_id,
+    )
+    if writer.get("ok") is not True:
+        return {"ok": False, "skipped": False, "status": "blocked", "run_id": resolved_run_id, "reason": "global-writer-unavailable", "writer_gate": redact_lease_secrets(writer)}
     lane_lock = acquire_lane_lock(repo_root, "kb-org-maintenance", run_id=resolved_run_id)
     lock_released = False
     try:
@@ -1029,3 +1117,4 @@ def run_organization_maintenance(
     finally:
         if not lock_released:
             release_lane_lock(repo_root, "kb-org-maintenance", run_id=resolved_run_id)
+        _leave_organization_writer(repo_root, writer)

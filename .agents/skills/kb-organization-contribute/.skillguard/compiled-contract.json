@@ -28,7 +28,7 @@
       ]
     }
   ],
-  "check_declarations_hash": "7F2A6D16B1B5996403C66927D12E29D062C300BD7A77DD3CC4C8D3DB8F842785",
+  "check_declarations_hash": "AC94FE38815BF9F207AC3B7607596A76FD08E7F59FED0F05C06499967538C286",
   "checks": [
     {
       "args": [
@@ -67,7 +67,7 @@
       "maintenance_unit_id": "unit:kb-organization-contribute",
       "member_skill_id": "kb-organization-contribute",
       "owner_declaration_hash": "sha256:ad371edb1230f151f453b5339b5efee7ef43c75f0c0c6354e102ddf3a11f1581",
-      "owner_input_projection_hash": "sha256:2917c079de4211c44ddaa45608fb384eec829de8c3b257226415f7f7dad5bca5",
+      "owner_input_projection_hash": "sha256:23cb580f943e26a1b905cbefd29a142222948c4c190e8dc5b20750212317cc14",
       "projection_declaration_hash": "sha256:34fddbde822de854f366d8a17d1e3e76b917602adb52ab7d2dcedfe7ed5a1f66",
       "semantic_check_id": "semantic:kb-organization-contribute:intake-runtime",
       "target_input_role_ids": [],
@@ -112,7 +112,7 @@
       "maintenance_unit_id": "unit:kb-organization-contribute",
       "member_skill_id": "kb-organization-contribute",
       "owner_declaration_hash": "sha256:129b6dc6375cfaf8f4b59b945aab01e140b813e00655a71f52f979b69e4095aa",
-      "owner_input_projection_hash": "sha256:2917c079de4211c44ddaa45608fb384eec829de8c3b257226415f7f7dad5bca5",
+      "owner_input_projection_hash": "sha256:23cb580f943e26a1b905cbefd29a142222948c4c190e8dc5b20750212317cc14",
       "projection_declaration_hash": "sha256:e3b8e7b579b3a369aebedb2d91c5d8776a255e414e493d88067159875eea2168",
       "semantic_check_id": "semantic:kb-organization-contribute:native-runtime",
       "target_input_role_ids": [],
@@ -155,7 +155,7 @@
       "maintenance_unit_id": "unit:kb-organization-contribute",
       "member_skill_id": "kb-organization-contribute",
       "owner_declaration_hash": "sha256:af0f0032da7ce6ddd66060a694a63520a60140c1b9db84753437d726baf34cfd",
-      "owner_input_projection_hash": "sha256:2917c079de4211c44ddaa45608fb384eec829de8c3b257226415f7f7dad5bca5",
+      "owner_input_projection_hash": "sha256:23cb580f943e26a1b905cbefd29a142222948c4c190e8dc5b20750212317cc14",
       "projection_declaration_hash": "sha256:76f6277ed7bf3d785ca5aeec2cf967ecf36760a2e42cc6d8a374c56ed30ed58d",
       "semantic_check_id": "semantic:kb-organization-contribute:terminal-runtime",
       "target_input_role_ids": [],
@@ -200,7 +200,7 @@
       "member_skill_id": "kb-organization-contribute",
       "native_route_id": "route:kb-organization-contribute:run",
       "owner_declaration_hash": "sha256:3a1952590fe45509ecff63d37751b2c0760ad94255491747b61797c468ad4d99",
-      "owner_input_projection_hash": "sha256:2917c079de4211c44ddaa45608fb384eec829de8c3b257226415f7f7dad5bca5",
+      "owner_input_projection_hash": "sha256:23cb580f943e26a1b905cbefd29a142222948c4c190e8dc5b20750212317cc14",
       "projection_declaration_hash": "sha256:5e75e2c9dfbf629784feb46f171396f2ab47acbcbfc4b5c3c6a6bd97e6477ae7",
       "semantic_check_id": "semantic:kb-organization-contribute:depth-positive",
       "target_input_role_ids": [],
@@ -245,7 +245,7 @@
       "member_skill_id": "kb-organization-contribute",
       "native_route_id": "route:kb-organization-contribute:run",
       "owner_declaration_hash": "sha256:383b93f8c6760dabe42a91e2150a58199c29f68df7e23844453f977228d86368",
-      "owner_input_projection_hash": "sha256:2917c079de4211c44ddaa45608fb384eec829de8c3b257226415f7f7dad5bca5",
+      "owner_input_projection_hash": "sha256:23cb580f943e26a1b905cbefd29a142222948c4c190e8dc5b20750212317cc14",
       "projection_declaration_hash": "sha256:acf719d0befee74554e1d54a679f8b8519c47c11c83956eead62f899c00f4446",
       "semantic_check_id": "semantic:kb-organization-contribute:depth-shallow",
       "target_input_role_ids": [],
@@ -369,7 +369,7 @@
         "classification_rule_ids": [
           "skillguard.content_role_classifier.current:documentation_model"
         ],
-        "component_hash": "sha256:347fac849a7f324c42dca263706c636e30cb5273f79354472defebe467cb6f1b",
+        "component_hash": "sha256:fc807084eb8c82a643a044d68104139effc9e7915ff7c87eaf28db17fe8a5188",
         "component_id": "component:documentation_model:a551166724ac0e0e",
         "consumer_ids": [
           "projection:installation"
@@ -384,7 +384,7 @@
         "classification_rule_ids": [
           "skillguard.content_role_classifier.current:documentation_model"
         ],
-        "component_hash": "sha256:e854ef1e820a817782a6d355b73b2d342c0e5c450eabb781de488aa46cbb4019",
+        "component_hash": "sha256:1e0cb0b5eaac6e62aab5bcd1c79e2adf6ee121175a354538084c57d5870b9bbe",
         "component_id": "component:documentation_model:0f3006af27638d20",
         "consumer_ids": [
           "projection:contract-compile"
@@ -399,7 +399,7 @@
         "classification_rule_ids": [
           "skillguard.content_role_classifier.current:runtime_source"
         ],
-        "component_hash": "sha256:9520536689c559e73c07045868507405f3f68822ae307ab29d054088a0ea2300",
+        "component_hash": "sha256:681698a11f6a324929f287f794862255c31a6896eb188eacdc7a9cfd7045fcc0",
         "component_id": "component:runtime_source:8eaabf96e832e663",
         "consumer_ids": [
           "projection:installation",
@@ -415,7 +415,7 @@
         "classification_rule_ids": [
           "skillguard.content_role_classifier.current:runtime_source"
         ],
-        "component_hash": "sha256:9ee4117654602042e4866be0ece8176737a710b0a7bdbe239aba55fd7302d5b1",
+        "component_hash": "sha256:0c347ff8755a4fe93112934820d4afd6dfc881818e72a7a179f17e5743e536e5",
         "component_id": "component:runtime_source:1d764b227ae8c2a4",
         "consumer_ids": [
           "owner:kb-organization-contribute:depth-positive",
@@ -437,7 +437,7 @@
         "classification_rule_ids": [
           "skillguard.content_role_classifier.current:runtime_source"
         ],
-        "component_hash": "sha256:e1fd86c546f7278e5dca593c5cf908683e5757eaa29c89bad4214698fbffe7ee",
+        "component_hash": "sha256:f6db1790bf1bf77f8873c65f51545c5b55b4a07fa0c9e6e03729c5582e269267",
         "component_id": "component:runtime_source:55aaa5572316f643",
         "consumer_ids": [
           "projection:kb-organization-contribute:target-runtime-sources"
@@ -459,7 +459,7 @@
         "classification_rule_ids": [
           "skillguard.content_role_classifier.current:test_dev"
         ],
-        "component_hash": "sha256:70c44b4c96feb2b2379b257cdcd7d87757548b32f8007792dcc8adeb32e89eb3",
+        "component_hash": "sha256:ea4b4f855ea5ef0b8e472cfe364fbbbab6eb56db2f32f2eace764addd2a5f96a",
         "component_id": "component:test_dev:b6e84047a276ad2a",
         "consumer_ids": [
           "projection:kb-organization-contribute:target-tests"
@@ -492,7 +492,7 @@
       "owner_cycles": [],
       "unmapped_paths": []
     },
-    "impact_graph_hash": "sha256:d472106acf4eb61de78c8263c01eb60ec9d6c83e83edcfbbbd303099369bbf26",
+    "impact_graph_hash": "sha256:704572bcd58f94ec356166283f7c309da2c5392681c67df30293ba5fb1138b67",
     "inventory": [
       {
         "classification_rule_id": "skillguard.content_role_classifier.current:contract_schema",
@@ -503,56 +503,56 @@
       },
       {
         "classification_rule_id": "skillguard.content_role_classifier.current:documentation_model",
-        "content_hash": "sha256:80be068902a00c4aace3ce3f6c9be8bec34f299ebffe6ff471a6c3bd6d257baf",
+        "content_hash": "sha256:04174b29b257d680c0bb9d7d145250b540c3a63fef16747b1699c258cac6957b",
         "install_disposition": "copy",
         "path": ".agents/skills/kb-organization-contribute/SKILL.md",
         "role": "documentation_model"
       },
       {
         "classification_rule_id": "skillguard.content_role_classifier.current:runtime_source",
-        "content_hash": "sha256:830f2ccbbd07f713170d77f3356587439a37dcc6fa9841846c5ee89bee85c863",
+        "content_hash": "sha256:61e27964cfb7cb059fbf014279e7d6b894f006c650af37badbfc5b026d5820d9",
         "install_disposition": "copy",
         "path": ".agents/skills/kb-organization-contribute/agents/openai.yaml",
         "role": "runtime_source"
       },
       {
         "classification_rule_id": "skillguard.content_role_classifier.current:documentation_model",
-        "content_hash": "sha256:b56cf0e29b133fdcecdc72914d1f9bc33f8611240e366187b740eba4d1967bbc",
+        "content_hash": "sha256:da1411bc1076c5b867801c25e5072b5b841c363c976b6dce2f403bd6651b1413",
         "install_disposition": "source_only",
         "path": ".flowguard/kb_org_contribute_skill_contract_model.py",
         "role": "documentation_model"
       },
       {
         "classification_rule_id": "skillguard.content_role_classifier.current:runtime_source",
-        "content_hash": "sha256:9b54f028861b518d9ffb6130c7b70df834ef5c99e79f695260ea2e624bf544f3",
+        "content_hash": "sha256:762e97b264964380db7b651504b1b365013a6b74855be391a6be084e964cf6eb",
         "install_disposition": "source_only",
         "path": "local_kb/automation_contracts.py",
         "role": "runtime_source"
       },
       {
         "classification_rule_id": "skillguard.content_role_classifier.current:runtime_source",
-        "content_hash": "sha256:0b4f32d4ce0c772a955ef1da45668cca2d84ddcc7c41b66851461bb1e503b0a7",
+        "content_hash": "sha256:a598f88ebf168537e40311568994f7ea206ab6a3781ca9f5a2deb455b154e866",
         "install_disposition": "source_only",
         "path": "local_kb/automation_runtime.py",
         "role": "runtime_source"
       },
       {
         "classification_rule_id": "skillguard.content_role_classifier.current:runtime_source",
-        "content_hash": "sha256:7ac3dd81105e58b3906891440765d039dca75a3772f98dd4de5bddcfa1f1b35c",
+        "content_hash": "sha256:cb0c16e46a538c97d01abe72a7f5ff123228869a8043737fc6e845d8bf963d04",
         "install_disposition": "source_only",
         "path": "local_kb/install.py",
         "role": "runtime_source"
       },
       {
         "classification_rule_id": "skillguard.content_role_classifier.current:runtime_source",
-        "content_hash": "sha256:0c295ecf92ab82ad0b9275eb7db94ae445742677fe759d500fc8ab09e1858295",
+        "content_hash": "sha256:2d51bf6b43e344c3f475b0b583d1aefdcb6776ddcd6a014df587c9baef521ff2",
         "install_disposition": "source_only",
         "path": "local_kb/org_automation.py",
         "role": "runtime_source"
       },
       {
         "classification_rule_id": "skillguard.content_role_classifier.current:runtime_source",
-        "content_hash": "sha256:a7e260ed6237303c1c27c17fad2e46bcbe5933bac05c60a7aaa0d624c22bcc86",
+        "content_hash": "sha256:aad8f005648f6dc4257b0e98579ffb5b4a5b9cd8197536ae61604d49a24dde26",
         "install_disposition": "source_only",
         "path": "local_kb/org_outbox.py",
         "role": "runtime_source"
@@ -594,14 +594,14 @@
       },
       {
         "classification_rule_id": "skillguard.content_role_classifier.current:runtime_source",
-        "content_hash": "sha256:1c3e77f3a49d1f8c9956b104f316ba5c1e7ef9263730bb53aa45704f30574841",
+        "content_hash": "sha256:55314ad338bc691bded146cbcb9592a9a15689f8be1be62582851dc4b410c161",
         "install_disposition": "source_only",
         "path": "scripts/run_kb_automation.py",
         "role": "runtime_source"
       },
       {
         "classification_rule_id": "skillguard.content_role_classifier.current:test_dev",
-        "content_hash": "sha256:9e2601c1356106a19074f14c41da89d34f251b0bf0ef9995522342560f341141",
+        "content_hash": "sha256:faf00ea2637d13e9b9ab77a9b1420060f05116e2d5269397eb36b52d3f95f61f",
         "install_disposition": "source_only",
         "path": "tests/test_e2e_skill_bundle_contribution_flow.py",
         "role": "test_dev"
@@ -622,21 +622,21 @@
       },
       {
         "classification_rule_id": "skillguard.content_role_classifier.current:test_dev",
-        "content_hash": "sha256:728407c5c802ef82a6d0a50db2b7285849f385f316eb47c4883bfe1c6bc6b0e7",
+        "content_hash": "sha256:0fe7aabaa811aa6dbbad182d6744de2ff50b810515ce661b8e6df23f20a5a485",
         "install_disposition": "source_only",
         "path": "tests/test_org_automation.py",
         "role": "test_dev"
       },
       {
         "classification_rule_id": "skillguard.content_role_classifier.current:test_dev",
-        "content_hash": "sha256:228ddb965593df007eaae56517114d9d1bbfd67c515c03f8399a6b2b69ce2e95",
+        "content_hash": "sha256:d33130b51b9c96f0ec92f8e7b90ba6e7440fc1ed61d86bed5f7f9e39cc6bab76",
         "install_disposition": "source_only",
         "path": "tests/test_org_checks.py",
         "role": "test_dev"
       },
       {
         "classification_rule_id": "skillguard.content_role_classifier.current:test_dev",
-        "content_hash": "sha256:f82adee9ac7fd337c841ce37dee4a7cdb3006aa6353bbf0ea178524b338bf3cf",
+        "content_hash": "sha256:3b114f402e6f05e882b83f53365fac54604093dd7b54591a15c1e07cd7a5af50",
         "install_disposition": "source_only",
         "path": "tests/test_org_outbox.py",
         "role": "test_dev"
@@ -649,7 +649,7 @@
         "role": "test_dev"
       }
     ],
-    "inventory_hash": "sha256:c4e9856203466ec0f5d67279537eff5cf57bc7f50f42b224caf19b62bfe89755",
+    "inventory_hash": "sha256:bd4df42b02e2b3f2037801ffe3ebf69e2f1c40a61171ae680b5d724760ae16b0",
     "member_root_path": ".agents/skills/kb-organization-contribute",
     "owner_receipt_root_ref": {
       "path_token": "owner_evidence_root",
@@ -672,7 +672,7 @@
           }
         ],
         "owner_declaration_hash": "sha256:3a1952590fe45509ecff63d37751b2c0760ad94255491747b61797c468ad4d99",
-        "owner_input_projection_hash": "sha256:2917c079de4211c44ddaa45608fb384eec829de8c3b257226415f7f7dad5bca5",
+        "owner_input_projection_hash": "sha256:23cb580f943e26a1b905cbefd29a142222948c4c190e8dc5b20750212317cc14",
         "target_input_role_ids": []
       },
       {
@@ -691,7 +691,7 @@
           }
         ],
         "owner_declaration_hash": "sha256:383b93f8c6760dabe42a91e2150a58199c29f68df7e23844453f977228d86368",
-        "owner_input_projection_hash": "sha256:2917c079de4211c44ddaa45608fb384eec829de8c3b257226415f7f7dad5bca5",
+        "owner_input_projection_hash": "sha256:23cb580f943e26a1b905cbefd29a142222948c4c190e8dc5b20750212317cc14",
         "target_input_role_ids": []
       },
       {
@@ -710,7 +710,7 @@
           }
         ],
         "owner_declaration_hash": "sha256:ad371edb1230f151f453b5339b5efee7ef43c75f0c0c6354e102ddf3a11f1581",
-        "owner_input_projection_hash": "sha256:2917c079de4211c44ddaa45608fb384eec829de8c3b257226415f7f7dad5bca5",
+        "owner_input_projection_hash": "sha256:23cb580f943e26a1b905cbefd29a142222948c4c190e8dc5b20750212317cc14",
         "target_input_role_ids": []
       },
       {
@@ -729,7 +729,7 @@
           }
         ],
         "owner_declaration_hash": "sha256:129b6dc6375cfaf8f4b59b945aab01e140b813e00655a71f52f979b69e4095aa",
-        "owner_input_projection_hash": "sha256:2917c079de4211c44ddaa45608fb384eec829de8c3b257226415f7f7dad5bca5",
+        "owner_input_projection_hash": "sha256:23cb580f943e26a1b905cbefd29a142222948c4c190e8dc5b20750212317cc14",
         "target_input_role_ids": []
       },
       {
@@ -748,7 +748,7 @@
           }
         ],
         "owner_declaration_hash": "sha256:af0f0032da7ce6ddd66060a694a63520a60140c1b9db84753437d726baf34cfd",
-        "owner_input_projection_hash": "sha256:2917c079de4211c44ddaa45608fb384eec829de8c3b257226415f7f7dad5bca5",
+        "owner_input_projection_hash": "sha256:23cb580f943e26a1b905cbefd29a142222948c4c190e8dc5b20750212317cc14",
         "target_input_role_ids": []
       }
     ],
@@ -757,14 +757,14 @@
     "projection_consumers": [
       {
         "consumer_id": "projection:contract-compile",
-        "consumer_projection_hash": "sha256:ab0507d11cc2e0e34039d523f5fbdff30225d30ea0929e800e6e85dc56d5c626",
+        "consumer_projection_hash": "sha256:e5c0796012d840786aebb3d8a72436012cd9bc13ca2f4e8d5e9bbca1f3ee7ed0",
         "impact_plan_schema_version": "skillguard.content_impact_plan.current",
         "impact_policy_id": "skillguard.content_impact_policy.current",
         "input_component_ids": [
           "component:contract_schema:c479cd12027439fb",
           "component:documentation_model:0f3006af27638d20"
         ],
-        "input_projection_hash": "sha256:4623f2d1eca06b9f50c3932b347d195549749f85467d4ff668d1cfcad375dbaa",
+        "input_projection_hash": "sha256:7bca49bb6da876429f6fa90b1d80d060018e1e0a2cffc00b0d6b195e6b8a2bcb",
         "kind": "contract_compile",
         "projection_declaration_hash": "sha256:8ee8168aed01b468b0a93a22905087b7a4377576a13e0c2c9e690074c57ddb08"
       },
@@ -780,20 +780,20 @@
       },
       {
         "consumer_id": "projection:installation",
-        "consumer_projection_hash": "sha256:e7d56344505bdafc467ca0b60f48c50fa71f921c7920bcb7b668af227e760131",
+        "consumer_projection_hash": "sha256:5a3ca0e42ec9d85ece934be1fe75bcb8b2a176ef0e46cb6bbfd605e083e3c80c",
         "impact_plan_schema_version": "skillguard.content_impact_plan.current",
         "impact_policy_id": "skillguard.content_impact_policy.current",
         "input_component_ids": [
           "component:documentation_model:a551166724ac0e0e",
           "component:runtime_source:8eaabf96e832e663"
         ],
-        "input_projection_hash": "sha256:5d87593b839bed101757e8def85707417a0ec62d5215b753bf501e616b2a3b1e",
+        "input_projection_hash": "sha256:3de4716113f063f880089d2b583c64d9849019a6a04ae8d1e2b0ce3377d1fa4a",
         "kind": "installation",
         "projection_declaration_hash": "sha256:b8e4c36eb13588bc80aaf2b84e9cb1f06dfa251d67e3f63aab23f5345811d448"
       },
       {
         "consumer_id": "projection:kb-organization-contribute:target-runtime-sources",
-        "consumer_projection_hash": "sha256:f20d563a76851734492e0d77ffa5262ca7c4e020e4e15e9fe592975732640773",
+        "consumer_projection_hash": "sha256:200a6d4aaa0a4d5deeeceb62d45796cc4ec203f2a70f6f1b7ece4def71a40701",
         "impact_plan_schema_version": "skillguard.content_impact_plan.current",
         "impact_policy_id": "skillguard.content_impact_policy.current",
         "input_component_ids": [
@@ -801,19 +801,19 @@
           "component:runtime_source:55aaa5572316f643",
           "component:runtime_source:8eaabf96e832e663"
         ],
-        "input_projection_hash": "sha256:7ff07c0d72919cf11e26ad134c0825a411328edf11c0818f70332d72c6974f2a",
+        "input_projection_hash": "sha256:b20344f55ad4dc018b3adf8456ba15dbe00ee6866357982207789e001e803868",
         "kind": "target_runtime_source",
         "projection_declaration_hash": "sha256:3e43d371dc1d1c1436bad7d9e4a5b8c5ed8b47c6c0aa7e289d2d37c547a3117a"
       },
       {
         "consumer_id": "projection:kb-organization-contribute:target-tests",
-        "consumer_projection_hash": "sha256:f7980a6f38f908e4915bd4d56ac07d7d8472ee43dbe5aa7510d2cf23c7fd4f1e",
+        "consumer_projection_hash": "sha256:fa8f3fd7f6d33475541f04735b25be7ceb1bd79e7c2e5762a8941f4186216921",
         "impact_plan_schema_version": "skillguard.content_impact_plan.current",
         "impact_policy_id": "skillguard.content_impact_policy.current",
         "input_component_ids": [
           "component:test_dev:b6e84047a276ad2a"
         ],
-        "input_projection_hash": "sha256:5cd46e13c98b71e086e1185049095e9db571058e2f9077ff0e07c24410c1b05c",
+        "input_projection_hash": "sha256:5337768c494664852e99a6b955c87075ff128d96ac1f8b48dc3870f9b9c7039e",
         "kind": "target_test_source",
         "projection_declaration_hash": "sha256:8c4a0030b50c1a4a7df5a69b446255b123daaf9ba18ddd4dc879c09389ab2a7d"
       },
@@ -843,7 +843,7 @@
     "schema_version": "skillguard.content_impact_plan.current",
     "unknown_mapping_disposition": "block"
   },
-  "contract_hash": "89B1474268BC1DC3082FDD2A367990E711E6922B651CF87AFF73547E28136254",
+  "contract_hash": "2AE90AC90B638AB52B94F1686030DBF9FDB2E4DF72772F3E418DD9354663114A",
   "depth_profile": {
     "claim_boundary": "Only exact current receipts for the target skill's declared checks are supervised. The target skill retains all domain judgment, including positive/shallow behavior and direct native completion.",
     "enforcement_level": "enforced",
@@ -890,7 +890,7 @@
   "flowguard_schema_version": "1.0",
   "functions": [
     {
-      "business_intent": "Contribute only policy-eligible, privacy-safe, content-hash-bound organization knowledge.",
+      "business_intent": "Run as the unscheduled organization-cycle child and contribute only policy-eligible, privacy-safe, content-hash-bound current organization knowledge.",
       "function_id": "function:kb-organization-contribute:run",
       "owner_id": "kb-organization-contribute",
       "route_ids": [
@@ -1068,29 +1068,29 @@
   "skill_id": "kb-organization-contribute",
   "source_fingerprints": {
     "binding": "51FDED5712D26A4F2ED2D2F10688EA196D850ECB1A6058A0D5A67D8AC371DFEE",
-    "entrypoint": "80BE068902A00C4AACE3CE3F6C9BE8BEC34F299EBFFE6FF471A6C3BD6D257BAF",
-    "implementation:.agents/skills/kb-organization-contribute": "AEAE4FC633C813168B5D4D7D4186083A4A37B3FFD223510C61DBCF16C26E7494",
-    "implementation:.flowguard/kb_org_contribute_skill_contract_model.py": "B56CF0E29B133FDCECDC72914D1F9BC33F8611240E366187B740EBA4D1967BBC",
-    "implementation:local_kb/automation_contracts.py": "9B54F028861B518D9FFB6130C7B70DF834EF5C99E79F695260EA2E624BF544F3",
-    "implementation:local_kb/automation_runtime.py": "0B4F32D4CE0C772A955EF1DA45668CCA2D84DDCC7C41B66851461BB1E503B0A7",
-    "implementation:local_kb/install.py": "7AC3DD81105E58B3906891440765D039DCA75A3772F98DD4DE5BDDCFA1F1B35C",
-    "implementation:local_kb/org_automation.py": "0C295ECF92AB82AD0B9275EB7DB94AE445742677FE759D500FC8AB09E1858295",
-    "implementation:local_kb/org_outbox.py": "A7E260ED6237303C1C27C17FAD2E46BCBE5933BAC05C60A7AAA0D624C22BCC86",
+    "entrypoint": "04174B29B257D680C0BB9D7D145250B540C3A63FEF16747B1699C258CAC6957B",
+    "implementation:.agents/skills/kb-organization-contribute": "1DD871DE71C8FB19207F2D1B5ACEC35E159413D20D93DAB33682FADA400312F2",
+    "implementation:.flowguard/kb_org_contribute_skill_contract_model.py": "DA1411BC1076C5B867801C25E5072B5B841C363C976B6DCE2F403BD6651B1413",
+    "implementation:local_kb/automation_contracts.py": "762E97B264964380DB7B651504B1B365013A6B74855BE391A6BE084E964CF6EB",
+    "implementation:local_kb/automation_runtime.py": "A598F88EBF168537E40311568994F7EA206AB6A3781CA9F5A2DEB455B154E866",
+    "implementation:local_kb/install.py": "CB0C16E46A538C97D01ABE72A7F5FF123228869A8043737FC6E845D8BF963D04",
+    "implementation:local_kb/org_automation.py": "2D51BF6B43E344C3F475B0B583D1AEFDCB6776DDCD6A014DF587C9BAEF521FF2",
+    "implementation:local_kb/org_outbox.py": "AAD8F005648F6DC4257B0E98579FFB5B4A5B9CD8197536AE61604D49A24DDE26",
     "implementation:local_kb/process_control.py": "2B29B195BBF85C3501A0D3C9E2DEF3976D7C3090F3D7178894C4F17C52AD0C06",
     "implementation:scripts/build_kb_automation_skillguard_contracts.py": "6CC892A7F1F2E39F076EAF7A01CDBCFBE2295527D633CECE85C2AD841F7300AE",
     "implementation:scripts/check_kb_automation_run_receipt.py": "9BE3AE789E2EFE3F5081364380614F668600E35879250CDDF7A831217D73E6DC",
     "implementation:scripts/check_kb_skillguard.py": "695981E396957D976ACEA1A357DDB8F5091B6AFCEC7CF116DC9E2E7357853378",
     "implementation:scripts/kb_org_outbox.py": "5702433B13F8A9FFAD6A012B10AA4BF17253DF8D7D0D95AD2E45C938CDDFC9B7",
-    "implementation:scripts/run_kb_automation.py": "1C3E77F3A49D1F8C9956B104F316BA5C1E7EF9263730BB53AA45704F30574841",
-    "implementation:tests/test_e2e_skill_bundle_contribution_flow.py": "9E2601C1356106A19074F14C41DA89D34F251B0BF0EF9995522342560F341141",
+    "implementation:scripts/run_kb_automation.py": "55314AD338BC691BDED146CBCB9592A9A15689F8BE1BE62582851DC4B410C161",
+    "implementation:tests/test_e2e_skill_bundle_contribution_flow.py": "FAF00EA2637D13E9B9AB77A9B1420060F05116E2D5269397EB36B52D3F95F61F",
     "implementation:tests/test_github_repo_config.py": "E33C16DEB1C7166120A874B054D2CFC8ACC806F50E5941EB9801BE7DE85D3223",
     "implementation:tests/test_kb_automation_skillguard.py": "873D112C95DA27BD864663EA9D00BB97182B99D491AD08355CD8D3D84787679A",
-    "implementation:tests/test_org_automation.py": "728407C5C802EF82A6D0A50DB2B7285849F385F316EB47C4883BFE1C6BC6B0E7",
-    "implementation:tests/test_org_checks.py": "228DDB965593DF007EAAE56517114D9D1BBFD67C515C03F8399A6B2B69CE2E95",
-    "implementation:tests/test_org_outbox.py": "F82ADEE9AC7FD337C841CE37DEE4A7CDB3006AA6353BBF0EA178524B338BF3CF",
+    "implementation:tests/test_org_automation.py": "0FE7AABAA811AA6DBBAD182D6744DE2FF50B810515CE661B8E6DF23F20A5A485",
+    "implementation:tests/test_org_checks.py": "D33130B51B9C96F0EC92F8E7B90BA6E7440FC1ED61D86BED5F7F9E39CC6BAB76",
+    "implementation:tests/test_org_outbox.py": "3B114F402E6F05E882B83F53365FAC54604093DD7B54591A15C1E07CD7A5AF50",
     "implementation:tests/test_skill_sharing.py": "0A96591C3168A3ABD8BA92680F743910BEBD09166ADC1C60376ED492AE25E094",
-    "model": "B56CF0E29B133FDCECDC72914D1F9BC33F8611240E366187B740EBA4D1967BBC",
-    "model_export": "8D68AA69A6789B3FEAB8003D7F7CDD6EB5787BA4E898980C113EA2C4FF645D4B"
+    "model": "DA1411BC1076C5B867801C25E5072B5B841C363C976B6DCE2F403BD6651B1413",
+    "model_export": "9DED05B6A31B6553A1AFB3A6268D9755B0D9A8361A0D0C103F3E248376EE7ED7"
   },
   "steps": [
     {

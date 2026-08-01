@@ -24,12 +24,12 @@ def _enable_windows_dpi_awareness() -> None:
 _enable_windows_dpi_awareness()
 
 import tkinter as tk
-from tkinter import font as tkfont, ttk
+from tkinter import font as tkfont, messagebox, ttk
 
 from PIL import Image, ImageDraw, ImageFilter, ImageTk
 
-from local_kb.adoption import record_organization_use_by_source_info
 from local_kb.common import normalize_text
+from local_kb.lifecycle import record_retrieval_interaction
 from local_kb.i18n import (
     DEFAULT_LANGUAGE,
     ZH_CN,
@@ -2410,6 +2410,7 @@ class KbDesktopApp(tk.Tk):
                 return
         self._card_selected_by_user = True
         summary = self.deck[self.selected_index]
+        self._record_detail_interaction(summary, "selected")
         summary_source = summary.get("source_info") if isinstance(summary.get("source_info"), dict) else None
         if (summary_source or {}).get("kind") == "organization":
             detail = build_card_detail_payload(
@@ -2422,15 +2423,7 @@ class KbDesktopApp(tk.Tk):
             )
             if detail is not None:
                 self._open_detail_window({**detail, "route_reason": summary.get("route_reason")})
-                try:
-                    record_organization_use_by_source_info(
-                        self.repo_root,
-                        str(summary.get("id")),
-                        self._active_organization_sources(),
-                        source_info=summary_source,
-                    )
-                except Exception:
-                    pass
+                self._record_detail_interaction(summary, "viewed")
                 return
         detail = build_card_detail_payload(
             self.repo_root,
@@ -2443,6 +2436,41 @@ class KbDesktopApp(tk.Tk):
         if detail is None:
             return
         self._open_detail_window({**detail, "route_reason": summary.get("route_reason")})
+        self._record_detail_interaction(summary, "viewed")
+
+    def _record_detail_interaction(
+        self,
+        summary: dict[str, Any],
+        interaction: str,
+    ) -> None:
+        request_id = str(summary.get("retrieval_request_id") or "").strip()
+        result_ref = str(summary.get("result_ref") or "").strip()
+        if not request_id and not result_ref:
+            return
+        if not request_id or not result_ref:
+            messagebox.showwarning(
+                "KB interaction",
+                "This card is missing its exact retrieval identity. Please search again.",
+                parent=self,
+            )
+            return
+        event_id = f"desktop:{request_id}:{result_ref}:{interaction}"
+        try:
+            record_retrieval_interaction(
+                self.repo_root,
+                request_id=request_id,
+                result_refs=[result_ref],
+                interaction=interaction,
+                event_id=event_id,
+                actor="desktop-app",
+                context={"card_id": str(summary.get("id") or "")},
+            )
+        except (OSError, RuntimeError, ValueError) as exc:
+            messagebox.showwarning(
+                "KB interaction",
+                f"Could not record {interaction}: {type(exc).__name__}: {exc}",
+                parent=self,
+            )
 
     def _open_detail_window(self, card: dict[str, Any]) -> None:
         u = self._u

@@ -15,19 +15,23 @@ The retrieval system SHALL generate results only from the current active-knowled
 - **THEN** the retrieval system MUST exclude it before results are returned
 
 ### Requirement: Local authority and read-only organization visibility remain distinct
-The system SHALL treat candidate lifecycle authority and candidate source visibility as separate dimensions. An ineligible local candidate MUST NOT enter predictive retrieval. A read-only organization candidate MAY be returned by an organization-source search only as explicitly untrusted, read-only input for adoption or automated validation, and MUST NOT thereby enter the local active index, gain local retrieval eligibility, or receive trusted authority. Organization-source reads MUST use only the strict current schema-version-1 manifest with the `kb/main` surface; old `kb/trusted` and `kb/candidates` roots and retired manifest fields MUST be migrated before the source can participate.
+The system SHALL treat local lifecycle authority and organization-source visibility as separate dimensions. An ineligible local candidate MUST NOT enter predictive retrieval. Organization maintenance SHALL prefetch the complete active organization card set and each card's validated portable LogicGuard bundle into one immutable local snapshot. Ordinary retrieval MAY globally rank and directly use a matching organization card from that snapshot as foreign read-only context, but snapshot presence, viewing, selection, use, or outcome recording MUST NOT copy the card into local authority, publish a local model, install a Skill, or transfer local eligibility or confidence. Organization-source reads MUST use only the strict current schema-version-2 catalog/bundle contract; retired manifests, layouts, and adoption metadata are direct-upgrade input only and MUST have zero normal-runtime reader authority.
 
 #### Scenario: Read-only organization candidate is visible but not authoritative
-- **WHEN** an organization-source search strongly matches a candidate that has no local retrieval eligibility
-- **THEN** the result MAY be returned with `untrusted-candidate` and read-only source labels, but it MUST NOT be present in the local active index
+- **WHEN** unified retrieval strongly matches a candidate in the current immutable organization snapshot
+- **THEN** the result MAY be returned with its organization source, generation, revision, LogicGuard binding, and untrusted read-only status, but it MUST NOT be present in the local active index
 
 #### Scenario: Equivalent local candidate remains hidden
 - **WHEN** an ineligible local candidate matches the same query as a visible read-only organization candidate
 - **THEN** the local candidate MUST be excluded and the organization result MUST NOT transfer eligibility or confidence to it
 
-#### Scenario: Organization candidate is adopted
-- **WHEN** automated validation accepts a read-only organization candidate for local adoption
-- **THEN** the adopted local identity MUST enter the normal local lifecycle and remain ineligible until its own explicit local evidence gate passes
+#### Scenario: Foreign use becomes Sleep calibration evidence
+- **WHEN** a task actually uses an organization card and later records an exact outcome for that source-qualified result
+- **THEN** Sleep MAY reinforce, dampen, suppress, or create a separate local candidate through the normal local lifecycle, but the foreign card itself MUST remain organization-owned and unchanged
+
+#### Scenario: Organization snapshot is unavailable
+- **WHEN** the current organization snapshot is missing, stale beyond policy, or fails bundle validation
+- **THEN** local retrieval MUST remain available, organization context MUST be reported as unavailable, and task-time retrieval MUST NOT download, translate, adopt, or fall back to a retired organization source
 
 ### Requirement: Rejected and superseded knowledge has zero retrieval exposure
 The system SHALL return zero `rejected` and zero `superseded` records in every user-facing and machine-facing Top-K result. This invariant MUST hold when the query exactly matches the record identifier or title or a related card points to it. A stale index MUST be rejected before serving any query and MUST NOT trigger an alternate result-producing code path.
@@ -118,6 +122,13 @@ The retrieval regression suite SHALL contain versioned cases for useful-card que
 ### Requirement: Foreground retrieval uses a compact fail-closed authority snapshot
 Routine retrieval SHALL validate the generated index, its activation receipt, and only the source records that can actually be returned. It MUST NOT rescan every inactive card or replay the complete lifecycle event log on each query. Within one process it MAY reuse only a successful exact indexed-source and LogicGuard projection validation whose key binds the repository root, active-index generation and content digest, invalidation token, active authority digest, current LogicGuard generation pointer digest, and raw content digest of every indexed source. Each query MUST compare indexed-source content signatures before and after its snapshot. A changed source, index, authority, LogicGuard generation, or invalidation token MUST force exact revalidation or visible failure; failed validation MUST NOT be cached. Observation-only events SHALL NOT invalidate entry eligibility. Before any lifecycle event that can change entry eligibility is committed, the writer MUST durably invalidate the active authority; a validated rebuild is the only operation permitted to reactivate it. Full manifest and lifecycle replay SHALL remain mandatory for rebuild, Sleep, migration, and aggregate audit rather than foreground query latency.
 
+Foreign-card calibration SHALL follow the same foreground boundary. A local-only query
+MUST read no foreign-calibration state. A query with eligible organization results MAY
+read only the compact current foreign-calibration projection published by Sleep or the
+versioned upgrade. That projection MUST bind its digest, lifecycle event count, last
+sequence, and event-file identity; a missing, malformed, or stale projection MUST fail
+foreign retrieval visibly without replay, repair, or an uncalibrated fallback.
+
 #### Scenario: Observation intake does not stale entry authority
 - **WHEN** another AI records a new observation without changing any card lifecycle state
 - **THEN** the current index generation MUST remain queryable through the compact authority path without a full manifest scan or lifecycle replay
@@ -134,6 +145,14 @@ Routine retrieval SHALL validate the generated index, its activation receipt, an
 - **WHEN** repeated foreground queries observe the same active-index, authority, LogicGuard generation, invalidation, and indexed-source identities
 - **THEN** the process MAY reuse the prior successful exact validation without reparsing the same immutable LogicGuard meshes
 - **AND** any identity or source-content drift MUST bypass that result and run exact validation again without a fallback reader
+
+#### Scenario: Local-only retrieval has no foreign calibration work
+- **WHEN** the globally ranked candidate set contains no organization entry
+- **THEN** the query MUST NOT load a lifecycle projection or replay lifecycle history
+
+#### Scenario: Foreign calibration projection loses currentness
+- **WHEN** its source event count, last sequence, event-file size, event-file timestamp, or projection digest differs from current authority
+- **THEN** organization retrieval MUST fail visibly and only Sleep or the versioned upgrade MAY repair the projection
 
 ### Requirement: Indexed retrieval meets the P95 latency budget
 The active-index query path SHALL complete with P95 latency below 1.0 second on the declared representative real-corpus benchmark and reference environment. The measurement MUST include route selection, active-status filtering, lexical scoring, confidence and trust reranking, related-card eligibility checks, and result serialization; it MUST exclude index construction but report index age and generation. The benchmark MUST run enough queries to calculate P95, publish raw timing evidence and the corpus digest, and distinguish cold-start, warm-query, rebuild, skipped, and failed measurements. A missing, stale, skipped, or environment-incomparable result MUST NOT be reported as passing.

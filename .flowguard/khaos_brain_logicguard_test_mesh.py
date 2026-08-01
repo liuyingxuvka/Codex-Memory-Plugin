@@ -9,6 +9,7 @@ production implementation begins.
 from __future__ import annotations
 
 import json
+import hashlib
 from dataclasses import replace
 
 from flowguard.testmesh import (
@@ -23,9 +24,9 @@ from khaos_brain_logicguard_model_test_alignment import BINDINGS
 
 
 PARENT_SUITE_ID = "suite:khaos-logicguard-native:parent"
-INVENTORY_REVISION = "khaos-logicguard-native-inventory-v5-organization-snapshot-cycles"
+INVENTORY_REVISION = "khaos-logicguard-native-inventory-v6-terminal-evidence"
 RECEIPT_ROOT = ".local/verification/khaos-logicguard-native"
-FINAL_COMMAND = "python scripts/check_khaos_logicguard_native_readiness.py --json"
+TERMINAL_CONSUMER_COMMAND = "python scripts/check_kb_model_test_alignment.py --evidence-manifest <frozen-manifest> --json"
 RESUMABLE_SLEEP_OBLIGATION_IDS = (
     "req.maintenance.resumable-batch",
     "req.maintenance.item-checkpoint",
@@ -100,17 +101,24 @@ SUITE_SPECS = (
     ),
     (
         "suite:organization-snapshot-cycles",
-        "python -m pytest -q tests/test_org_snapshot.py tests/test_multi_source_search.py tests/test_organization_adoption.py tests/test_e2e_multi_source_browsing.py tests/test_cli_output_contract.py tests/test_local_maintenance_cycle.py tests/test_organization_cycle.py",
+        "python -m pytest -q tests/test_org_sources.py tests/test_org_snapshot.py tests/test_org_maintenance.py tests/test_org_cleanup.py tests/test_org_outbox.py tests/test_multi_source_search.py tests/test_organization_adoption.py tests/test_e2e_multi_source_browsing.py tests/test_cli_output_contract.py tests/test_kb_retrieval_calibration.py tests/test_maintenance_lanes.py tests/test_current_automation_runtime.py tests/test_local_maintenance_cycle.py tests/test_organization_cycle.py tests/test_kb_operator_activation.py",
         (
             "req.organization.snapshot-bundle",
             "req.organization.legacy-upgrade",
             "req.organization.foreign-reader",
             "req.organization.snapshot-retrieval",
+            "req.organization.current-source",
+            "req.organization.interaction",
             "req.organization.feedback-token",
+            "req.organization.sleep-calibration",
+            "req.organization.merge-split",
             "req.organization.ui-detail",
             "req.organization.cli-surface",
             "req.maintenance.local-cycle",
             "req.maintenance.organization-cycle",
+            "req.maintenance.global-writer",
+            "req.maintenance.receipt-v3",
+            "req.assurance.execution-classification",
         ),
         1800,
         ("organization_snapshot_cycle_test_state",),
@@ -154,12 +162,12 @@ SUITE_SPECS = (
         ("release_gate_contract_receipt",),
     ),
     (
-        "suite:final-aggregate-owner",
-        FINAL_COMMAND,
-        ("req.assurance.execution-owner", "inventory.final-aggregate-receipt"),
-        7200,
-        ("final_aggregate_execution_state",),
-        ("final_aggregate_execution", "final_parent_receipt"),
+        "suite:terminal-evidence-consumer",
+        TERMINAL_CONSUMER_COMMAND,
+        ("req.assurance.execution-owner",),
+        300,
+        ("terminal_evidence_consumption_state",),
+        ("terminal_alignment_receipt", "terminal_test_mesh_receipt"),
     ),
 )
 
@@ -173,7 +181,7 @@ DEPENDENCIES = {
     "suite:surface-skillguard": ("suite:model-authority-projection", "suite:sleep-dream", "suite:retrieval-ui-performance", "suite:migration-installer"),
     "suite:existing-khaos-regressions": ("suite:model-authority-projection", "suite:sleep-dream", "suite:retrieval-ui-performance", "suite:migration-installer"),
     "suite:release-gate-contract": (),
-    "suite:final-aggregate-owner": (
+    "suite:terminal-evidence-consumer": (
         "suite:flowguard-assurance",
         "suite:model-authority-projection",
         "suite:sleep-dream",
@@ -224,13 +232,16 @@ STRUCTURAL_BLOCKER_CODES = {
     "missing_target_split_rationale",
     "duplicate_state_owner",
     "duplicate_side_effect_owner",
+    "coverage_inventory_id_missing",
+    "coverage_inventory_revision_missing",
+    "coverage_inventory_fingerprint_missing",
+    "coverage_inventory_evidence_missing",
 }
 
 
 def required_inventory_ids() -> tuple[str, ...]:
     return tuple(obligation_id for obligation_id, *_rest in BINDINGS) + RESUMABLE_SLEEP_OBLIGATION_IDS + (
         "inventory.existing-khaos-regressions",
-        "inventory.final-aggregate-receipt",
     )
 
 
@@ -294,6 +305,9 @@ def build_plan() -> TestMeshPlan:
         )
         for suite_id, command, item_ids, timeout, state, effects in SUITE_SPECS
     )
+    inventory_fingerprint = "sha256:" + hashlib.sha256(
+        json.dumps(inventory, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
     return TestMeshPlan(
         parent_suite_id=PARENT_SUITE_ID,
         partition_items=partitions,
@@ -317,6 +331,16 @@ def build_plan() -> TestMeshPlan:
         decision_scope="release",
         release_deferred_allowed=False,
         inventory_revision=INVENTORY_REVISION,
+        coverage_inventory_id="inventory:khaos-logicguard-native:required-tests",
+        coverage_inventory_revision=INVENTORY_REVISION,
+        coverage_inventory_fingerprint=inventory_fingerprint,
+        coverage_inventory_evidence_ids=(
+            "evidence:openspec-and-model-test-binding-inventory:current",
+        ),
+        planning_context_ids=(
+            "openspec:make-khaos-brain-logicguard-native",
+            "flowguard:khaos_brain_logicguard_model_test_alignment",
+        ),
         required_inventory_item_ids=inventory,
         require_complete_inventory=True,
         require_final_receipts=True,
@@ -326,20 +350,20 @@ def build_plan() -> TestMeshPlan:
 def build_known_bad_plan() -> TestMeshPlan:
     current = build_plan()
     duplicate_final = TestSuiteEvidence(
-        suite_id="suite:parallel-final-aggregate-owner",
-        command=FINAL_COMMAND,
+        suite_id="suite:parallel-terminal-evidence-consumer",
+        command=TERMINAL_CONSUMER_COMMAND,
         result_status="not_run",
         evidence_tier="candidate_only",
         timeout_seconds=7200,
-        owns_state=("parallel_final_state",),
-        owns_side_effects=("final_aggregate_execution",),
-        not_run_reason="Known bad: a second owner attempts to run the same final aggregate.",
+        owns_state=("parallel_terminal_consumer_state",),
+        owns_side_effects=("terminal_alignment_receipt",),
+        not_run_reason="Known bad: a second owner attempts to publish the same terminal alignment receipt.",
         inventory_revision=INVENTORY_REVISION,
     )
     derivation = replace(
         current.target_split_derivation,
         target_suite_ids=(*current.target_split_derivation.target_suite_ids, duplicate_final.suite_id),
-        state_owner_fields=(*current.target_split_derivation.state_owner_fields, "parallel_final_state"),
+        state_owner_fields=(*current.target_split_derivation.state_owner_fields, "parallel_terminal_consumer_state"),
     )
     return replace(current, child_suites=(*current.child_suites, duplicate_final), target_split_derivation=derivation)
 
@@ -374,7 +398,10 @@ def main() -> int:
     known_bad = review_test_mesh(build_known_bad_plan())
     current_codes = {finding.code for finding in current.findings}
     known_bad_codes = {finding.code for finding in known_bad.findings}
-    final_owners = tuple(suite for suite in current_plan.child_suites if suite.command == FINAL_COMMAND)
+    terminal_consumers = tuple(
+        suite for suite in current_plan.child_suites
+        if suite.command == TERMINAL_CONSUMER_COMMAND
+    )
     payload = {
         "artifact_type": "khaos_brain_logicguard_native_frozen_test_mesh",
         "planning_state": "frozen_not_run",
@@ -384,18 +411,18 @@ def main() -> int:
         "dependencies": {key: list(value) for key, value in DEPENDENCIES.items()},
         "current": current.to_dict(),
         "known_bad": known_bad.to_dict(),
-        "final_execution_owner": final_owners[0].suite_id if len(final_owners) == 1 else "",
-        "final_command": FINAL_COMMAND,
+        "terminal_evidence_consumer": terminal_consumers[0].suite_id if len(terminal_consumers) == 1 else "",
+        "terminal_consumer_command": TERMINAL_CONSUMER_COMMAND,
         "ok": (
             len(current_plan.required_inventory_item_ids) == len(owner_by_item())
             and not (current_codes & STRUCTURAL_BLOCKER_CODES)
-            and len(final_owners) == 1
+            and len(terminal_consumers) == 1
             and dependency_graph_is_closed()
             and "duplicate_side_effect_owner" in known_bad_codes
         ),
         "claim_boundary": (
             "This artifact freezes a complete disjoint inventory, DAG, timeouts, freshness selectors, receipt root, "
-            "and exactly one final aggregate command. Its release decision remains blocked because every suite is "
+            "and exactly one post-execution terminal evidence consumer. The aggregate runner is the parent owner, not its own child. Its release decision remains blocked because every suite is "
             "explicitly not run; no planned receipt is represented as current terminal evidence."
         ),
     }

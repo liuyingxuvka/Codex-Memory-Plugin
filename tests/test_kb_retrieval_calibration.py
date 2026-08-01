@@ -16,11 +16,13 @@ from local_kb.active_index import (
     validate_active_index,
     validate_active_index_fast,
 )
-from local_kb.calibration import calibrate_entry
+from local_kb.calibration import calibrate_entry, plan_foreign_calibration
 from local_kb.lifecycle import (
+    OUTCOME_RECEIPT_SCHEMA,
     commit_lifecycle_event,
     load_lifecycle_state,
     record_outcome_receipt,
+    record_retrieval_interaction,
     transition_entry,
 )
 from local_kb.maintenance_standard import (
@@ -130,10 +132,19 @@ class KbRetrievalCalibrationTests(unittest.TestCase):
                 repo_root,
                 query="migration checkpoint guidance",
             )
+            result_ref = retrieval["returned_results"][0]["result_ref"]
+            record_retrieval_interaction(
+                repo_root,
+                request_id=retrieval["request_id"],
+                result_refs=[result_ref],
+                interaction="used",
+                event_id="test:trusted-contradiction:used",
+                actor="pytest",
+            )
             record_outcome_receipt(
                 repo_root,
                 request_id=retrieval["request_id"],
-                used_entry_ids=[entry_id],
+                used_result_refs=[result_ref],
                 outcome="misleading",
                 evidence_kind="test",
                 evidence_ref="pytest:verified-regression",
@@ -313,12 +324,21 @@ class KbRetrievalCalibrationTests(unittest.TestCase):
             write_yaml_file(repo_root / "kb" / "public" / "card.yaml", card("card-1", "trusted"))
             publish_current_cards(repo_root, reason="test")
             _entries, retrieval = search_with_receipt(repo_root, query="migration checkpoint")
+            result_ref = retrieval["returned_results"][0]["result_ref"]
+            record_retrieval_interaction(
+                repo_root,
+                request_id=retrieval["request_id"],
+                result_refs=[result_ref],
+                interaction="used",
+                event_id="test:outcome-validation:used",
+                actor="pytest",
+            )
 
             with self.assertRaises(ValueError):
                 record_outcome_receipt(
                     repo_root,
                     request_id=retrieval["request_id"],
-                    used_entry_ids=["not-returned"],
+                    used_result_refs=["result:not-returned"],
                     outcome="success",
                     evidence_kind="test",
                     evidence_ref="test::1",
@@ -328,7 +348,7 @@ class KbRetrievalCalibrationTests(unittest.TestCase):
                 record_outcome_receipt(
                     repo_root,
                     request_id=retrieval["request_id"],
-                    used_entry_ids=["card-1"],
+                    used_result_refs=[result_ref],
                     outcome="success",
                     evidence_kind="test",
                     verified=True,
@@ -336,13 +356,61 @@ class KbRetrievalCalibrationTests(unittest.TestCase):
             receipt = record_outcome_receipt(
                 repo_root,
                 request_id=retrieval["request_id"],
-                used_entry_ids=["card-1"],
+                used_result_refs=[result_ref],
                 outcome="success",
                 evidence_kind="test",
                 evidence_ref="pytest:test_case",
                 verified=True,
             )
             self.assertEqual(receipt["evidence_grade"], "strong")
+            self.assertEqual(receipt["schema_version"], OUTCOME_RECEIPT_SCHEMA)
+            self.assertEqual(receipt["used_result_refs"], [result_ref])
+            self.assertEqual(receipt["used_results"][0]["entry_id"], "card-1")
+
+    def test_foreign_calibration_is_local_and_source_qualified(self) -> None:
+        observation = {
+            "event_id": "foreign-outcome:test",
+            "event_type": "observation",
+            "source": {"kind": "verified-test"},
+            "target": {
+                "kind": "foreign-knowledge-outcome",
+                "retrieval_results": [
+                    {
+                        "knowledge_ref": "knowledge:org-card",
+                        "result_ref": "result:org-card-v7",
+                        "source_kind": "organization",
+                        "source_id": "sandbox",
+                        "entry_id": "shared-card",
+                    }
+                ],
+            },
+            "context": {
+                "outcome": "misleading",
+                "outcome_id": "outcome:test",
+                "verified": True,
+            },
+        }
+        plan = plan_foreign_calibration(observation)
+
+        self.assertEqual(plan[0]["knowledge_ref"], "knowledge:org-card")
+        self.assertEqual(plan[0]["disposition"], "suppress")
+        self.assertFalse(plan[0]["retrieval_eligible"])
+        self.assertEqual(plan[0]["source_id"], "sandbox")
+
+        observation["source"] = {"kind": "organization-use"}
+        observation["context"] = {
+            "outcome": "success",
+            "outcome_id": "outcome:localized",
+            "suggested_action": "new-candidate",
+            "predictive_observation": {
+                "scenario": "The foreign rule matched a local deployment.",
+                "action_taken": "Applied it with a local boundary.",
+                "observed_result": "The deployment completed without duplication.",
+            },
+        }
+        localized = plan_foreign_calibration(observation)
+        self.assertEqual(localized[0]["disposition"], "localize_candidate")
+        self.assertTrue(localized[0]["candidate_eligible"])
 
     def test_no_card_is_preserved_as_first_class_result(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:

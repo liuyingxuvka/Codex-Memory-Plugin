@@ -1,8 +1,9 @@
 """Target-specific completion contracts for Chaos Brain maintenance Skills.
 
-Four scheduled prompts select their native Skills; the update Skill is selected
-only by an explicit user request in the current conversation. Neither entry
-surface is completion evidence. These records bind each route to its
+Two scheduled prompts select the local and organization cycle owners. Dream
+and organization contribution remain target-owned composite children, while
+the update Skill is selected only by an explicit user request in the current
+conversation. Neither entry surface is completion evidence. These records bind each route to its
 target-owned obligations, native entrypoint, regression evidence, and
 fail-closed SkillGuard depth profile used by release assurance.
 """
@@ -64,7 +65,7 @@ def _obligation(
 AUTOMATION_COMPLETION_CONTRACTS: dict[str, dict[str, Any]] = {
     "kb-sleep-maintenance": {
         "automation_id": "kb-sleep",
-        "execution_kind": "scheduled-automation",
+        "execution_kind": "scheduled",
         "entrypoint_path": ".agents/skills/local-kb-retrieve/scripts/kb_sleep.py",
         "native_test_files": [
             "tests/test_kb_automation_native_receipts.py",
@@ -89,7 +90,7 @@ AUTOMATION_COMPLETION_CONTRACTS: dict[str, dict[str, Any]] = {
             "previous_remaining",
             "closing_remaining",
             "convergence_status",
-            "organization cycle as not_run",
+            "records only Dream as not_run",
             "explicit disposition",
             "executable reopen conditions",
             "promotion or downgrade review",
@@ -114,14 +115,14 @@ AUTOMATION_COMPLETION_CONTRACTS: dict[str, dict[str, Any]] = {
             _obligation("atomic-model-generation", "verify", "closure", "Publish the complete model, mesh, deterministic projection, active index, generation manifest, and pointer as one rollbackable generation with the pointer last.", "test_committed_generation_keeps_prior_active_index_until_final_owner", "test_failed_index_publication_restores_prior_generation_and_projection", "test_foreground_reads_pointer_bound_immutable_artifact_not_mutable_yaml"),
             _obligation("index-watermark-commit", "verify", "closure", "Publish a validated active index and advance the watermark only after durable success.", "test_second_sleep_is_bounded_noop_without_duplicate_events", "test_active_index_excludes_terminal_states_and_serializes_dates"),
             _obligation("remaining-reconciliation", "verify", "validation", "Reconcile previous, newly eligible, opening, settled, closing, and net-reduction counts under one versioned rule.", "test_target_is_twice_new_items_clamped_to_tested_bounds", "test_next_cycle_compares_closing_remainder_and_reports_growth", "test_sleep_progress_saved_receipt_rejects_remaining_mismatch"),
-            _obligation("downstream-not-run", "verify", "branch", "On progress_saved, completed-with-blocks, failed, open-batch, or backlog-growing outcomes, prove Dream and both organization descendants were not run.", "test_soft_stop_preserves_generation_and_resumes_only_pending_frozen_items", "test_blocked_item_does_not_prevent_completed_siblings_from_publishing", "test_sleep_progress_saved_receipt_rejects_downstream_stage_that_ran"),
-            _obligation("failure-fail-closed", "verify", "recovery", "Keep the committed watermark and prior validated generation unchanged on progress_saved or failure, isolate malformed siblings without replaying completed work, and never infer hard-timeout success.", "test_malformed_history_is_isolated_without_advancing_watermark", "test_sleep_progress_saved_receipt_binds_frozen_batch_and_not_run_descendants"),
+            _obligation("downstream-not-run", "verify", "branch", "On progress_saved, completed-with-blocks, failed, open-batch, or backlog-growing outcomes, prove only the local Dream phase was not run; the independent organization cycle remains untouched.", "test_soft_stop_preserves_generation_and_resumes_only_pending_frozen_items", "test_blocked_item_does_not_prevent_completed_siblings_from_publishing", "test_sleep_progress_saved_receipt_rejects_downstream_stage_that_ran", "test_sleep_downstream_gate_is_local_only"),
+            _obligation("failure-fail-closed", "verify", "recovery", "Keep the committed watermark and prior validated generation unchanged on progress_saved or failure, isolate malformed siblings without replaying completed work, and never infer hard-timeout success.", "test_malformed_history_is_isolated_without_advancing_watermark", "test_sleep_progress_saved_receipt_binds_frozen_batch_and_local_dream_gate"),
             _obligation("depth-calibration", "verify", "validation", "Reject shallow proposal-only completion and require the full native receipt.", "test_sleep_contract_is_deep_and_current", "test_sleep_shallow_contract_is_rejected"),
         ],
     },
     "kb-dream-pass": {
-        "automation_id": "kb-dream",
-        "execution_kind": "scheduled-automation",
+        "automation_id": "",
+        "execution_kind": "composite-child",
         "entrypoint_path": ".agents/skills/local-kb-retrieve/scripts/kb_dream.py",
         "native_test_files": [
             "tests/test_kb_dream.py",
@@ -154,8 +155,8 @@ AUTOMATION_COMPLETION_CONTRACTS: dict[str, dict[str, Any]] = {
         ],
     },
     "kb-organization-contribute": {
-        "automation_id": "kb-org-contribute",
-        "execution_kind": "scheduled-automation",
+        "automation_id": "",
+        "execution_kind": "composite-child",
         "entrypoint_path": "scripts/kb_org_outbox.py",
         "native_test_files": [
             "tests/test_org_automation.py",
@@ -178,7 +179,7 @@ AUTOMATION_COMPLETION_CONTRACTS: dict[str, dict[str, Any]] = {
             _obligation("settings-noop-gate", "intake", "input", "Treat missing or invalid organization settings as a receipt-backed successful no-op.", "test_contribution_noops_without_valid_organization_settings", "test_automation_scripts_noop_successfully_without_settings"),
             _obligation("sync-preflight", "intake", "route", "Sync the validated organization mirror and run organization preflight before export.", "test_contribution_syncs_and_uploads_created_outbox_to_import_branch"),
             _obligation("privacy-shareability", "execute", "scope", "Export only shareable public models and exclude private or machine-specific material before any branch or push.", "test_outbox_blocks_machine_specific_payloads_before_materialization", "test_contribution_blocks_machine_specific_public_payload_before_branch"),
-            _obligation("content-hash-dedup", "execute", "reuse", "Block every previously exchanged or currently present content hash.", "test_contribution_ignores_stale_outbox_when_hash_exists_in_organization", "test_outbox_skips_hashes_previously_downloaded_from_organization"),
+            _obligation("content-hash-dedup", "execute", "reuse", "Block every previously exchanged or currently present content hash.", "test_contribution_ignores_stale_outbox_when_hash_exists_in_organization", "test_outbox_skips_hashes_already_exported_or_present_in_organization"),
             _obligation("skill-bundle-author-version", "execute", "semantic", "Bundle dependent Skills with hash, author, version, and original-author update policy.", "test_contribution_skill_bundle_receipt_preserves_author_version_hash_policy", "test_dependency_manifest_builds_card_bound_skill_bundle_metadata", "test_latest_skill_bundle_version_is_selected_by_version_time"),
             _obligation("branch-pr-auto-merge", "execute", "side_effect", "Use the import branch, push/PR path, and auto-merge label only when checks allow.", "test_contribution_pr_and_label_are_check_gated", "test_create_pull_request_posts_pr_then_labels"),
             _obligation("postflight-terminal", "verify", "closure", "Record postflight and return a complete created/skipped/error receipt.", "test_contribution_records_postflight_on_non_skipped_success"),
@@ -188,7 +189,7 @@ AUTOMATION_COMPLETION_CONTRACTS: dict[str, dict[str, Any]] = {
     },
     "kb-organization-maintenance": {
         "automation_id": "kb-org-maintenance",
-        "execution_kind": "scheduled-automation",
+        "execution_kind": "scheduled",
         "entrypoint_path": "scripts/kb_org_maintainer.py",
         "native_test_files": [
             "tests/test_org_automation.py",
@@ -204,7 +205,7 @@ AUTOMATION_COMPLETION_CONTRACTS: dict[str, dict[str, Any]] = {
             "similar-card merge checkpoint",
             "overloaded-card split checkpoint",
             "Skill safety checkpoint",
-            "exact selected action ids",
+            "exact selected packet ids",
             "post-apply organization check",
             "GitHub merge-readiness checkpoint",
         ],
@@ -212,11 +213,11 @@ AUTOMATION_COMPLETION_CONTRACTS: dict[str, dict[str, Any]] = {
             _obligation("settings-participation-gate", "intake", "input", "Require validated settings and explicit organization-maintenance participation.", "test_maintenance_noops_until_participation_is_requested"),
             _obligation("manifest-git-preflight", "intake", "route", "Validate organization layout, manifest, repository state, and entry lanes.", "test_maintenance_runs_when_participation_is_requested", "test_maintenance_sync_failure_releases_lane_and_returns_failed_terminal"),
             _obligation("card-candidate-intake", "execute", "workflow", "Inspect main cards, imports, candidates, hashes, and cleanup proposals.", "test_maintenance_runs_when_participation_is_requested"),
-            _obligation("card-decision-coverage", "execute", "semantic", "Give every reviewed card exactly one keep, watch, or change decision with a reason and complete review dimensions.", "test_maintenance_records_one_decision_for_every_reviewed_card"),
-            _obligation("merge-split-decisions", "execute", "branch", "Record merge, split, promotion, rejection, watch, or rewrite decisions.", "test_maintenance_records_merge_and_split_checkpoint_decisions"),
+            _obligation("card-decision-coverage", "execute", "semantic", "Give every reviewed card exactly one keep, watch, or change decision with a reason and complete review dimensions.", "test_report_uses_exact_catalog_identity_coverage_including_skills_route"),
+            _obligation("merge-split-decisions", "execute", "branch", "Record merge, split, promotion, rejection, watch, or rewrite decisions.", "test_merge_candidates_have_terminal_packet_or_reopen_contract"),
             _obligation("skill-safety-version", "execute", "scope", "Enforce Skill safety, hash, original-author, fork, and latest-version boundaries.", "test_maintenance_enforces_skill_author_hash_version_and_fork_policy", "test_skill_registry_rejects_unknown_state_and_unpinned_approved_skill"),
-            _obligation("exact-selected-apply", "execute", "side_effect", "Apply only exact selected action ids and preserve local adoption authority.", "test_maintenance_applies_exact_selected_ids"),
-            _obligation("postapply-merge-readiness", "verify", "validation", "Run post-apply organization checks and use their decision to gate the GitHub label.", "tests/test_org_maintenance.py::OrganizationMaintenanceTests::test_maintenance_postapply_readiness_controls_pr_and_label"),
+            _obligation("exact-selected-apply", "execute", "side_effect", "Apply only exact selected action ids and preserve local adoption authority.", "test_apply_rebuilds_current_source_and_applies_exact_selected_ids"),
+            _obligation("postapply-merge-readiness", "verify", "validation", "Run post-apply organization checks and use their decision to gate the GitHub label.", "tests/test_org_automation.py::OrganizationAutomationTests::test_maintenance_postapply_readiness_controls_pr_and_label"),
             _obligation("postflight-terminal", "verify", "closure", "Record a complete no-op, applied, blocked, or failure receipt.", "test_maintenance_records_postflight_on_non_skipped_success"),
             _obligation("depth-calibration", "verify", "recovery", "Reject inspection-only completion and require the full native receipt.", "test_org_maintenance_contract_is_deep_and_current", "test_org_maintenance_shallow_contract_is_rejected"),
         ],

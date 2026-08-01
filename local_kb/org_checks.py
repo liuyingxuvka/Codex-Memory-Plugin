@@ -11,6 +11,7 @@ from typing import Any, Iterable
 
 from local_kb.adoption import card_exchange_hash
 from local_kb.org_sources import validate_organization_repo
+from local_kb.org_source_contract import load_current_catalog
 from local_kb.skill_sharing import skill_directory_content_hash
 from local_kb.store import load_yaml_file
 
@@ -389,14 +390,40 @@ def _check_cards(root: Path) -> dict[str, Any]:
     warnings: list[str] = []
     hashes: dict[str, list[str]] = {}
     bundle_count = 0
+    seen_ids: dict[str, str] = {}
 
     for relative_root, expected_statuses in (
-        ("kb/main", {"trusted", "approved", "candidate", "rejected", "deprecated"}),
+        ("kb/main", {"trusted", "candidate", "rejected", "deprecated"}),
         ("kb/imports", {"candidate", "rejected", "deprecated"}),
     ):
-        for path in _iter_yaml_files(root, [relative_root]):
+        if relative_root == "kb/main":
+            catalog = load_current_catalog(root)
+            paths = [
+                root / str(row.get("source_path") or "")
+                for row in (catalog.get("cards") or [])
+                if isinstance(row, dict) and str(row.get("source_path") or "")
+            ]
+        else:
+            # Card-bound Skill bundles live below
+            # ``kb/imports/<contributor>/skills``.  Their metadata is still
+            # covered by path, privacy, and dependency checks, but it is not a
+            # card document and must not be interpreted as one.
+            imports_root = root / relative_root
+            paths = [
+                path
+                for path in _iter_yaml_files(root, [relative_root])
+                if "skills" not in path.relative_to(imports_root).parts
+            ]
+        for path in paths:
             relative = path.relative_to(root).as_posix()
             payload = _load_yaml_for_check(path, errors, root)
+            entry_id = str(payload.get("id") or "").strip()
+            if not entry_id:
+                errors.append(f"{relative}: card id is required")
+            elif entry_id in seen_ids:
+                errors.append(f"{relative}: duplicate card id {entry_id}; first declared by {seen_ids[entry_id]}")
+            else:
+                seen_ids[entry_id] = relative
             status = str(payload.get("status") or "").strip()
             if _has_hash_meaning(payload):
                 hashes.setdefault(card_exchange_hash(payload), []).append(relative)

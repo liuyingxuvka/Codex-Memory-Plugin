@@ -9,14 +9,16 @@ from pathlib import Path
 from unittest.mock import patch
 
 from local_kb.active_index import active_index_corruption_path, active_index_path, mark_active_index_corruption
-from local_kb.adoption import card_exchange_hash, recorded_exchange_hashes
-from local_kb.maintenance_lanes import read_lane_status
+from local_kb.adoption import card_exchange_hash, record_exchange_hash, recorded_exchange_hashes
+from local_kb.maintenance_lanes import read_global_write_lease, read_lane_status
 from local_kb.org_automation import (
     _materialized_change_manifest,
+    _outbox_proposal_files,
     run_organization_contribution,
     run_organization_maintenance,
 )
 from local_kb.org_sources import _run_git
+from local_kb.org_source_contract import materialize_current_source
 from local_kb.settings import ORGANIZATION_MODE, load_desktop_settings, save_desktop_settings
 from local_kb.store import load_yaml_file, write_yaml_file
 from tests.org_helpers import (
@@ -28,6 +30,53 @@ from tests.org_helpers import (
 
 
 class OrganizationAutomationTests(unittest.TestCase):
+    def test_independent_entry_owns_and_releases_global_writer(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            org = root / "org"
+            repo = root / "repo"
+            self._write_org_repo(org)
+            self._save_organization_settings(repo, org)
+            result = run_organization_contribution(repo, dry_run=True, record_postflight=False)
+            remaining = read_global_write_lease(repo)
+
+        self.assertTrue(result["ok"], result)
+        self.assertEqual(remaining, {})
+
+    def test_partial_or_invalid_writer_delegation_is_blocked_without_fallback(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            org = root / "org"
+            repo = root / "repo"
+            self._write_org_repo(org)
+            self._save_organization_settings(repo, org, maintenance_requested=True)
+            partial = run_organization_maintenance(repo, record_postflight=False, writer_lease_id="lease-only")
+            invalid = run_organization_maintenance(
+                repo,
+                record_postflight=False,
+                writer_lease_id="missing",
+                writer_delegation_token="wrong",
+                writer_phase_id="organization-maintenance",
+            )
+
+        self.assertEqual(partial["status"], "blocked")
+        self.assertEqual(partial["writer_gate"]["status"], "writer-delegation-incomplete")
+        self.assertEqual(invalid["status"], "blocked")
+        self.assertEqual(invalid["writer_gate"]["status"], "lease-missing-or-mismatch")
+
+    def test_outbox_dedup_uses_only_current_contribution_write_states(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            outbox = root / "kb" / "outbox" / "organization" / "sandbox" / "card.yaml"
+            write_yaml_file(outbox, {"id": "card", "organization_proposal": {"content_hash": "hash-1"}})
+            record_exchange_hash(root, "hash-1", direction="used", organization_id="sandbox")
+            after_foreign_use = _outbox_proposal_files(root, "sandbox")
+            record_exchange_hash(root, "hash-1", direction="exported", organization_id="sandbox")
+            after_export = _outbox_proposal_files(root, "sandbox")
+
+        self.assertEqual(after_foreign_use, [outbox])
+        self.assertEqual(after_export, [])
+
     def test_contribution_fails_closed_before_outbox_when_index_is_invalidated(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -104,27 +153,15 @@ class OrganizationAutomationTests(unittest.TestCase):
         self.assertEqual(receipt["materialized_files"], [])
 
     def _write_org_repo(self, root: Path) -> None:
-        write_yaml_file(
-            root / "khaos_org_kb.yaml",
-            {
-                "kind": "khaos-organization-kb",
-                "schema_version": 1,
-                "organization_id": "sandbox",
-                "kb": {
-                    "main_path": "kb/main",
-                    "imports_path": "kb/imports",
-                },
-                "skills": {
-                    "registry_path": "skills/registry.yaml",
-                    "candidates_path": "skills/candidates",
-                },
-            },
+        materialize_current_source(
+            root,
+            organization_id="sandbox",
+            cards=[
+                ("kb/main/trusted/trusted.yaml", base_card("trusted", "Trusted", "Use trusted.")),
+                ("kb/main/candidates/candidate.yaml", base_card("candidate", "Candidate", "Use candidate.", status="candidate")),
+            ],
         )
-        write_yaml_file(root / "kb" / "main" / "trusted" / "trusted.yaml", {"id": "trusted", "status": "trusted"})
-        write_yaml_file(root / "kb" / "main" / "candidates" / "candidate.yaml", {"id": "candidate", "status": "candidate"})
-        (root / "kb" / "imports").mkdir(parents=True)
         write_yaml_file(root / "skills" / "registry.yaml", {"skills": [{"id": "org.demo", "status": "candidate"}]})
-        (root / "skills" / "candidates").mkdir(parents=True)
 
     def _write_local_card(self, root: Path, entry_id: str = "share-model") -> None:
         write_yaml_file(
@@ -469,9 +506,16 @@ class OrganizationAutomationTests(unittest.TestCase):
             org = root / "org"
             repo = root / "repo"
             self.assertEqual(0, _run_git(["init", "--bare", str(remote)]).returncode)
-            self._write_org_repo(org)
             shared_card = base_card("already-shared", "Already shared", "This card is already in the organization.")
-            write_yaml_file(org / "kb" / "main" / "trusted" / "already-shared.yaml", shared_card)
+            materialize_current_source(
+                org,
+                organization_id="sandbox",
+                cards=[
+                    ("kb/main/trusted/already-shared.yaml", shared_card),
+                    ("kb/main/trusted/trusted.yaml", base_card("trusted", "Trusted", "Use trusted.")),
+                    ("kb/main/candidates/candidate.yaml", base_card("candidate", "Candidate", "Use candidate.", status="candidate")),
+                ],
+            )
             stale_outbox = repo / "kb" / "outbox" / "organization" / "sandbox" / "already-shared.yaml"
             write_yaml_file(
                 stale_outbox,
@@ -518,18 +562,14 @@ class OrganizationAutomationTests(unittest.TestCase):
             org = root / "org"
             repo = root / "repo"
             self.assertEqual(0, _run_git(["init", "--bare", str(remote)]).returncode)
-            write_valid_org_repo(org, include_sandbox_cards=False)
-            write_yaml_file(
-                org / "kb" / "main" / "candidates" / "weak-card.yaml",
-                base_card("weak-card", "Weak org card", "Weak shared candidate.", status="candidate", confidence=0.2),
-            )
-            write_yaml_file(
-                org / "kb" / "main" / "candidates" / "strong-card.yaml",
-                base_card("strong-card", "Strong org card", "Strong shared candidate.", status="candidate", confidence=0.9),
-            )
-            write_yaml_file(
-                org / "kb" / "main" / "trusted" / "trusted-low.yaml",
-                base_card("trusted-low", "Trusted low card", "Trusted but weak.", status="trusted", confidence=0.4),
+            materialize_current_source(
+                org,
+                organization_id="sandbox",
+                cards=[
+                    ("kb/main/candidates/weak-card.yaml", base_card("weak-card", "Weak org card", "Weak shared candidate.", status="candidate", confidence=0.2)),
+                    ("kb/main/candidates/strong-card.yaml", base_card("strong-card", "Strong org card", "Strong shared candidate.", status="candidate", confidence=0.9)),
+                    ("kb/main/trusted/trusted-low.yaml", base_card("trusted-low", "Trusted low card", "Trusted but weak.", status="trusted", confidence=0.4)),
+                ],
             )
             self.assertEqual(0, _run_git(["init"], cwd=org).returncode)
             self.assertEqual(0, _run_git(["remote", "add", "origin", str(remote)], cwd=org).returncode)
@@ -579,10 +619,10 @@ class OrganizationAutomationTests(unittest.TestCase):
             root = Path(tmp)
             org = root / "org"
             repo = root / "repo"
-            write_valid_org_repo(org, include_sandbox_cards=False)
-            write_yaml_file(
-                org / "kb" / "main" / "candidates" / "weak-card.yaml",
-                base_card("weak-card", "Weak org card", "Weak shared candidate.", status="candidate", confidence=0.2),
+            materialize_current_source(
+                org,
+                organization_id="sandbox",
+                cards=[("kb/main/candidates/weak-card.yaml", base_card("weak-card", "Weak org card", "Weak shared candidate.", status="candidate", confidence=0.2))],
             )
             self._save_organization_settings(repo, org, maintenance_requested=True)
 

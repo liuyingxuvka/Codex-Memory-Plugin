@@ -2,7 +2,7 @@
 
 Dream is the immutable LogicGuard model-verification lane. Sleep is the only owner that turns evidence into canonical model or mesh revisions, readable card projections, candidates, confidence, lifecycle status, or central predictive history.
 
-Run `python .agents/skills/local-kb-retrieve/scripts/kb_dream.py --json` from the repository root.
+The local-cycle wrapper runs `python .agents/skills/local-kb-retrieve/scripts/kb_dream.py --json` exactly once after clean Sleep. Dream has no independent schedule; it receives the exact parent phase/run identity and a delegated global-writer token only for its receipt/handoff commit.
 
 Required behavior:
 

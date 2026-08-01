@@ -27,17 +27,17 @@
 
 ## 5. Documentation and Release Metadata
 
-- [x] 5.1 Update README, Windows UI/install documentation, upgrade documentation, automation descriptions, and current-runtime residual rules to describe status-only UI, four background tasks, and manual AI update.
+- [x] 5.1 Update README, Windows UI/install documentation, upgrade documentation, automation descriptions, and current-runtime residual rules to describe status-only UI, two composite background tasks, and explicit-user-only AI update.
 - [x] 5.2 Update VERSION, CHANGELOG, and release-facing version references for the patch release selected by the release audit.
 - [x] 5.3 Remove or replace every current production/documentation reference that could recreate or advertise the retired scheduled/UI-prepared update route, while preserving historical evidence as non-authoritative history.
 
 ## 6. Verification and Local Activation
 
 - [x] 6.0 Define and test the exact activation inventory: five maintained
-  skills, four scheduled automations, and manual-only `khaos-brain-update`.
+  skills, two scheduled owners, two composite-child skills, and explicit-user-only `khaos-brain-update`.
 - [ ] 6.1 Run the focused update/UI, installer, residual, author-contract, FlowGuard, field-lifecycle, commitment-ledger, conformance, and project-audit checks from the verification contract; fix every failure.
 - [ ] 6.2 Run one final full regression on the frozen integrated source and record its terminal result under one execution owner.
-- [ ] 6.3 Run the real transactional installer and independent install check, confirm the exact old task is absent, then apply the user's explicit current-machine all-active override and prove all four surviving tasks are `ACTIVE`; repeat the independent check for idempotence.
+- [ ] 6.3 Run the real transactional installer and independent install check, confirm the exact old task is absent, then apply the user's explicit current-machine all-active override and prove both scheduled composite tasks are `ACTIVE`; repeat the independent check for idempotence.
 - [ ] 6.4 Launch the real Windows desktop UI, capture the status-only surface, click/hover it, and record visual/runtime evidence that no state or process mutation occurs.
 - [ ] 6.5 Perform the predictive-KB postflight and record any reusable task/skill/delegation lesson exposed by this change.
 

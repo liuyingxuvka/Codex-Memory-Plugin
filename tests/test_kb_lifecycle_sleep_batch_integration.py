@@ -3,7 +3,8 @@ from __future__ import annotations
 import json
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
 
 from local_kb.active_index import active_index_path
 from local_kb.feedback import build_observation, record_observation
@@ -33,8 +34,8 @@ def test_soft_stop_preserves_generation_and_resumes_only_pending_frozen_items() 
             active_index_path(repo_root).read_text(encoding="utf-8")
         )
         with patch(
-            "local_kb.lifecycle.time.monotonic",
-            side_effect=[100.0, 100.0, 101.0],
+            "local_kb.lifecycle.time",
+            SimpleNamespace(monotonic=Mock(side_effect=[100.0, 100.0, 101.0])),
         ), patch(
             "local_kb.model_maintenance.publish_sleep_model_generation",
             side_effect=AssertionError("an open frozen batch must not publish"),

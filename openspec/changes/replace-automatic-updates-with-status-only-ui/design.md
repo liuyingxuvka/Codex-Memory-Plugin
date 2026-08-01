@@ -53,16 +53,16 @@ The installer-owned upgrade migration accepts only the exact former schema, maps
 
 The native updater is renamed to a manual-update entrypoint. The native owner requires an explicit user-request flag for the invocation; no authorization bit is written to disk. The manual route checks the remote, requires a fast-forward target and a closed Khaos Brain UI, then performs dirty-tree, pause, snapshot, migration, clean transactional install, exact restoration, final health, CURRENT, cleanup, rollback, and immutable native-receipt gates in one target-owned route.
 
-The portable installer continues to preserve the exact prior state of the four
-surviving maintenance tasks. A separate current-machine operator transaction may
+The portable installer continues to preserve the exact prior state of the two
+scheduled composite maintenance tasks. A separate current-machine operator transaction may
 override that preserved state only after aggregate and scheduled-production
-evidence is current. For this rollout the user's explicit override is all four
-survivors `ACTIVE`, while both retired tasks stay absent; any partial activation
+evidence is current. For this rollout the user's explicit override is both
+scheduled owners `ACTIVE`, while retired tasks stay absent; any partial activation
 or final health failure re-pauses the group.
 
 ### 5. Keep verification ownership explicit
 
-FlowGuard owns the UI/status/manual-execution behavior model and the four-survivor automation invariant. The field-lifecycle model owns deletion and migration of `user_requested`, `prepared`, and the scheduler identity. The behavior commitment ledger registers exactly one primary owner for read-only status, manual conversational authorization, and scheduler absence. The manual updater owns its native checks and receipt; SkillGuard may audit the source contract on the maintainer computer but is absent from execution and installation.
+FlowGuard owns the UI/status/manual-execution behavior model and the two-scheduled-owner automation invariant. The field-lifecycle model owns deletion and migration of `user_requested`, `prepared`, and the scheduler identity. The behavior commitment ledger registers exactly one primary owner for read-only status, manual conversational authorization, and scheduler absence. The explicit-user-only updater owns its native checks and receipt; SkillGuard may audit the source contract on the maintainer computer but is absent from execution and installation.
 
 ## Risks / Trade-offs
 

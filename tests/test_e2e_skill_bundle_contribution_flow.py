@@ -10,30 +10,12 @@ from local_kb.org_outbox import build_organization_outbox
 from local_kb.org_sources import _run_git
 from local_kb.store import load_yaml_file, write_yaml_file
 from tests.current_runtime_helpers import activate_current_kb_runtime
+from tests.org_helpers import write_valid_org_repo
 
 
 class SkillBundleContributionFlowE2ETests(unittest.TestCase):
     def _write_org_repo(self, root: Path) -> None:
-        write_yaml_file(
-            root / "khaos_org_kb.yaml",
-            {
-                "kind": "khaos-organization-kb",
-                "schema_version": 1,
-                "organization_id": "sandbox",
-                "kb": {
-                    "main_path": "kb/main",
-                    "imports_path": "kb/imports",
-                },
-                "skills": {
-                    "registry_path": "skills/registry.yaml",
-                    "candidates_path": "skills/candidates",
-                },
-            },
-        )
-        write_yaml_file(root / "kb" / "main" / "trusted" / "seed.yaml", {"id": "seed", "status": "trusted"})
-        (root / "kb" / "imports").mkdir(parents=True, exist_ok=True)
-        write_yaml_file(root / "skills" / "registry.yaml", {"skills": []})
-        (root / "skills" / "candidates").mkdir(parents=True, exist_ok=True)
+        write_valid_org_repo(root, include_sandbox_cards=False)
 
     def _write_skill_backed_local_card(self, repo: Path) -> None:
         skill_dir = repo / ".agents" / "skills" / "demo-skill"

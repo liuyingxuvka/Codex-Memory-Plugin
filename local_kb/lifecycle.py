@@ -27,10 +27,18 @@ SLEEP_POLICY_VERSION = 1
 LIFECYCLE_ROOT = Path("kb") / "history" / "lifecycle"
 LIFECYCLE_EVENTS_FILENAME = "events.jsonl"
 LIFECYCLE_CURRENT_FILENAME = "current.json"
+FOREIGN_CALIBRATION_CURRENT_FILENAME = "foreign_calibration_current.json"
+FOREIGN_CALIBRATION_PROJECTION_SCHEMA = (
+    "khaos-brain.foreign-calibration-projection.v1"
+)
 SLEEP_STATE_FILENAME = "sleep_state.json"
 SLEEP_RECEIPT_DIRNAME = "sleep-receipts"
 RETRIEVAL_RECEIPT_FILENAME = "retrieval_receipts.jsonl"
+RETRIEVAL_INTERACTION_FILENAME = "retrieval_interactions.jsonl"
 OUTCOME_RECEIPT_FILENAME = "outcome_receipts.jsonl"
+RETRIEVAL_RECEIPT_SCHEMA = "khaos-brain.retrieval-receipt.v2"
+RETRIEVAL_INTERACTION_SCHEMA = "khaos-brain.retrieval-interaction.v1"
+OUTCOME_RECEIPT_SCHEMA = "khaos-brain.outcome-receipt.v2"
 DREAM_HANDOFF_FILENAME = "dream_handoffs.jsonl"
 DREAM_HANDOFF_ACK_FILENAME = "dream_handoff_acks.jsonl"
 LIFECYCLE_WRITER_LOCK_SCHEMA = "khaos-brain.lifecycle-writer-lock.v1"
@@ -145,6 +153,10 @@ def lifecycle_current_path(repo_root: Path) -> Path:
     return lifecycle_root(repo_root) / LIFECYCLE_CURRENT_FILENAME
 
 
+def foreign_calibration_current_path(repo_root: Path) -> Path:
+    return lifecycle_root(repo_root) / FOREIGN_CALIBRATION_CURRENT_FILENAME
+
+
 def sleep_state_path(repo_root: Path) -> Path:
     return lifecycle_root(repo_root) / SLEEP_STATE_FILENAME
 
@@ -159,6 +171,10 @@ def retrieval_receipts_path(repo_root: Path) -> Path:
 
 def outcome_receipts_path(repo_root: Path) -> Path:
     return lifecycle_root(repo_root) / OUTCOME_RECEIPT_FILENAME
+
+
+def retrieval_interactions_path(repo_root: Path) -> Path:
+    return lifecycle_root(repo_root) / RETRIEVAL_INTERACTION_FILENAME
 
 
 def dream_handoffs_path(repo_root: Path) -> Path:
@@ -186,6 +202,110 @@ def _atomic_write_json(path: Path, payload: Mapping[str, Any]) -> None:
         handle.flush()
         os.fsync(handle.fileno())
     os.replace(temporary, path)
+
+
+def _lifecycle_event_file_identity(repo_root: Path) -> dict[str, int]:
+    path = lifecycle_events_path(repo_root)
+    if not path.is_file():
+        return {"size": 0, "mtime_ns": 0}
+    stat = path.stat()
+    return {"size": int(stat.st_size), "mtime_ns": int(stat.st_mtime_ns)}
+
+
+def _foreign_calibration_projection_payload(
+    repo_root: Path,
+    state: Mapping[str, Any],
+) -> dict[str, Any]:
+    foreign_entries = state.get("foreign_entries")
+    if not isinstance(foreign_entries, Mapping):
+        raise RuntimeError("Lifecycle state has no current foreign_entries projection")
+    payload: dict[str, Any] = {
+        "schema_version": FOREIGN_CALIBRATION_PROJECTION_SCHEMA,
+        "source_event_count": int(state.get("event_count") or 0),
+        "source_last_sequence": int(state.get("last_sequence") or 0),
+        "source_event_digest": str(state.get("event_digest") or ""),
+        "source_event_file": _lifecycle_event_file_identity(repo_root),
+        "foreign_entries": {
+            str(key): dict(value)
+            for key, value in sorted(foreign_entries.items())
+            if isinstance(value, Mapping)
+        },
+    }
+    payload["projection_digest"] = content_fingerprint(payload)
+    return payload
+
+
+def _write_foreign_calibration_projection(
+    repo_root: Path,
+    state: Mapping[str, Any],
+) -> dict[str, Any]:
+    payload = _foreign_calibration_projection_payload(repo_root, state)
+    path = foreign_calibration_current_path(repo_root)
+    existing: dict[str, Any] = {}
+    if path.is_file():
+        try:
+            loaded = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            loaded = {}
+        if isinstance(loaded, dict):
+            existing = loaded
+    if existing != payload:
+        _atomic_write_json(path, payload)
+    return payload
+
+
+def load_current_foreign_calibration(repo_root: Path) -> dict[str, Any]:
+    """Read the current compact foreign-card calibration without replay.
+
+    Ordinary retrieval is a read-only consumer.  It must never repair or fall
+    back to the lifecycle event log.  Sleep/upgrade owns projection repair; a
+    missing, malformed, or stale projection is therefore a visible failure.
+    """
+
+    path = foreign_calibration_current_path(repo_root)
+    if not path.is_file():
+        raise RuntimeError(
+            "Current foreign calibration projection is missing; run Sleep or the "
+            "versioned upgrade before organization retrieval"
+        )
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise RuntimeError("Current foreign calibration projection is invalid") from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError("Current foreign calibration projection is not an object")
+    issues: list[str] = []
+    if payload.get("schema_version") != FOREIGN_CALIBRATION_PROJECTION_SCHEMA:
+        issues.append("schema-version")
+    expected_digest = str(payload.get("projection_digest") or "")
+    digest_payload = {
+        key: value for key, value in payload.items() if key != "projection_digest"
+    }
+    if not expected_digest or content_fingerprint(digest_payload) != expected_digest:
+        issues.append("projection-digest")
+    source_file = payload.get("source_event_file")
+    if not isinstance(source_file, Mapping):
+        issues.append("source-event-file")
+    elif {
+        "size": int(source_file.get("size") or 0),
+        "mtime_ns": int(source_file.get("mtime_ns") or 0),
+    } != _lifecycle_event_file_identity(repo_root):
+        issues.append("source-event-file-stale")
+    event_count = int(payload.get("source_event_count") or 0)
+    last_sequence = int(payload.get("source_last_sequence") or 0)
+    if event_count < 0 or last_sequence < 0 or event_count != last_sequence:
+        issues.append("source-sequence")
+    if not str(payload.get("source_event_digest") or ""):
+        issues.append("source-event-digest")
+    foreign_entries = payload.get("foreign_entries")
+    if not isinstance(foreign_entries, dict):
+        issues.append("foreign-entries")
+    if issues:
+        raise RuntimeError(
+            "Current foreign calibration projection is stale or malformed: "
+            + ", ".join(sorted(set(issues)))
+        )
+    return payload
 
 
 def _append_jsonl_durable(path: Path, payload: Mapping[str, Any]) -> None:
@@ -454,6 +574,7 @@ def _empty_replay() -> dict[str, Any]:
         "last_sequence": 0,
         "observations": {},
         "entries": {},
+        "foreign_entries": {},
         "idempotency_keys": [],
         "idempotency_event_ids": {},
         "validation": {"ok": True, "issues": []},
@@ -463,6 +584,7 @@ def _empty_replay() -> dict[str, Any]:
 def replay_lifecycle(repo_root: Path) -> dict[str, Any]:
     observations: dict[str, dict[str, Any]] = {}
     entries: dict[str, dict[str, Any]] = {}
+    foreign_entries: dict[str, dict[str, Any]] = {}
     idempotency_keys: list[str] = []
     seen_idempotency_keys: set[str] = set()
     idempotency_event_ids: dict[str, str] = {}
@@ -549,6 +671,25 @@ def replay_lifecycle(repo_root: Path) -> dict[str, Any]:
                 "updated_at": str(event.get("created_at") or ""),
                 "latest_event_id": event.get("lifecycle_event_id", ""),
             }
+        elif event_type == "foreign-entry-calibration":
+            previous = foreign_entries.get(item_id, {})
+            foreign_entries[item_id] = {
+                **previous,
+                "knowledge_ref": item_id,
+                "source_kind": "organization",
+                "source_id": str(event.get("source_id") or previous.get("source_id") or ""),
+                "source_entry_id": str(
+                    event.get("source_entry_id") or previous.get("source_entry_id") or ""
+                ),
+                "disposition": str(event.get("disposition") or "no_delta"),
+                "score_adjustment": float(event.get("score_adjustment") or 0.0),
+                "retrieval_eligible": bool(event.get("retrieval_eligible", True)),
+                "evidence_grade": str(event.get("evidence_grade") or "weak"),
+                "evidence_ids": list(event.get("evidence_ids") or []),
+                "reason": str(event.get("reason") or ""),
+                "updated_at": str(event.get("created_at") or ""),
+                "latest_event_id": event.get("lifecycle_event_id", ""),
+            }
     event_hasher.update(b"]")
     if not event_count:
         return _empty_replay()
@@ -559,6 +700,7 @@ def replay_lifecycle(repo_root: Path) -> dict[str, Any]:
         "last_sequence": last_sequence,
         "observations": observations,
         "entries": entries,
+        "foreign_entries": foreign_entries,
         "idempotency_keys": idempotency_keys,
         "idempotency_event_ids": idempotency_event_ids,
         "validation": {"ok": not issues, "issues": issues},
@@ -597,6 +739,7 @@ def load_lifecycle_state(repo_root: Path, *, repair_projection: bool = True) -> 
                     "event_digest"
                 ):
                     _atomic_write_json(projection_path, state)
+        _write_foreign_calibration_projection(repo_root, state)
     return state
 
 
@@ -624,6 +767,7 @@ def commit_lifecycle_event(repo_root: Path, event: Mapping[str, Any]) -> dict[st
         _append_jsonl_durable(lifecycle_events_path(repo_root), payload)
         next_state = replay_lifecycle(repo_root)
         _atomic_write_json(lifecycle_current_path(repo_root), next_state)
+        _write_foreign_calibration_projection(repo_root, next_state)
         return {
             "created": True,
             "idempotent_reuse": False,
@@ -707,6 +851,7 @@ def commit_lifecycle_events(
         _atomic_extend_jsonl(lifecycle_events_path(repo_root), created_events)
         next_state = replay_lifecycle(repo_root)
         _atomic_write_json(lifecycle_current_path(repo_root), next_state)
+        _write_foreign_calibration_projection(repo_root, next_state)
         return {
             "created_count": len(created_events),
             "reused_count": len(reused_keys),
@@ -800,9 +945,15 @@ def classify_observation(observation: Mapping[str, Any]) -> dict[str, Any]:
     predictive = context.get("predictive_observation", {}) if isinstance(context.get("predictive_observation"), Mapping) else {}
     suggested = str(context.get("suggested_action") or "none").strip().lower()
     entry_ids = [str(item).strip() for item in target.get("entry_ids", []) if str(item).strip()] if isinstance(target.get("entry_ids"), list) else []
+    foreign_results = [
+        item
+        for item in target.get("retrieval_results", [])
+        if isinstance(item, Mapping)
+        and str(item.get("source_kind") or "") == "organization"
+    ]
     grade = _observation_evidence_grade(observation)
     has_triplet = all(str(predictive.get(key) or "").strip() for key in ("scenario", "action_taken", "observed_result"))
-    if suggested == "update-card" and entry_ids:
+    if suggested == "update-card" and entry_ids and not foreign_results:
         return {
             "disposition": "represented",
             "reason": "Observation is owned by an explicit existing-card update review.",
@@ -839,6 +990,13 @@ def classify_observation(observation: Mapping[str, Any]) -> dict[str, Any]:
                 "minimum_count": 2,
                 "requires_new_fingerprint": True,
             },
+        }
+    if foreign_results:
+        return {
+            "disposition": "history_only",
+            "reason": "Foreign authority remains read-only; Sleep records only a local calibration decision.",
+            "target_id": str(foreign_results[0].get("knowledge_ref") or ""),
+            "evidence_grade": grade,
         }
     if entry_ids:
         return {
@@ -885,6 +1043,38 @@ def build_observation_disposition_event(
         "reopen_condition": selected.get("reopen_condition", {}),
         "policy_version": SLEEP_POLICY_VERSION,
     }
+
+
+def build_foreign_calibration_event(
+    observation: Mapping[str, Any],
+    *,
+    run_id: str,
+    plan: Mapping[str, Any],
+) -> dict[str, Any]:
+    observation_id = str(observation.get("event_id") or "").strip()
+    knowledge_ref = str(plan.get("knowledge_ref") or "").strip()
+    if not observation_id or not knowledge_ref:
+        raise ValueError("Foreign calibration requires observation_id and knowledge_ref")
+    payload = {
+        "event_type": "foreign-entry-calibration",
+        "item_id": knowledge_ref,
+        "actor": run_id,
+        "source_id": str(plan.get("source_id") or ""),
+        "source_entry_id": str(plan.get("source_entry_id") or ""),
+        "result_ref": str(plan.get("result_ref") or ""),
+        "disposition": str(plan.get("disposition") or "no_delta"),
+        "score_adjustment": float(plan.get("score_adjustment") or 0.0),
+        "retrieval_eligible": bool(plan.get("retrieval_eligible", True)),
+        "evidence_grade": str(plan.get("evidence_grade") or "weak"),
+        "evidence_ids": list(plan.get("evidence_ids") or []),
+        "reason": str(plan.get("reason") or ""),
+        "policy_version": 2,
+    }
+    payload["idempotency_key"] = (
+        f"foreign-calibration:{observation_id}:{knowledge_ref}:"
+        f"{content_fingerprint(payload)}"
+    )
+    return payload
 
 
 def dispose_observation(
@@ -1269,6 +1459,27 @@ def _apply_staged_entry_event(
     entry_states[entry_id] = prior
 
 
+def _apply_staged_foreign_event(
+    foreign_states: dict[str, dict[str, Any]],
+    event: Mapping[str, Any],
+) -> None:
+    if str(event.get("event_type") or "") != "foreign-entry-calibration":
+        return
+    knowledge_ref = str(event.get("item_id") or "")
+    if not knowledge_ref:
+        return
+    foreign_states[knowledge_ref] = {
+        **dict(foreign_states.get(knowledge_ref, {})),
+        "knowledge_ref": knowledge_ref,
+        "source_id": str(event.get("source_id") or ""),
+        "source_entry_id": str(event.get("source_entry_id") or ""),
+        "disposition": str(event.get("disposition") or "no_delta"),
+        "score_adjustment": float(event.get("score_adjustment") or 0.0),
+        "retrieval_eligible": bool(event.get("retrieval_eligible", True)),
+        "evidence_grade": str(event.get("evidence_grade") or "weak"),
+    }
+
+
 def _sleep_not_run(reason: str) -> dict[str, Any]:
     return {"ok": False, "status": "not_run", "reason": reason}
 
@@ -1296,6 +1507,7 @@ def _run_incremental_sleep_locked(
         create_or_reuse_candidate,
         review_entry_lifecycles,
     )
+    from local_kb.calibration import plan_foreign_calibration
     from local_kb.history import record_history_event
     from local_kb.model_maintenance import (
         load_current_model_entries,
@@ -1389,6 +1601,11 @@ def _run_incremental_sleep_locked(
         lifecycle_before,
         known_history_event_ids=known_history_event_ids,
     )
+    foreign_states = {
+        str(key): dict(value)
+        for key, value in lifecycle_before.get("foreign_entries", {}).items()
+        if isinstance(value, Mapping)
+    }
     staged_model_upserts: dict[str, dict[str, Any]] = {}
     deferred_history_events: list[dict[str, Any]] = []
     candidate_catalog_entries: list[Any] | None = None
@@ -1415,6 +1632,7 @@ def _run_incremental_sleep_locked(
         for event in details.get("lifecycle_events") or []:
             if isinstance(event, Mapping):
                 _apply_staged_entry_event(candidate_plan.entry_states, event)
+                _apply_staged_foreign_event(foreign_states, event)
 
     for item_id in selected_ids:
         result = current_batch.get("results", {}).get(item_id, {})
@@ -1486,6 +1704,10 @@ def _run_incremental_sleep_locked(
         history_start = len(deferred_history_events)
         upsert_keys_before = set(staged_model_upserts)
         selected = classify_observation(observation)
+        foreign_plans = plan_foreign_calibration(
+            observation,
+            current_foreign_entries=foreign_states,
+        )
         created_count = reused_count = 0
         if selected.get("disposition") == "candidate":
             candidate = create_or_reuse_candidate(
@@ -1520,6 +1742,16 @@ def _run_incremental_sleep_locked(
         ]
         if not isinstance(current, Mapping) or current_state in {"", "missing-admission"}:
             item_events.append(build_observation_admission_event(observation))
+        foreign_event_keys: list[str] = []
+        for foreign_plan in foreign_plans:
+            foreign_event = build_foreign_calibration_event(
+                observation,
+                run_id=clean_run_id,
+                plan=foreign_plan,
+            )
+            item_events.append(foreign_event)
+            foreign_event_keys.append(str(foreign_event["idempotency_key"]))
+            _apply_staged_foreign_event(foreign_states, foreign_event)
         disposition_event = build_observation_disposition_event(
             observation,
             run_id=clean_run_id,
@@ -1540,6 +1772,7 @@ def _run_incremental_sleep_locked(
             "observation_id": observation_id,
             "lifecycle_events": item_events,
             "candidate_lifecycle_event_keys": candidate_event_keys,
+            "foreign_calibration_event_keys": foreign_event_keys,
             "disposition_key": str(
                 disposition_event.get("idempotency_key") or ""
             ),
@@ -1563,6 +1796,7 @@ def _run_incremental_sleep_locked(
                 "processed_observations": 1,
                 "candidate_created": created_count,
                 "candidate_reused": reused_count,
+                "foreign_calibrated": len(foreign_event_keys),
             },
         }
         current_batch = record_sleep_batch_item_result(
@@ -1650,7 +1884,7 @@ def _run_incremental_sleep_locked(
                     "status": "not_run",
                     "reason": "sleep-progress-saved",
                 }
-                for stage_id in ("organization-cycle",)
+                for stage_id in ("dream",)
             },
             "blockers": [],
             "lane_lock": dict(lane_lock),
@@ -1672,7 +1906,7 @@ def _run_incremental_sleep_locked(
     disposition_keys: list[str] = []
     candidate_event_keys: set[str] = set()
     pending_acks: list[dict[str, str]] = []
-    candidate_created = candidate_reused = total_processed = 0
+    candidate_created = candidate_reused = foreign_calibrated = total_processed = 0
     for item_id in selected_ids:
         result = current_batch.get("results", {}).get(item_id, {})
         if not isinstance(result, Mapping) or result.get("status") != "completed":
@@ -1716,6 +1950,7 @@ def _run_incremental_sleep_locked(
             total_processed += int(counters.get("processed_observations") or 0)
             candidate_created += int(counters.get("candidate_created") or 0)
             candidate_reused += int(counters.get("candidate_reused") or 0)
+            foreign_calibrated += int(counters.get("foreign_calibrated") or 0)
 
     lifecycle_batch = {
         "requested_count": len(all_events) - len(candidate_event_keys),
@@ -1981,6 +2216,7 @@ def _run_incremental_sleep_locked(
         ],
         "candidate_created": candidate_created,
         "candidate_reused": candidate_reused,
+        "foreign_calibrated": foreign_calibrated,
         "lifecycle_review": lifecycle_review,
         "model_generation": model_generation,
         "post_review_index_refresh": index_refresh,
@@ -2019,7 +2255,7 @@ def _run_incremental_sleep_locked(
                     "status": "not_run",
                     "reason": "sleep-completed-with-blocks",
                 }
-                for stage_id in ("organization-cycle",)
+                for stage_id in ("dream",)
             }
             if has_blocked_items
             else {}
@@ -2139,7 +2375,7 @@ def _sleep_retryable_receipt(
     return {**receipt, "receipt_path": str(receipt_path)}
 
 
-def run_incremental_sleep(
+def _run_incremental_sleep_with_lane(
     repo_root: Path,
     *,
     run_id: str | None = None,
@@ -2251,139 +2487,551 @@ def run_incremental_sleep(
     return {**receipt_body, "receipt_path": str(receipt_path)}
 
 
+def run_incremental_sleep(
+    repo_root: Path,
+    *,
+    run_id: str | None = None,
+    max_observations: int = 250,
+    soft_deadline_seconds: float | None = None,
+    writer_delegation: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Run Sleep under either an exact delegation or its own global writer.
+
+    A scheduled composite owner must pass the exact delegated writer identity.
+    A direct standalone invocation owns, heartbeats, and releases the global
+    writer itself. Missing/incorrect delegated identity never falls back to a
+    second writer or an unguarded mutation.
+    """
+
+    from local_kb.maintenance_lanes import (
+        acquire_global_write_lease,
+        heartbeat_global_write_lease,
+        redact_lease_secrets,
+        release_global_write_lease,
+        validate_global_write_delegation,
+    )
+
+    root = Path(repo_root)
+    clean_run_id = str(
+        run_id or f"kb-sleep-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}"
+    )
+    if writer_delegation is not None:
+        delegation = dict(writer_delegation)
+        required = {
+            "lease_id",
+            "child_phase_id",
+            "child_run_id",
+            "delegation_token",
+        }
+        missing = sorted(key for key in required if not str(delegation.get(key) or ""))
+        if missing:
+            return {
+                "ok": False,
+                "status": "blocked",
+                "final_run_state": "blocked",
+                "run_id": clean_run_id,
+                "reason": "global-writer-delegation-incomplete",
+                "missing_fields": missing,
+            }
+        if (
+            str(delegation["child_phase_id"]) != "sleep"
+            or str(delegation["child_run_id"]) != clean_run_id
+        ):
+            return {
+                "ok": False,
+                "status": "blocked",
+                "final_run_state": "blocked",
+                "run_id": clean_run_id,
+                "reason": "global-writer-delegation-identity-mismatch",
+            }
+        validation = validate_global_write_delegation(
+            root,
+            lease_id=str(delegation["lease_id"]),
+            child_phase_id="sleep",
+            child_run_id=clean_run_id,
+            delegation_token=str(delegation["delegation_token"]),
+        )
+        if validation.get("ok") is not True:
+            return {
+                "ok": False,
+                "status": "blocked",
+                "final_run_state": "blocked",
+                "run_id": clean_run_id,
+                "reason": "global-writer-delegation-invalid",
+                "writer_validation": validation,
+            }
+        result = _run_incremental_sleep_with_lane(
+            root,
+            run_id=clean_run_id,
+            max_observations=max_observations,
+            soft_deadline_seconds=soft_deadline_seconds,
+        )
+        return {
+            **result,
+            "global_writer": {
+                "mode": "delegated",
+                "validation": validation,
+            },
+        }
+
+    lease = acquire_global_write_lease(
+        root,
+        cycle_kind="standalone-sleep",
+        run_id=clean_run_id,
+        scope="sleep",
+        wait=False,
+    )
+    if lease.get("acquired") is not True:
+        return {
+            "ok": False,
+            "status": "blocked",
+            "final_run_state": "blocked",
+            "run_id": clean_run_id,
+            "reason": "global-writer-unavailable",
+            "global_writer": redact_lease_secrets(lease),
+        }
+    lease_id = str(lease["lease_id"])
+    lease_token = str(lease["lease_token"])
+    heartbeat_stop = threading.Event()
+    heartbeat_failures: list[dict[str, Any]] = []
+
+    def keep_writer_current() -> None:
+        while not heartbeat_stop.wait(30.0):
+            heartbeat = heartbeat_global_write_lease(
+                root,
+                lease_id=lease_id,
+                lease_token=lease_token,
+            )
+            if heartbeat.get("ok") is not True:
+                heartbeat_failures.append(dict(redact_lease_secrets(heartbeat)))
+                return
+
+    heartbeat_thread = threading.Thread(
+        target=keep_writer_current,
+        name="standalone-sleep-global-writer-heartbeat",
+        daemon=True,
+    )
+    heartbeat_thread.start()
+    result: dict[str, Any]
+    try:
+        result = _run_incremental_sleep_with_lane(
+            root,
+            run_id=clean_run_id,
+            max_observations=max_observations,
+            soft_deadline_seconds=soft_deadline_seconds,
+        )
+    except Exception as exc:
+        result = {
+            "ok": False,
+            "status": "blocked",
+            "final_run_state": "blocked",
+            "run_id": clean_run_id,
+            "reason": "sleep-entry-exception",
+            "error": f"{type(exc).__name__}: {exc}",
+        }
+    finally:
+        heartbeat_stop.set()
+        heartbeat_thread.join(timeout=2.0)
+        released = release_global_write_lease(
+            root,
+            lease_id=lease_id,
+            lease_token=lease_token,
+        )
+    writer_ok = bool(
+        not heartbeat_failures
+        and not heartbeat_thread.is_alive()
+        and released.get("ok") is True
+        and released.get("released") is True
+    )
+    writer_receipt = {
+        "mode": "standalone",
+        "lease": redact_lease_secrets(lease),
+        "heartbeat_failures": heartbeat_failures,
+        "heartbeat_stopped": not heartbeat_thread.is_alive(),
+        "release": released,
+    }
+    if not writer_ok:
+        return {
+            **result,
+            "ok": False,
+            "status": "blocked",
+            "final_run_state": "blocked",
+            "reason": "global-writer-cleanup-unconfirmed",
+            "global_writer": writer_receipt,
+        }
+    return {**result, "global_writer": writer_receipt}
+
+
+def _current_rows(path: Path, schema: str) -> list[dict[str, Any]]:
+    """Read only the current runtime format; retired rows are upgrade input."""
+
+    return [
+        row
+        for row in _read_jsonl(path)
+        if str(row.get("schema_version") or "") == schema
+    ]
+
+
+def _normalize_retrieval_result(item: Mapping[str, Any], rank: int) -> dict[str, Any]:
+    knowledge_ref = str(item.get("knowledge_ref") or "").strip()
+    result_ref = str(item.get("result_ref") or "").strip()
+    source_kind = str(item.get("source_kind") or "").strip()
+    source_id = str(item.get("source_id") or "").strip()
+    entry_id = str(item.get("entry_id") or item.get("id") or "").strip()
+    if not all((knowledge_ref, result_ref, source_kind, source_id, entry_id)):
+        raise ValueError(
+            "Current retrieval results require knowledge_ref, result_ref, "
+            "source_kind, source_id, and entry_id"
+        )
+    return {
+        "knowledge_ref": knowledge_ref,
+        "result_ref": result_ref,
+        "source_kind": source_kind,
+        "source_id": source_id,
+        "entry_id": entry_id,
+        "rank": int(item.get("rank") or rank),
+        "score": float(item.get("score") or 0.0),
+        "status": str(item.get("status") or ""),
+        "authority": dict(item.get("authority") or {}),
+        "logicguard_binding": dict(item.get("logicguard_binding") or {}),
+        "materialization_fingerprint": str(
+            item.get("materialization_fingerprint") or ""
+        ),
+        "logicguard_ranking": dict(item.get("logicguard_ranking") or {}),
+        "source_conflict": dict(item.get("source_conflict") or {}),
+    }
+
+
 def record_retrieval_receipt(
     repo_root: Path,
     *,
     query: str,
     path_hint: str,
-    index_generation: int,
-    index_digest: str,
     ranked_entries: list[Mapping[str, Any]],
+    source_states: list[Mapping[str, Any]],
     thresholds: Mapping[str, Any],
     request_id: str | None = None,
 ) -> dict[str, Any]:
+    returned_results = [
+        _normalize_retrieval_result(item, index + 1)
+        for index, item in enumerate(ranked_entries)
+    ]
+    stable_request_id = str(request_id or f"retrieval:{uuid4()}")
     normalized = {
         "query": str(query),
         "path_hint": str(path_hint),
-        "index_generation": int(index_generation),
-        "index_digest": str(index_digest),
-        "returned": [
-            {
-                "entry_id": str(item.get("entry_id") or item.get("id") or ""),
-                "rank": int(item.get("rank") or index + 1),
-                "score": float(item.get("score") or 0.0),
-                "status": str(item.get("status") or ""),
-                "logicguard_binding": dict(item.get("logicguard_binding") or {}),
-                "materialization_fingerprint": str(
-                    item.get("materialization_fingerprint") or ""
-                ),
-                "logicguard_ranking": dict(
-                    item.get("logicguard_ranking") or {}
-                ),
-            }
-            for index, item in enumerate(ranked_entries)
-        ],
+        "source_states": [dict(item) for item in source_states],
+        "returned_results": returned_results,
         "thresholds": dict(thresholds),
     }
-    stable_request_id = request_id or f"retrieval:{uuid4()}"
+    request_fingerprint = content_fingerprint(normalized)
     receipt = {
-        "schema_version": 1,
+        "schema_version": RETRIEVAL_RECEIPT_SCHEMA,
         "request_id": stable_request_id,
         "created_at": utc_now_iso(),
+        "request_fingerprint": request_fingerprint,
         "query_context_fingerprint": content_fingerprint([query, path_hint]),
-        "route_hints": [segment for segment in str(path_hint).replace("\\", "/").split("/") if segment],
-        "index_generation": int(index_generation),
-        "index_digest": str(index_digest),
-        "policy_version": int(thresholds.get("policy_version") or 2),
-        "returned_entries": normalized["returned"],
-        "used_entry_ids": [],
-        "no_card": not bool(normalized["returned"]),
-        "abstention_reason": "no eligible entry exceeded the relevance threshold" if not normalized["returned"] else "",
+        "route_hints": [
+            segment
+            for segment in str(path_hint).replace("\\", "/").split("/")
+            if segment
+        ],
+        "source_states": normalized["source_states"],
+        "policy_version": int(thresholds.get("policy_version") or 3),
+        "returned_results": returned_results,
+        "no_card": not bool(returned_results),
+        "abstention_reason": (
+            "no eligible result exceeded the relevance threshold"
+            if not returned_results
+            else ""
+        ),
         "thresholds": dict(thresholds),
-        "receipt_digest": content_fingerprint(normalized),
     }
-    _append_jsonl_durable(retrieval_receipts_path(repo_root), receipt)
+    receipt["receipt_digest"] = content_fingerprint(receipt)
+    with _lifecycle_lock(repo_root):
+        for existing in reversed(
+            _current_rows(retrieval_receipts_path(repo_root), RETRIEVAL_RECEIPT_SCHEMA)
+        ):
+            if str(existing.get("request_id") or "") != stable_request_id:
+                continue
+            if str(existing.get("request_fingerprint") or "") != request_fingerprint:
+                raise ValueError(
+                    f"Retrieval request_id collision with different inputs: {stable_request_id}"
+                )
+            return {**existing, "created": False, "idempotent_reuse": True}
+        _append_jsonl_durable(retrieval_receipts_path(repo_root), receipt)
+    return {**receipt, "created": True, "idempotent_reuse": False}
+
+
+def _retrieval_receipt_for_request(repo_root: Path, request_id: str) -> dict[str, Any]:
+    receipt = next(
+        (
+            item
+            for item in reversed(
+                _current_rows(
+                    retrieval_receipts_path(repo_root), RETRIEVAL_RECEIPT_SCHEMA
+                )
+            )
+            if str(item.get("request_id") or "") == str(request_id)
+        ),
+        None,
+    )
+    if receipt is None:
+        raise ValueError(f"Unknown current retrieval request_id: {request_id}")
     return receipt
+
+
+def record_retrieval_interaction(
+    repo_root: Path,
+    *,
+    request_id: str,
+    result_refs: list[str] | tuple[str, ...],
+    interaction: str,
+    event_id: str,
+    actor: str,
+    context: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    kind = str(interaction or "").strip().lower()
+    if kind not in {"viewed", "selected", "used"}:
+        raise ValueError(f"Unsupported retrieval interaction: {kind}")
+    stable_event_id = str(event_id or "").strip()
+    if not stable_event_id:
+        raise ValueError("Retrieval interactions require an exact event_id")
+    receipt = _retrieval_receipt_for_request(repo_root, request_id)
+    returned = {
+        str(item.get("result_ref") or ""): dict(item)
+        for item in receipt.get("returned_results", [])
+        if isinstance(item, Mapping) and str(item.get("result_ref") or "")
+    }
+    normalized_refs = sorted({str(item).strip() for item in result_refs if str(item).strip()})
+    if not normalized_refs:
+        raise ValueError("Retrieval interactions require at least one result_ref")
+    unknown = sorted(set(normalized_refs) - set(returned))
+    if unknown:
+        raise ValueError(
+            "Interaction result_refs were not returned by the retrieval request: "
+            + ", ".join(unknown)
+        )
+    body = {
+        "schema_version": RETRIEVAL_INTERACTION_SCHEMA,
+        "event_id": stable_event_id,
+        "request_id": str(request_id),
+        "interaction": kind,
+        "result_refs": normalized_refs,
+        "actor": str(actor or "unknown"),
+        "context": dict(context or {}),
+    }
+    event_fingerprint = content_fingerprint(body)
+    with _lifecycle_lock(repo_root):
+        for existing in reversed(
+            _current_rows(
+                retrieval_interactions_path(repo_root), RETRIEVAL_INTERACTION_SCHEMA
+            )
+        ):
+            if str(existing.get("event_id") or "") != stable_event_id:
+                continue
+            if str(existing.get("event_fingerprint") or "") != event_fingerprint:
+                raise ValueError(
+                    f"Retrieval interaction event_id collision: {stable_event_id}"
+                )
+            return {**existing, "created": False, "idempotent_reuse": True}
+        payload = {
+            **body,
+            "created_at": utc_now_iso(),
+            "event_fingerprint": event_fingerprint,
+        }
+        payload["receipt_digest"] = content_fingerprint(payload)
+        _append_jsonl_durable(retrieval_interactions_path(repo_root), payload)
+    return {**payload, "created": True, "idempotent_reuse": False}
+
+
+def _foreign_outcome_observation(
+    receipt: Mapping[str, Any],
+    *,
+    observation_context: Mapping[str, Any] | None,
+) -> dict[str, Any] | None:
+    foreign_results = [
+        dict(item)
+        for item in receipt.get("used_results", [])
+        if isinstance(item, Mapping)
+        and str(item.get("source_kind") or "") == "organization"
+    ]
+    if not foreign_results:
+        return None
+    from local_kb.history import build_history_event
+
+    supplied = dict(observation_context or {})
+    predictive = supplied.get("predictive_observation")
+    if not isinstance(predictive, Mapping):
+        predictive = {}
+    outcome = str(receipt.get("outcome") or "unknown")
+    suggested_action = str(supplied.get("suggested_action") or "none")
+    source_kind = (
+        "user-correction"
+        if receipt.get("user_correction")
+        else ("verified-test" if receipt.get("verified") else "organization-use")
+    )
+    return build_history_event(
+        "observation",
+        event_id=f"foreign-outcome:{receipt['outcome_id']}",
+        created_at=str(receipt.get("created_at") or utc_now_iso()),
+        source={
+            "kind": source_kind,
+            "foreign_source_kind": "organization",
+            "agent": "retrieval-outcome-recorder",
+        },
+        target={
+            "kind": "foreign-knowledge-outcome",
+            "task_summary": str(supplied.get("task_summary") or "Organization card task outcome"),
+            "route_hint": supplied.get("route_hint") or [],
+            "entry_ids": [str(item.get("entry_id") or "") for item in foreign_results],
+            "knowledge_refs": [str(item.get("knowledge_ref") or "") for item in foreign_results],
+            "result_refs": [str(item.get("result_ref") or "") for item in foreign_results],
+            "retrieval_request_id": str(receipt.get("request_id") or ""),
+            "retrieval_results": foreign_results,
+        },
+        rationale="Recorded exact organization-card use outcome for Sleep calibration.",
+        context={
+            "outcome": outcome,
+            "hit_quality": str(supplied.get("hit_quality") or "used"),
+            "suggested_action": suggested_action,
+            "predictive_observation": dict(predictive),
+            "outcome_id": str(receipt.get("outcome_id") or ""),
+            "evidence_kind": str(receipt.get("evidence_kind") or ""),
+            "evidence_ref": str(receipt.get("evidence_ref") or ""),
+            "verified": bool(receipt.get("verified")),
+            "user_correction": bool(receipt.get("user_correction")),
+        },
+    )
+
+
+def _append_history_event_exact_once(repo_root: Path, event: Mapping[str, Any]) -> None:
+    event_id = str(event.get("event_id") or "").strip()
+    if not event_id:
+        raise ValueError("History exact-once projection requires event_id")
+    for existing in _read_jsonl(history_events_path(repo_root)):
+        if str(existing.get("event_id") or "") != event_id:
+            continue
+        if content_fingerprint(existing) != content_fingerprint(event):
+            raise ValueError(f"History event_id collision: {event_id}")
+        return
+    _append_jsonl_durable(history_events_path(repo_root), event)
 
 
 def record_outcome_receipt(
     repo_root: Path,
     *,
     request_id: str,
-    used_entry_ids: list[str] | tuple[str, ...],
+    used_result_refs: list[str] | tuple[str, ...],
     outcome: str,
     evidence_kind: str,
     evidence_ref: str = "",
     verified: bool = False,
     user_correction: bool = False,
+    observation_context: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    retrieval_receipt = next(
-        (
-            item
-            for item in reversed(_read_jsonl(retrieval_receipts_path(repo_root)))
-            if str(item.get("request_id") or "") == str(request_id)
-        ),
-        None,
-    )
-    if retrieval_receipt is None:
-        raise ValueError(f"Unknown retrieval request_id: {request_id}")
-    returned_ids = {
-        str(item.get("entry_id") or "")
-        for item in retrieval_receipt.get("returned_entries", [])
-        if isinstance(item, Mapping) and str(item.get("entry_id") or "")
+    retrieval_receipt = _retrieval_receipt_for_request(repo_root, request_id)
+    returned = {
+        str(item.get("result_ref") or ""): dict(item)
+        for item in retrieval_receipt.get("returned_results", [])
+        if isinstance(item, Mapping) and str(item.get("result_ref") or "")
     }
-    normalized_used_ids = sorted({str(item) for item in used_entry_ids if str(item)})
-    unknown_used = sorted(set(normalized_used_ids) - returned_ids)
-    if unknown_used:
+    normalized_refs = sorted(
+        {str(item).strip() for item in used_result_refs if str(item).strip()}
+    )
+    unknown = sorted(set(normalized_refs) - set(returned))
+    if unknown:
         raise ValueError(
-            "Outcome used_entry_ids were not returned by the retrieval request: "
-            + ", ".join(unknown_used)
+            "Outcome used_result_refs were not returned by the retrieval request: "
+            + ", ".join(unknown)
         )
+    if normalized_refs:
+        used_interactions = {
+            result_ref
+            for item in _current_rows(
+                retrieval_interactions_path(repo_root), RETRIEVAL_INTERACTION_SCHEMA
+            )
+            if str(item.get("request_id") or "") == str(request_id)
+            and str(item.get("interaction") or "") == "used"
+            for result_ref in item.get("result_refs", [])
+        }
+        not_used = sorted(set(normalized_refs) - used_interactions)
+        if not_used:
+            raise ValueError(
+                "Outcome requires a prior exact 'used' interaction for: "
+                + ", ".join(not_used)
+            )
     if verified and not str(evidence_ref or "").strip():
         raise ValueError("Verified outcomes require a concrete evidence_ref")
     classification = str(outcome or "unknown").strip().lower() or "unknown"
-    if classification not in {"success", "failure", "misleading", "rework", "unknown", "no-card-success"}:
+    if classification not in {
+        "success",
+        "failure",
+        "misleading",
+        "rework",
+        "unknown",
+        "no-card-success",
+    }:
         classification = "unknown"
     grade = "strong" if verified or user_correction else "weak"
     if evidence_kind == "dream" and grade == "weak":
         grade = "medium"
-    idempotency_key = content_fingerprint(
-        {
-            "request_id": str(request_id),
-            "used_entry_ids": normalized_used_ids,
-            "outcome": classification,
-            "evidence_kind": str(evidence_kind),
-            "evidence_ref": str(evidence_ref),
-            "verified": bool(verified),
-            "user_correction": bool(user_correction),
-        }
-    )
-    for existing in reversed(_read_jsonl(outcome_receipts_path(repo_root))):
-        if str(existing.get("idempotency_key") or "") == idempotency_key:
-            return {**existing, "created": False, "idempotent_reuse": True}
-    receipt = {
-        "schema_version": 1,
-        "outcome_id": f"outcome:{uuid4()}",
-        "idempotency_key": idempotency_key,
-        "created_at": utc_now_iso(),
+    used_results = [returned[result_ref] for result_ref in normalized_refs]
+    body = {
         "request_id": str(request_id),
-        "used_entry_ids": normalized_used_ids,
+        "used_result_refs": normalized_refs,
         "outcome": classification,
         "evidence_kind": str(evidence_kind),
         "evidence_ref": str(evidence_ref),
         "verified": bool(verified),
         "user_correction": bool(user_correction),
-        "evidence_grade": grade,
-        "policy_version": 1,
+        "observation_context": dict(observation_context or {}),
     }
-    receipt["receipt_digest"] = content_fingerprint(receipt)
-    _append_jsonl_durable(outcome_receipts_path(repo_root), receipt)
-    # A verified failure or correction is safety-relevant.  Suspend a trusted
-    # entry immediately; the next successful Sleep pass performs the complete
-    # calibration review and rebuilds the active index.
+    idempotency_key = content_fingerprint(body)
+    with _lifecycle_lock(repo_root):
+        current_outcomes = _current_rows(
+            outcome_receipts_path(repo_root), OUTCOME_RECEIPT_SCHEMA
+        )
+        existing = next(
+            (
+                item
+                for item in reversed(current_outcomes)
+                if str(item.get("idempotency_key") or "") == idempotency_key
+            ),
+            None,
+        )
+        if existing is None:
+            receipt = {
+                "schema_version": OUTCOME_RECEIPT_SCHEMA,
+                "outcome_id": f"outcome:{idempotency_key[:24]}",
+                "idempotency_key": idempotency_key,
+                "created_at": utc_now_iso(),
+                **body,
+                "used_results": used_results,
+                "evidence_grade": grade,
+                "policy_version": 2,
+            }
+            receipt["receipt_digest"] = content_fingerprint(receipt)
+            _append_jsonl_durable(outcome_receipts_path(repo_root), receipt)
+            created = True
+        else:
+            receipt = dict(existing)
+            created = False
+        foreign_observation = _foreign_outcome_observation(
+            receipt,
+            observation_context=observation_context,
+        )
+        if foreign_observation is not None:
+            _append_history_event_exact_once(repo_root, foreign_observation)
+
+    # Strong contradictory local evidence keeps its existing immediate safety
+    # action. Foreign authority remains read-only and is changed only by Sleep.
     if classification in {"failure", "misleading", "rework"} and grade == "strong":
         lifecycle = load_lifecycle_state(repo_root, repair_projection=False)
-        for entry_id in normalized_used_ids:
+        for result in used_results:
+            if str(result.get("source_kind") or "") != "local":
+                continue
+            entry_id = str(result.get("entry_id") or "")
             entry_state = lifecycle.get("entries", {}).get(entry_id, {})
             if isinstance(entry_state, Mapping) and str(entry_state.get("status") or "") == "trusted":
                 transition_entry(
@@ -2405,7 +3053,7 @@ def record_outcome_receipt(
                     evidence_fingerprint=idempotency_key,
                     decision_receipt={"outcome_receipt": receipt},
                 )
-    return {**receipt, "created": True, "idempotent_reuse": False}
+    return {**receipt, "created": created, "idempotent_reuse": not created}
 
 
 def record_dream_handoff(

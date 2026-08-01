@@ -42,7 +42,7 @@ Migration SHALL acquire the declared managed-writer boundary, preserve unrelated
 
 #### Scenario: Projection or privacy validation fails
 - **WHEN** any migrated projection, exact binding, scope audit, zero-residual check, or active-index rebuild fails
-- **THEN** migration SHALL restore the prior complete generation, record the blocker, and keep all four retained automations paused
+- **THEN** migration SHALL restore the prior complete generation, record the blocker, and keep both composite automations paused
 
 ### Requirement: Retired authority schemas cut over once with complete inventory evidence
 Before deleting or rebuilding retired store authority, migration SHALL hash
@@ -64,7 +64,7 @@ normal runtime MUST NOT gain a converter, dual reader, alias, or fallback.
 
 #### Scenario: Cutover fails after the old authority is removed
 - **WHEN** model/mesh, projection, index, pointer, or zero-residual validation fails after transactional removal begins
-- **THEN** rollback SHALL restore the exact pre-cutover card, index, pointer, and authority-tree digest and keep all four retained automations paused
+- **THEN** rollback SHALL restore the exact pre-cutover card, index, pointer, and authority-tree digest and keep both composite automations paused
 
 ### Requirement: Installer and install check enforce current model authority
 Every fresh install and upgrade SHALL run the current model-authority migration before readiness checks. The install check SHALL expose structured signals for the exact public ResearchGuard package and `researchguard.logic` member identity, scoped store readiness, model-bound card coverage, projection parity, mesh/index validity, zero legacy authority residuals, skill/install parity, and final strong-session readiness.
@@ -79,4 +79,19 @@ Every fresh install and upgrade SHALL run the current model-authority migration 
 
 #### Scenario: ResearchGuard package identity changes during a long upgrade
 - **WHEN** the current ResearchGuard package and logic member pass preflight and are then replaced, redirected, or edited after their immutable snapshot is committed
-- **THEN** every migration and readiness child SHALL consume only the frozen complete ResearchGuard-package digest, final live mismatch SHALL keep all four automations paused, and no standalone LogicGuard package, compatibility import, or fallback reader SHALL be introduced
+- **THEN** every migration and readiness child SHALL consume only the frozen complete ResearchGuard-package digest, final live mismatch SHALL keep both composite automations paused, and no standalone LogicGuard package, compatibility import, or fallback reader SHALL be introduced
+
+### Requirement: Organization legacy authority has one direct source upgrade
+The organization maintenance upgrade owner SHALL inventory and rewrite legacy
+organization source cards into the current portable projection and LogicGuard
+bundle contract before normal snapshot publication. Snapshot-time wrapping is
+permitted only inside that rollbackable versioned upgrade and SHALL have zero
+normal-runtime readers after cutover.
+
+#### Scenario: Organization source upgrade is interrupted
+- **WHEN** only part of the upgraded source generation or merge/split packet has been staged
+- **THEN** the prior source generation SHALL remain authoritative, no mixed snapshot SHALL activate, and resume SHALL bind the same frozen inventory and idempotency keys
+
+#### Scenario: Organization rollback path exceeds the legacy Windows path limit
+- **WHEN** a valid organization card path is below the legacy Windows limit but the repo-local rollback prefix makes its backup target exceed that limit
+- **THEN** the upgrader SHALL preserve the existing rollback identity, copy and validate the complete tree through the native extended-length filesystem path, and SHALL NOT shorten, omit, or silently skip the card

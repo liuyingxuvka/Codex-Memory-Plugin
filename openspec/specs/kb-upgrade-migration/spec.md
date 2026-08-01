@@ -117,5 +117,5 @@ or predates the final attempt receipt.
   lightweight install state omits or mismatches that attempt's `receipt_hash`
 - **THEN** the independent installation check fails with an exact
   current-attempt binding defect
-- **AND** the four scheduled automations remain paused until one current
+- **AND** the two scheduled composite automations remain paused until one current
   installer transaction persists and verifies the matching binding

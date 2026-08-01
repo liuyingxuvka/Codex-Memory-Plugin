@@ -15,12 +15,21 @@ from local_kb.lifecycle import (
     pending_dream_handoffs,
     record_dream_handoff,
     record_outcome_receipt,
+    record_retrieval_interaction,
     rollback_uncommitted_dream_handoff_acknowledgements,
     run_incremental_sleep,
     sleep_state_path,
     transition_entry,
 )
-from local_kb.maintenance_lanes import acquire_lane_lock, release_lane_lock
+from local_kb.maintenance_lanes import (
+    acquire_global_write_lease,
+    acquire_lane_lock,
+    delegate_global_write_lease,
+    read_global_write_lease,
+    release_delegated_write_lease,
+    release_global_write_lease,
+    release_lane_lock,
+)
 from local_kb.model_maintenance import publish_sleep_model_generation
 from local_kb.search import search_with_receipt
 from local_kb.store import history_events_path, write_yaml_file
@@ -42,6 +51,8 @@ class KbSleepConvergenceTests(unittest.TestCase):
             receipt = run_incremental_sleep(repo_root, run_id="sleep-lock-bound")
 
             self.assertEqual(receipt["final_run_state"], "completed", receipt)
+            self.assertEqual(receipt["global_writer"]["mode"], "standalone")
+            self.assertEqual(read_global_write_lease(repo_root), {})
             self.assertEqual(receipt["lane_lock"]["group"], "local-maintenance")
             self.assertEqual(receipt["lane_lock"]["lane"], "kb-sleep")
             self.assertEqual(receipt["lane_lock"]["run_id"], "sleep-lock-bound")
@@ -50,6 +61,60 @@ class KbSleepConvergenceTests(unittest.TestCase):
             self.assertTrue(receipt["lock_release"]["released"])
             self.assertEqual(receipt["lock_release"]["run_id"], "sleep-lock-bound")
             self.assertEqual(receipt["lock_release"]["lock"]["run_id"], "sleep-lock-bound")
+
+    def test_sleep_requires_exact_scheduled_writer_delegation_without_fallback(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            repo_root = Path(tmp_dir)
+            activate_standard(repo_root)
+            lease = acquire_global_write_lease(
+                repo_root,
+                cycle_kind="local-maintenance-cycle",
+                run_id="cycle-owner",
+                scope="sleep",
+                wait=False,
+            )
+            self.assertTrue(lease["acquired"], lease)
+            delegation = delegate_global_write_lease(
+                repo_root,
+                lease_id=lease["lease_id"],
+                lease_token=lease["lease_token"],
+                child_phase_id="sleep",
+                child_run_id="delegated-sleep",
+                scope="sleep",
+            )
+            self.assertTrue(delegation["ok"], delegation)
+            try:
+                invalid = run_incremental_sleep(
+                    repo_root,
+                    run_id="delegated-sleep",
+                    writer_delegation={
+                        **delegation,
+                        "delegation_token": "wrong-token",
+                    },
+                )
+                receipt = run_incremental_sleep(
+                    repo_root,
+                    run_id="delegated-sleep",
+                    writer_delegation=delegation,
+                )
+                self.assertEqual(invalid["reason"], "global-writer-delegation-invalid")
+                self.assertEqual(receipt["global_writer"]["mode"], "delegated")
+            finally:
+                delegated_release = release_delegated_write_lease(
+                    repo_root,
+                    lease_id=lease["lease_id"],
+                    lease_token=lease["lease_token"],
+                    child_phase_id="sleep",
+                    child_run_id="delegated-sleep",
+                    delegation_token=delegation["delegation_token"],
+                )
+                root_release = release_global_write_lease(
+                    repo_root,
+                    lease_id=lease["lease_id"],
+                    lease_token=lease["lease_token"],
+                )
+            self.assertTrue(delegated_release["ok"], delegated_release)
+            self.assertTrue(root_release["released"], root_release)
 
     def test_sleep_lane_contention_is_retryable_and_does_not_advance_watermark(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -161,10 +226,19 @@ class KbSleepConvergenceTests(unittest.TestCase):
                 repo_root,
                 query="migration checkpoint fingerprint",
             )
+            result_ref = retrieval["returned_results"][0]["result_ref"]
+            record_retrieval_interaction(
+                repo_root,
+                request_id=retrieval["request_id"],
+                result_refs=[result_ref],
+                interaction="used",
+                event_id="test:candidate-promotion:used",
+                actor="pytest",
+            )
             record_outcome_receipt(
                 repo_root,
                 request_id=retrieval["request_id"],
-                used_entry_ids=[entry_id],
+                used_result_refs=[result_ref],
                 outcome="success",
                 evidence_kind="test",
                 evidence_ref="pytest:independent-support",
@@ -176,7 +250,7 @@ class KbSleepConvergenceTests(unittest.TestCase):
             record_outcome_receipt(
                 repo_root,
                 request_id=retrieval["request_id"],
-                used_entry_ids=[entry_id],
+                used_result_refs=[result_ref],
                 outcome="success",
                 evidence_kind="validation",
                 evidence_ref="validator:semantic-current",

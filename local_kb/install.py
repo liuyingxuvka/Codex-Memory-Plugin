@@ -125,21 +125,25 @@ MAINTENANCE_SKILL_SPECS = (
     {
         "name": "kb-sleep-maintenance",
         "automation_id": "kb-sleep",
+        "execution_kind": "scheduled",
         "prompt_marker": "MAINTENANCE_PROMPT.md",
     },
     {
         "name": "kb-dream-pass",
-        "automation_id": "kb-dream",
+        "automation_id": "",
+        "execution_kind": "composite-child",
         "prompt_marker": "DREAM_PROMPT.md",
     },
     {
         "name": "kb-organization-contribute",
-        "automation_id": "kb-org-contribute",
+        "automation_id": "",
+        "execution_kind": "composite-child",
         "prompt_marker": "scripts/kb_org_outbox.py",
     },
     {
         "name": "kb-organization-maintenance",
         "automation_id": "kb-org-maintenance",
+        "execution_kind": "scheduled",
         "prompt_marker": "scripts/kb_org_maintainer.py",
     },
     {
@@ -204,18 +208,18 @@ SLEEP_AUTOMATION_PROMPT = (
     "before the outer hard timeout. Report previous_remaining, newly_eligible, opening_remaining, target_batch_size, "
     "completed_this_attempt, blocked_this_attempt, closing_remaining, net_reduction, and convergence_status under one "
     "counting rule. progress_saved or failure leaves the committed watermark and prior validated generation unchanged and "
-    "records the organization cycle as not_run when the local cycle cannot reach a clean Sleep terminal. "
+    "records only Dream as not_run when the local cycle cannot reach a clean Sleep terminal; the independent organization task remains untouched. "
     "A named blocked item with an executable reopen condition may produce completed_with_blocks after settled siblings "
-    "publish; do not start the Dream phase or organization cycle with reason sleep-completed-with-blocks. "
+    "publish; do not start Dream, and do not change the independent organization task. "
     "The wrapper owns same-run terminalization: do not invoke kb_lane_status.py, retry the child, request human file review, "
     "start a second maintenance implementation, or resume another automation."
 )
 
 DREAM_AUTOMATION_PROMPT = (
-    "Use $kb-dream-pass for one fully automatic bounded Dream pass. Read PROJECT_SPEC.md, "
+    "Use $kb-dream-pass for the bounded Dream child phase of local maintenance or an explicit diagnostic; Dream has no independent schedule. Read PROJECT_SPEC.md, "
     "docs/maintenance_agent_worldview.md, docs/dream_runbook.md, and "
     ".agents/skills/local-kb-retrieve/DREAM_PROMPT.md, then run only "
-    "`python scripts/run_kb_automation.py --skill kb-dream-pass --json`. The target-owned runner invokes the "
+    "`python scripts/run_kb_automation.py --skill kb-dream-pass --json` only for an explicit diagnostic. The local-cycle owner invokes the "
     "native Dream entrypoint `.agents/skills/local-kb-retrieve/scripts/kb_dream.py` exactly once and validates this run's immutable native terminal receipt; do not "
     "run the child entrypoint directly. First pin the exact LogicGuard generation, model revision, root ArgumentBlock, "
     "and ModelMesh revision. Derive decision-relevant stable fingerprints, skip already closed unchanged evidence as "
@@ -227,20 +231,19 @@ DREAM_AUTOMATION_PROMPT = (
 )
 
 ORG_CONTRIBUTE_AUTOMATION_PROMPT = (
-    "Use $kb-organization-contribute to run one settings-gated organization KB contribution pass for this workspace. "
+    "Use $kb-organization-contribute for the settings-gated contribution child phase of the organization cycle or an explicit diagnostic; it has no independent schedule. "
     "Use PROJECT_SPEC.md, docs/organization_mode_plan.md, and .agents/skills/local-kb-retrieve/SKILL.md "
     "as the authoritative guides. Start by reading .local/khaos_brain_desktop_settings.json through "
     "scripts/kb_org_outbox.py --automation; if the desktop settings are personal mode, missing, unvalidated, or not "
     "connected to a validated organization repository, return a successful no-op. When organization mode is valid, "
     "sync the organization mirror first, run KB preflight against system/knowledge-library/organization, then export only shareable public model and "
-    "heuristic cards through the content-hash-gated outbox. Respect every exchanged hash including downloaded, used, absorbed, exported, uploaded, "
-    "current local card hashes, current organization main-card hashes, and current import hashes; do not export "
+    "heuristic cards through the content-hash-gated outbox. Respect current catalog, import, exported, uploaded, prior contribution, and current local-card hashes; viewed, selected, and used are evidence events rather than copied-card states. Do not export "
     "private cards, personal preferences, credentials, raw local paths, or raw machine identifiers. When cards "
     "depend on local Skills, upload card-bound Skill bundles with bundle_id, content_hash, version_time, "
     "original_author, readonly_when_imported, and update_policy=original_author_only; if several local cards point "
     "at the same bundle_id, upload the local latest version for that bundle rather than an older card-carried copy. Use "
-    "`python scripts/run_kb_automation.py --skill kb-organization-contribute --json` for the scheduled pass; "
-    "the target-owned runner invokes scripts/kb_org_outbox.py --automation exactly once and validates the immutable native "
+    "`python scripts/run_kb_automation.py --skill kb-organization-contribute --json` only for an explicit diagnostic; "
+    "the organization-cycle owner invokes scripts/kb_org_outbox.py --automation exactly once after maintenance and validates the immutable native "
     "terminal receipt. Do not run the child entrypoint directly. The native pass should prepare an import branch under kb/imports, then revalidate the exact materialized changed paths, counts, hashes, privacy/shareability, Skill author/version/hash metadata, and base-branch rollback before any push, then push eligible import proposals automatically only after that current revalidation, open a GitHub PR when available, and apply org-kb:auto-merge only when current checks allow it "
     "while leaving movement into organization main, trust upgrades, and final merge to organization maintenance and GitHub checks. Run KB postflight after "
     "any non-skipped pass, record a "
@@ -253,7 +256,7 @@ ORG_MAINTENANCE_AUTOMATION_PROMPT = (
     "Use $kb-organization-maintenance to run the single settings-gated organization maintenance cycle for this workspace. "
     "Treat the organization KB as a shared exchange layer rather than a central truth layer: "
     "organization maintenance may maintain organization main cards and imported card content with the same editorial "
-    "posture as local Sleep, while local machines keep final adoption authority. Use PROJECT_SPEC.md, "
+    "posture as local Sleep, while local machines directly use synchronized cards and keep final weighting authority. Use PROJECT_SPEC.md, "
     "docs/maintenance_agent_worldview.md, docs/organization_mode_plan.md, "
     ".agents/skills/local-kb-retrieve/SKILL.md, and organization-review guidance when available. Start by "
     "running only `python scripts/run_kb_automation.py --skill kb-organization-maintenance --json`; the "
@@ -263,21 +266,21 @@ ORG_MAINTENANCE_AUTOMATION_PROMPT = (
     "desktop settings are personal mode, missing, unvalidated, or organization maintenance participation is not "
     "requested, return a successful no-op. When participation is available for a validated organization "
     "repository, run KB preflight against system/knowledge-library/organization, validate the organization "
-    "manifest, expected paths, imports entry lane, main exchange lane, Skill registry, and current Git state, "
+    "schema-2 manifest, exact catalog identities, imports entry lane, main exchange lane, portable LogicGuard bundles, Skill registry, and current Git state; the versioned direct-to-current upgrader is the only legacy input route, "
     "then run the organization card-surface map checkpoint, organization candidate intake checkpoint, content-hash checkpoint, mandatory organization "
     "similar-card merge checkpoint, mandatory organization overloaded-card split checkpoint, candidate decision "
     "checkpoint, Skill safety checkpoint, Skill bundle version checkpoint, decision-apply checkpoint, post-apply organization check, and GitHub merge-readiness checkpoint. Inspect organization trusted cards, candidates, "
     "main cards, imports, Skill registry entries, card-and-Skill bundles, privacy boundaries, and GitHub auto-merge readiness "
-    "using the organization maintenance worldview and organization-review guidance when available. Treat duplicate content hashes as maintenance signals; duplicate entry ids remain visible and the snapshot upgrader assigns deterministic legacy ids so both cards survive. Every active card must be staged as a complete validated LogicGuard model, ModelMesh, and projection bundle before the snapshot pointer can move. Trusted/shared card content maintenance is allowed when the evidence supports a "
-    "Sleep-style keep, reject, watch, merge, split, rewrite, promote, demote, deprecate, or cross-link decision. "
+    "using the organization maintenance worldview and organization-review guidance when available. Treat duplicate content hashes as maintenance signals; the source upgrader assigns stable identities before normal validation, and duplicate current ids fail closed. Every active source card must already carry a validated portable LogicGuard bundle; the snapshot copies exact bundles into one immutable content-addressed generation and advances its pointer by compare-and-swap. Trusted/shared card content maintenance is allowed when the evidence supports a "
+    "Sleep-style keep, reject, merge, split, rewrite, promote, demote, deprecate, or cross-link decision. Merge/split decisions must yield a reversible apply packet, a typed keep decision, or blocked evidence with an executable reopen condition; generic watch is not terminal. "
     "For card-bound Skill bundles, group by bundle_id, approve only original-author updates "
     "on the same bundle, require sha256 content_hash and version_time, treat non-author changes as forks, and select "
     "the latest approved version by version_time for organization distribution. Use candidate, approved, and rejected "
     "as the first-pass Skill states; do not auto-install candidate, rejected, unknown, unpinned, or non-hash-verified "
-    "Skills. Build an organization Sleep decision set over cleanup proposals, select-for-apply or watch each action with a reason, treat organization-review as guidance rather than an apply gate, and apply only exact selected action ids. "
+    "Skills. Build an organization Sleep decision set over cleanup proposals, treat organization-review as guidance rather than an apply gate, and apply only exact selected packet ids through the current source publication transaction. "
     "Keep privacy and executable Skill boundaries stricter than ordinary card content. It is acceptable to skip applying a change when evidence, "
     "safety, tooling, permissions, or scope is insufficient, but the inspection and recorded decision must still "
-    "happen. After organization maintenance, run the existing contribution facade in the same task through one pinned sync context so upload and download are one serialized cycle; ordinary retrieval uses only the immutable local snapshot and never lazily downloads or adopts a card. Refresh the complete validated LogicGuard snapshot before retrieval. Run KB postflight after any non-skipped pass, record a structured observation, and report the settings "
+    "happen. After organization maintenance, run the existing contribution facade in the same task through one pinned sync context; ordinary retrieval uses only the already synchronized immutable snapshot and never lazily downloads, copies, or adopts a card. Run KB postflight after any non-skipped pass, record a structured observation, and report the settings "
     "gate, participation status, preflight entries, manifest status, main status counts and import counts, content-hash "
     "duplicate decisions, organization merge checkpoint decisions, organization split checkpoint decisions, "
     "candidate approval or rejection decisions, Sleep decision counts, selected action ids, apply result, post-apply check result, maintenance branch, PR, push, and auto-merge-label result, Skill dependency decisions, Skill bundle version decisions, GitHub "
@@ -3997,26 +4000,6 @@ def build_installation_check(
                     issues_for_automation.append(
                         f"Automation {expected['id']} prompt is missing required marker: {marker}"
                     )
-            if expected["id"] == "kb-dream" and "kb_dream.py" not in prompt_text:
-                issues_for_automation.append("Automation kb-dream prompt must reference kb_dream.py.")
-            if expected["id"] == "kb-dream":
-                for marker in (
-                    "docs/maintenance_agent_worldview.md",
-                    "stable fingerprints",
-                    "no_delta_closed",
-                    "pin the exact LogicGuard generation",
-                    "evidence removal",
-                    "assumption removal",
-                    "rebuttal strengthening",
-                    "typed idempotent Sleep handoffs",
-                    "must not directly write cards",
-                    "canonical generation unchanged",
-                    "no-op is a successful convergent result",
-                ):
-                    if marker not in prompt_text:
-                        issues_for_automation.append(
-                            f"Automation kb-dream prompt is missing dream lifecycle marker: {marker}"
-                        )
             if expected["id"] == "kb-sleep" and "MAINTENANCE_PROMPT.md" not in prompt_text:
                 issues_for_automation.append(
                     "Automation kb-sleep prompt must reference MAINTENANCE_PROMPT.md."
@@ -4033,7 +4016,7 @@ def build_installation_check(
                     "previous_remaining",
                     "closing_remaining",
                     "convergence_status",
-                    "organization cycle as not_run",
+                    "independent organization task remains untouched",
                     "explicit disposition",
                     "executable reopen conditions",
                     "sole canonical model-generation publisher",
@@ -4043,7 +4026,7 @@ def build_installation_check(
                     "typed Dream handoffs exactly once",
                     "second phase",
                     "local-cycle",
-                    "do not start the Dream phase",
+                    "do not start Dream",
                     "commit the watermark only after",
                     "do not invoke kb_lane_status.py",
                     "request human file review",
@@ -4051,27 +4034,6 @@ def build_installation_check(
                     if marker not in prompt_text:
                         issues_for_automation.append(
                             f"Automation kb-sleep prompt is missing sleep lifecycle marker: {marker}"
-                        )
-            if expected["id"] == "kb-org-contribute":
-                for marker in (
-                    "scripts/kb_org_outbox.py",
-                    "desktop settings",
-                    "organization mode",
-                    "validated organization repository",
-                    "successful no-op",
-                    "sync the organization mirror first",
-                    "KB preflight",
-                    "content-hash-gated outbox",
-                    "every exchanged hash",
-                    "downloaded, used, absorbed, exported, uploaded",
-                    "prepare an import branch",
-                    "push eligible import proposals automatically",
-                    "org-kb:auto-merge",
-                    "KB postflight",
-                ):
-                    if marker not in prompt_text:
-                        issues_for_automation.append(
-                            f"Automation kb-org-contribute prompt is missing organization contribution marker: {marker}"
                         )
             if expected["id"] == "kb-org-maintenance":
                 for marker in (
@@ -4095,17 +4057,17 @@ def build_installation_check(
                     "organization-review",
                     "Skill registry",
                     "duplicate content hashes",
-                    "duplicate entry ids",
-                    "deterministic legacy ids",
-                    "complete validated LogicGuard model",
-                    "ordinary retrieval uses only the immutable local snapshot",
+                    "duplicate current ids fail closed",
+                    "source upgrader assigns stable identities",
+                    "validated portable LogicGuard bundle",
+                    "ordinary retrieval uses only the already synchronized immutable snapshot",
                     "bundle_id",
                     "original-author updates",
                     "latest approved version by version_time",
                     "do not auto-install",
                     "organization Sleep decision set",
                     "organization-review as guidance rather than an apply gate",
-                    "exact selected action ids",
+                    "exact selected packet ids",
                     "post-apply check result",
                     "maintenance branch, PR, push, and auto-merge-label result",
                     "KB postflight",

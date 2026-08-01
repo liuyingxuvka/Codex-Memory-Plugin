@@ -45,14 +45,19 @@
         },
         "excluded_behavior_ids": [
           "filtered-scan-on-index-failure",
-          "unindexed-card-scan-before-current-standard"
+          "unindexed-card-scan-before-current-standard",
+          "local-first-result-truncation",
+          "task-time-organization-fetch",
+          "view-counted-as-use",
+          "foreign-card-adoption-or-skill-install",
+          "foreground-full-lifecycle-replay"
         ],
-        "expected_result": "results or a no-card receipt come only from the validated current active index",
-        "expected_terminal": "ranked_current_results_or_no_card",
+        "expected_result": "one globally ranked result list and one receipt bind exact local or foreign result references; foreign context remains read-only, and foreground retrieval never replays lifecycle history",
+        "expected_terminal": "combined_ranked_results_or_no_card",
         "external_differences": [],
-        "failure_boundary": "a missing, stale, or invalid index returns an explicit unavailable error and never scans another authority",
+        "failure_boundary": "missing current local authority or foreign snapshot, local-first truncation, task-time network fetch, or ambiguous result identity fails visibly; missing or stale compact foreign calibration blocks foreign results without a replay fallback",
         "in_scope": true,
-        "label": "Serve predictive retrieval only from the validated current index",
+        "label": "Rank current local and organization knowledge in one source-qualified retrieval",
         "lookup_binding": {
           "error_signatures": [
             "catalog-performance:30.620497>30.000000",
@@ -108,7 +113,7 @@
         "preconditions": [
           "current maintenance standard is committed"
         ],
-        "primary_owner_model_id": "kb_convergence_upgrade_model.LifecycleConvergenceBlock",
+        "primary_owner_model_id": "khaos_brain_logicguard_system",
         "rationale": "The active index is the sole retrieval authority; an alternate reader would recreate stale eligibility risk. Distinct cards in one exact generation and authority scope reuse the same immutable mesh view so large local brains remain within the declared runtime budget.",
         "relations": [],
         "replacement_state": "active",
@@ -120,11 +125,18 @@
         "source_surface_ids": [
           "surface:retrieval-api",
           "surface:retrieval-cli",
-          "surface:retrieval-spec"
+          "surface:retrieval-spec",
+          "surface:organization-snapshot-retrieval",
+          "surface:retrieval-interactions",
+          "surface:foreign-calibration-projection"
         ],
-        "state_writes": [],
+        "state_writes": [
+          "combined retrieval receipt",
+          "viewed/selected/used/outcome evidence"
+        ],
         "supporting_model_ids": [
-          "khaos_brain_logicguard_runtime_model_miss"
+          "khaos_brain_logicguard_runtime_model_miss",
+          "khaos_brain_two_maintenance_cycle_flow"
         ],
         "surface_delegation_only": false,
         "trigger": "requests predictive knowledge",
@@ -165,12 +177,12 @@
           "same-thread-self-deadlock",
           "hidden-writer-lock-release-failure"
         ],
-        "expected_result": "one exact PID/thread/token owner performs the mutation; live competing owners are not displaced; the active owner thread may safely reenter; dead or interrupted owners are recovered",
+        "expected_result": "local and organization tasks keep independent leases while every overlapping durable write has exactly one global owner or exact child delegation",
         "expected_terminal": "writer_released_or_visible_non_success",
         "external_differences": [],
-        "failure_boundary": "a live owner remains authoritative, while an unrecoverable acquisition or release failure blocks Sleep, Dream, postflight, and index completion visibly",
+        "failure_boundary": "dual ownership, partial delegation identity, leaked token, live-owner steal, or cleanup-unconfirmed recovery blocks mutation visibly",
         "in_scope": true,
-        "label": "Serialize lifecycle mutation through one recoverable identified writer",
+        "label": "Serialize overlapping durable mutation through one global delegated writer",
         "lookup_binding": {
           "error_signatures": [
             "Lifecycle writer lock is busy"
@@ -221,7 +233,7 @@
         "preconditions": [
           "the lifecycle authority root is current"
         ],
-        "primary_owner_model_id": "kb_convergence_upgrade_model.LifecycleConvergenceBlock",
+        "primary_owner_model_id": "khaos_brain_logicguard_system",
         "rationale": "Lifecycle mutation and active-index activation need one shared ownership contract; directory existence alone cannot distinguish a live writer from interrupted state or prove terminal release.",
         "relations": [],
         "replacement_state": "active",
@@ -236,14 +248,17 @@
         "source_surface_ids": [
           "surface:lifecycle-writer-lock",
           "surface:active-index-lifecycle-lock",
-          "surface:lifecycle-writer-lock-spec"
+          "surface:lifecycle-writer-lock-spec",
+          "surface:global-maintenance-writer"
         ],
         "state_writes": [
-          "lifecycle events",
-          "lifecycle projection",
-          "active-index authority"
+          "lifecycle/model/index authority",
+          "organization source/snapshot authority",
+          "global writer/delegation lease state"
         ],
-        "supporting_model_ids": [],
+        "supporting_model_ids": [
+          "khaos_brain_two_maintenance_cycle_flow"
+        ],
         "surface_delegation_only": false,
         "trigger": "mutates lifecycle state or activates a rebuilt index generation",
         "validation_boundary": "FlowGuard lifecycle known-bad proofs, focused lock protocol tests, real Sleep/Dream receipts, and aggregate readiness",
@@ -429,24 +444,31 @@
         },
         "excluded_behavior_ids": [
           "legacy-trusted-candidates-runtime-reader",
-          "legacy-layout-download-path"
+          "legacy-layout-download-path",
+          "task-time-lazy-download",
+          "local-adopted-card-copy",
+          "card-triggered-skill-install",
+          "equal-card-count-coverage-substitution",
+          "irreversible-similarity-only-merge"
         ],
-        "expected_result": "organization cards are read from kb/main, incoming material is read from kb/imports, and every distinct maintenance decision has one stable unique id with an exact count",
-        "expected_terminal": "current_layout_valid_or_explicitly_blocked",
+        "expected_result": "schema-2 catalog, exact card-bound LogicGuard bundles, reversible maintenance decisions, and one complete content-addressed foreign snapshot",
+        "expected_terminal": "current_source_and_snapshot_or_explicit_blocker",
         "external_differences": [],
-        "failure_boundary": "old trusted/candidates roots or an old manifest block runtime use and are handled only by the upgrade migrator",
+        "failure_boundary": "old runtime reader, incomplete identity coverage, unsupported upgrade item, incomplete Windows rollback copy, irreversible merge/split, or partial pointer activation remains blocked",
         "in_scope": true,
-        "label": "Consume organization knowledge only from the current main/imports schema",
+        "label": "Upgrade, maintain, and snapshot one current organization card contract",
         "lookup_binding": {
           "error_signatures": [],
           "metadata": {},
           "path_patterns": [
+            "local_kb/org_source_contract.py",
+            "local_kb/org_migration.py",
             "local_kb/org_sources.py",
+            "local_kb/org_snapshot.py",
             "local_kb/org_cleanup.py",
             "local_kb/org_maintenance.py",
-            "local_kb/store.py",
+            "local_kb/org_cycle.py",
             "local_kb/org_outbox.py",
-            "local_kb/adoption.py",
             "templates/github/org_kb_check.py"
           ],
           "task_terms": [
@@ -487,7 +509,7 @@
         "preconditions": [
           "the organization mirror has completed direct canonical migration"
         ],
-        "primary_owner_model_id": "kb_convergence_upgrade_model.UpgradeMigrationBlock",
+        "primary_owner_model_id": "khaos_brain_logicguard_system",
         "rationale": "An old organization layout is migration input, never a second daily authority.",
         "relations": [],
         "replacement_state": "active",
@@ -502,12 +524,17 @@
           "surface:organization-maintenance",
           "surface:organization-runtime-reader",
           "surface:organization-outbox-dedupe",
-          "surface:organization-adoption",
           "surface:organization-github-check",
-          "surface:organization-decision-identity"
+          "surface:organization-decision-identity",
+          "surface:organization-source-contract",
+          "surface:organization-snapshot",
+          "surface:organization-merge-split-packets",
+          "surface:organization-migration-rollback"
         ],
         "state_writes": [],
-        "supporting_model_ids": [],
+        "supporting_model_ids": [
+          "khaos_brain_two_maintenance_cycle_flow"
+        ],
         "surface_delegation_only": false,
         "trigger": "connects, validates, downloads, or maintains an organization KB",
         "validation_boundary": "organization schema migration, current-layout validation, and scheduled production receipt",
@@ -650,12 +677,12 @@
           "background-full-validation-retry",
           "missing-target-native-receipt"
         ],
-        "expected_result": "each maintenance unit validates its own performed or not-applicable obligations from exact target-native fields and writes one immutable receipt for its own run",
+        "expected_result": "five maintained Skills are classified as two scheduled owners, two composite children, and one explicit-user-only updater; each scheduled owner writes one identity-bound immutable receipt-v3 terminal",
         "expected_terminal": "target_native_terminal_or_explicit_block",
         "external_differences": [],
-        "failure_boundary": "missing or forged target-native evidence, nonexistent branch fields, generic shared no-op evidence, cross-unit receipt reuse, or author-control runtime dependence blocks completion",
+        "failure_boundary": "stale or partial child evidence, run-id-only reuse, cross-task not_run, cleanup-unconfirmed timeout, child/outer receipt inversion, or planning-only test evidence blocks completion",
         "in_scope": true,
-        "label": "Close each scheduled automation only from its own proof-bound native receipt",
+        "label": "Close two scheduled owners from exact receipt-v3 terminal evidence",
         "lookup_binding": {
           "error_signatures": [],
           "metadata": {},
@@ -707,7 +734,7 @@
           "the selected target skill and its native entrypoint are current",
           "the exact target-owned run id and command identity are frozen before native execution"
         ],
-        "primary_owner_model_id": "kb_convergence_upgrade_model.AutomationRuntimeAssuranceBlock",
+        "primary_owner_model_id": "khaos_brain_logicguard_system",
         "rationale": "A skill proves its own work. Author-side depth certification remains separate and no other skill may reuse this run as completion evidence.",
         "relations": [],
         "replacement_state": "active",
@@ -721,10 +748,15 @@
           "surface:automation-depth-projection",
           "surface:automation-contract-generation",
           "surface:automation-terminal-builder",
-          "surface:automation-frozen-supervision-session"
+          "surface:automation-frozen-supervision-session",
+          "surface:local-cycle-receipt-v3",
+          "surface:organization-cycle-receipt-v3",
+          "surface:automation-receipt-layering"
         ],
         "state_writes": [],
-        "supporting_model_ids": [],
+        "supporting_model_ids": [
+          "khaos_brain_two_maintenance_cycle_flow"
+        ],
         "surface_delegation_only": false,
         "trigger": "receives one immutable native automation receipt",
         "validation_boundary": "FlowGuard known-bad cases, distinct target-native receipt tests, source-only author contract audit, and aggregate readiness",
@@ -835,7 +867,7 @@
           "scoped_out_reason": ""
         },
         "preconditions": [
-          "all four retained background automations are transaction-paused"
+          "both retained scheduled automations are transaction-paused"
         ],
         "primary_owner_model_id": "kb_convergence_upgrade_model.UpgradeMigrationBlock",
         "rationale": "Old shapes are bounded migration input; successful normal operation has exactly one current path.",
@@ -1094,7 +1126,7 @@
           "fast-forward source",
           "run direct migration",
           "transactionally install managed surfaces",
-          "restore four surviving automations after closure"
+          "restore both scheduled composite automations after closure"
         ],
         "similarity_obligation_ids": [],
         "similarity_relation_ids": [],
@@ -1271,8 +1303,8 @@
           "delete-similarly-named-user-automation",
           "retire-manual-update-skill"
         ],
-        "expected_result": "fresh install, upgrade, repair, and repeat install retain four background automations, keep the manual skill, and keep the exact old task absent",
-        "expected_terminal": "exact_retired_task_absent_and_four_survivors_preserved",
+        "expected_result": "fresh install, upgrade, repair, and repeat install retain two scheduled composite automations, keep both child Skills and the explicit-user-only updater, and keep the exact old task absent",
+        "expected_terminal": "exact_retired_task_absent_and_two_scheduled_owners_preserved",
         "external_differences": [],
         "failure_boundary": "any exact retired-task residual, recreation, survivor-state loss, or similarly named user-asset mutation blocks installation confidence",
         "in_scope": true,
@@ -1286,9 +1318,9 @@
           ],
           "task_terms": [
             "retire system update automation",
-            "four surviving automations",
+            "two scheduled composite automations",
             "repeat install",
-            "manual update skill"
+            "explicit-user-only update skill"
           ],
           "tool_ids": [],
           "workflow_families": [
@@ -1336,8 +1368,8 @@
         "scoped_out_reason": "",
         "side_effects": [
           "remove exact managed automation directory",
-          "preserve four survivor states",
-          "install manual update skill"
+          "preserve both scheduled-owner states",
+          "install composite-child and explicit-user-only Skills"
         ],
         "similarity_obligation_ids": [],
         "similarity_relation_ids": [],
@@ -1447,7 +1479,7 @@
         "variant_of_business_intent_id": ""
       }
     ],
-    "current_revision": "status-only-manual-update-20260716",
+    "current_revision": "logicguard-org-windows-rollback-path-20260731",
     "expected_business_intent_ids": [
       "intent:serve-predictive-retrieval",
       "intent:serialize-lifecycle-mutation",
@@ -1492,7 +1524,6 @@
       "surface:organization-maintenance",
       "surface:organization-runtime-reader",
       "surface:organization-outbox-dedupe",
-      "surface:organization-adoption",
       "surface:organization-github-check",
       "surface:organization-decision-identity",
       "surface:automation-runtime-resolver",
@@ -1518,13 +1549,24 @@
       "surface:manual-update-native-receipt",
       "surface:manual-update-skill",
       "surface:update-automation-retirement",
-      "surface:update-retirement-openspec"
+      "surface:update-retirement-openspec",
+      "surface:organization-snapshot-retrieval",
+      "surface:retrieval-interactions",
+      "surface:foreign-calibration-projection",
+      "surface:global-maintenance-writer",
+      "surface:organization-source-contract",
+      "surface:organization-migration-rollback",
+      "surface:organization-snapshot",
+      "surface:organization-merge-split-packets",
+      "surface:local-cycle-receipt-v3",
+      "surface:organization-cycle-receipt-v3",
+      "surface:automation-receipt-layering"
     ],
     "ledger_id": "ledger:chaos-brain-current-runtime",
     "metadata": {},
     "owner": "Chaos Brain upgrade",
     "project_boundary": "Chaos Brain current runtime and direct upgrade migration",
-    "rationale": "Register the sole current success paths before removing every compatibility and fallback surface.",
+    "rationale": "Register the sole current LogicGuard, organization-snapshot, unified retrieval, and two-scheduled-owner success paths.",
     "require_complete_source_inventory": false,
     "require_current_evidence": false,
     "require_risk_gates_for_broad_claim": true,
@@ -2109,40 +2151,6 @@
         "surface_id": "surface:organization-outbox-dedupe",
         "surface_kind": "process",
         "validation_boundary": "organization outbox tests and current-runtime static gate"
-      },
-      {
-        "business_intent_ids": [
-          "intent:consume-organization-knowledge"
-        ],
-        "commitment_ids": [
-          "commitment:organization-current-layout"
-        ],
-        "content_fingerprint": "",
-        "coverage_disposition": "modeled",
-        "declared_semantics_fingerprint": "",
-        "delegated_owner_inventory_id": "",
-        "delegates_to_primary_path": false,
-        "delegation_relation_type": "",
-        "discovery_evidence_ids": [],
-        "freshness_state": "current",
-        "in_scope": true,
-        "inventory_revision": "",
-        "label": "",
-        "metadata": {},
-        "native_artifact_id": "",
-        "native_evidence_ids": [],
-        "owner": "UpgradeMigrationBlock",
-        "primary_path_id": "",
-        "rationale": "Adoption consumes only current organization cards and commits the resulting local active index.",
-        "scoped_out_reason": "",
-        "similarity_obligation_ids": [],
-        "similarity_relation_ids": [],
-        "source_authority_role": "normative",
-        "source_ref": "local_kb/adoption.py#adopt_organization_entry",
-        "source_system_id": "",
-        "surface_id": "surface:organization-adoption",
-        "surface_kind": "api",
-        "validation_boundary": "organization adoption and active-index commit tests"
       },
       {
         "business_intent_ids": [
@@ -2983,7 +2991,7 @@
         "native_evidence_ids": [],
         "owner": "UpgradeMigrationBlock",
         "primary_path_id": "",
-        "rationale": "Installer-owned exact retirement, four-survivor state preservation, and manual-skill retention.",
+        "rationale": "Installer-owned exact retirement, two-scheduled-owner state preservation, two child Skills, and manual-skill retention.",
         "scoped_out_reason": "",
         "similarity_obligation_ids": [],
         "similarity_relation_ids": [],
@@ -3027,6 +3035,380 @@
         "surface_id": "surface:update-retirement-openspec",
         "surface_kind": "doc",
         "validation_boundary": "OpenSpec 1.6.0 strict validation"
+      },
+      {
+        "business_intent_ids": [
+          "intent:serve-predictive-retrieval"
+        ],
+        "commitment_ids": [
+          "commitment:kb-retrieval-current-index"
+        ],
+        "content_fingerprint": "",
+        "coverage_disposition": "modeled",
+        "declared_semantics_fingerprint": "",
+        "delegated_owner_inventory_id": "",
+        "delegates_to_primary_path": false,
+        "delegation_relation_type": "",
+        "discovery_evidence_ids": [],
+        "freshness_state": "current",
+        "in_scope": true,
+        "inventory_revision": "",
+        "label": "",
+        "metadata": {},
+        "native_artifact_id": "",
+        "native_evidence_ids": [],
+        "owner": "Unified retrieval owner",
+        "primary_path_id": "",
+        "rationale": "One ranking consumes the already cached foreign snapshot without task-time networking.",
+        "scoped_out_reason": "",
+        "similarity_obligation_ids": [],
+        "similarity_relation_ids": [],
+        "source_authority_role": "normative",
+        "source_ref": "local_kb/search.py#search_with_receipt",
+        "source_system_id": "",
+        "surface_id": "surface:organization-snapshot-retrieval",
+        "surface_kind": "api",
+        "validation_boundary": "multi-source global-ranking, no-network, and exact result-ref tests"
+      },
+      {
+        "business_intent_ids": [
+          "intent:serve-predictive-retrieval"
+        ],
+        "commitment_ids": [
+          "commitment:kb-retrieval-current-index"
+        ],
+        "content_fingerprint": "",
+        "coverage_disposition": "modeled",
+        "declared_semantics_fingerprint": "",
+        "delegated_owner_inventory_id": "",
+        "delegates_to_primary_path": false,
+        "delegation_relation_type": "",
+        "discovery_evidence_ids": [],
+        "freshness_state": "current",
+        "in_scope": true,
+        "inventory_revision": "",
+        "label": "",
+        "metadata": {},
+        "native_artifact_id": "",
+        "native_evidence_ids": [],
+        "owner": "Retrieval evidence owner",
+        "primary_path_id": "",
+        "rationale": "Viewed, selected, used, and outcome evidence retain exact source-qualified result identity.",
+        "scoped_out_reason": "",
+        "similarity_obligation_ids": [],
+        "similarity_relation_ids": [],
+        "source_authority_role": "normative",
+        "source_ref": "local_kb/lifecycle.py#record_retrieval_interaction",
+        "source_system_id": "",
+        "surface_id": "surface:retrieval-interactions",
+        "surface_kind": "api",
+        "validation_boundary": "interaction ordering, UI detail-view, and foreign calibration tests"
+      },
+      {
+        "business_intent_ids": [
+          "intent:serve-predictive-retrieval"
+        ],
+        "commitment_ids": [
+          "commitment:kb-retrieval-current-index"
+        ],
+        "content_fingerprint": "",
+        "coverage_disposition": "modeled",
+        "declared_semantics_fingerprint": "",
+        "delegated_owner_inventory_id": "",
+        "delegates_to_primary_path": false,
+        "delegation_relation_type": "",
+        "discovery_evidence_ids": [],
+        "freshness_state": "current",
+        "in_scope": true,
+        "inventory_revision": "",
+        "label": "",
+        "metadata": {},
+        "native_artifact_id": "",
+        "native_evidence_ids": [],
+        "owner": "Foreign calibration projection owner",
+        "primary_path_id": "",
+        "rationale": "Foreground organization retrieval reads one current compact projection; Sleep/upgrade alone repairs it from lifecycle history.",
+        "scoped_out_reason": "",
+        "similarity_obligation_ids": [],
+        "similarity_relation_ids": [],
+        "source_authority_role": "normative",
+        "source_ref": "local_kb/lifecycle.py#load_current_foreign_calibration",
+        "source_system_id": "",
+        "surface_id": "surface:foreign-calibration-projection",
+        "surface_kind": "api",
+        "validation_boundary": "local zero-read, organization no-replay, stale-projection, and P95 retrieval tests"
+      },
+      {
+        "business_intent_ids": [
+          "intent:serialize-lifecycle-mutation"
+        ],
+        "commitment_ids": [
+          "commitment:lifecycle-writer-exclusive-current-owner"
+        ],
+        "content_fingerprint": "",
+        "coverage_disposition": "modeled",
+        "declared_semantics_fingerprint": "",
+        "delegated_owner_inventory_id": "",
+        "delegates_to_primary_path": false,
+        "delegation_relation_type": "",
+        "discovery_evidence_ids": [],
+        "freshness_state": "current",
+        "in_scope": true,
+        "inventory_revision": "",
+        "label": "",
+        "metadata": {},
+        "native_artifact_id": "",
+        "native_evidence_ids": [],
+        "owner": "Global maintenance writer protocol",
+        "primary_path_id": "",
+        "rationale": "Independent tasks serialize only overlapping durable writes and delegate exact child identity.",
+        "scoped_out_reason": "",
+        "similarity_obligation_ids": [],
+        "similarity_relation_ids": [],
+        "source_authority_role": "normative",
+        "source_ref": "local_kb/maintenance_lanes.py#acquire_global_write_lease",
+        "source_system_id": "",
+        "surface_id": "surface:global-maintenance-writer",
+        "surface_kind": "api",
+        "validation_boundary": "concurrent writer, delegation, expiry, cleanup, and cycle integration tests"
+      },
+      {
+        "business_intent_ids": [
+          "intent:consume-organization-knowledge"
+        ],
+        "commitment_ids": [
+          "commitment:organization-current-layout"
+        ],
+        "content_fingerprint": "",
+        "coverage_disposition": "modeled",
+        "declared_semantics_fingerprint": "",
+        "delegated_owner_inventory_id": "",
+        "delegates_to_primary_path": false,
+        "delegation_relation_type": "",
+        "discovery_evidence_ids": [],
+        "freshness_state": "current",
+        "in_scope": true,
+        "inventory_revision": "",
+        "label": "",
+        "metadata": {},
+        "native_artifact_id": "",
+        "native_evidence_ids": [],
+        "owner": "Organization current-source owner",
+        "primary_path_id": "",
+        "rationale": "Schema-2 catalog and exact card-bound LogicGuard bundles are the sole runtime source contract.",
+        "scoped_out_reason": "",
+        "similarity_obligation_ids": [],
+        "similarity_relation_ids": [],
+        "source_authority_role": "normative",
+        "source_ref": "local_kb/org_source_contract.py",
+        "source_system_id": "",
+        "surface_id": "surface:organization-source-contract",
+        "surface_kind": "api",
+        "validation_boundary": "direct upgrade, catalog identity, bundle, residual, and rollback tests"
+      },
+      {
+        "business_intent_ids": [
+          "intent:consume-organization-knowledge"
+        ],
+        "commitment_ids": [
+          "commitment:organization-current-layout"
+        ],
+        "content_fingerprint": "",
+        "coverage_disposition": "modeled",
+        "declared_semantics_fingerprint": "",
+        "delegated_owner_inventory_id": "",
+        "delegates_to_primary_path": false,
+        "delegation_relation_type": "",
+        "discovery_evidence_ids": [],
+        "freshness_state": "current",
+        "in_scope": true,
+        "inventory_revision": "",
+        "label": "",
+        "metadata": {},
+        "native_artifact_id": "",
+        "native_evidence_ids": [],
+        "owner": "Organization direct-source upgrade owner",
+        "primary_path_id": "",
+        "rationale": "The existing rollback tree and receipt identity remain unchanged while Windows file operations address complete paths beyond 260 characters.",
+        "scoped_out_reason": "",
+        "similarity_obligation_ids": [],
+        "similarity_relation_ids": [],
+        "source_authority_role": "normative",
+        "source_ref": "local_kb/org_migration.py#_native_filesystem_path",
+        "source_system_id": "",
+        "surface_id": "surface:organization-migration-rollback",
+        "surface_kind": "api",
+        "validation_boundary": "below-limit source, above-limit backup target, complete copy, and rollback tests"
+      },
+      {
+        "business_intent_ids": [
+          "intent:consume-organization-knowledge"
+        ],
+        "commitment_ids": [
+          "commitment:organization-current-layout"
+        ],
+        "content_fingerprint": "",
+        "coverage_disposition": "modeled",
+        "declared_semantics_fingerprint": "",
+        "delegated_owner_inventory_id": "",
+        "delegates_to_primary_path": false,
+        "delegation_relation_type": "",
+        "discovery_evidence_ids": [],
+        "freshness_state": "current",
+        "in_scope": true,
+        "inventory_revision": "",
+        "label": "",
+        "metadata": {},
+        "native_artifact_id": "",
+        "native_evidence_ids": [],
+        "owner": "Organization snapshot publisher",
+        "primary_path_id": "",
+        "rationale": "A complete content-addressed generation is validated before atomic pointer replacement.",
+        "scoped_out_reason": "",
+        "similarity_obligation_ids": [],
+        "similarity_relation_ids": [],
+        "source_authority_role": "normative",
+        "source_ref": "local_kb/org_snapshot.py#stage_organization_snapshot",
+        "source_system_id": "",
+        "surface_id": "surface:organization-snapshot",
+        "surface_kind": "api",
+        "validation_boundary": "snapshot content, reuse, pointer conflict, and previous-generation preservation tests"
+      },
+      {
+        "business_intent_ids": [
+          "intent:consume-organization-knowledge"
+        ],
+        "commitment_ids": [
+          "commitment:organization-current-layout"
+        ],
+        "content_fingerprint": "",
+        "coverage_disposition": "modeled",
+        "declared_semantics_fingerprint": "",
+        "delegated_owner_inventory_id": "",
+        "delegates_to_primary_path": false,
+        "delegation_relation_type": "",
+        "discovery_evidence_ids": [],
+        "freshness_state": "current",
+        "in_scope": true,
+        "inventory_revision": "",
+        "label": "",
+        "metadata": {},
+        "native_artifact_id": "",
+        "native_evidence_ids": [],
+        "owner": "Organization maintenance decision owner",
+        "primary_path_id": "",
+        "rationale": "Every merge/split has an exact reversible apply packet or concrete reopen contract.",
+        "scoped_out_reason": "",
+        "similarity_obligation_ids": [],
+        "similarity_relation_ids": [],
+        "source_authority_role": "normative",
+        "source_ref": "local_kb/org_maintenance.py#build_organization_maintenance_report",
+        "source_system_id": "",
+        "surface_id": "surface:organization-merge-split-packets",
+        "surface_kind": "process",
+        "validation_boundary": "decision-id, apply-packet, reopen, rollback, and exact selected-id tests"
+      },
+      {
+        "business_intent_ids": [
+          "intent:prove-complete-scheduled-automation"
+        ],
+        "commitment_ids": [
+          "commitment:automation-proof-bound-depth-terminal"
+        ],
+        "content_fingerprint": "",
+        "coverage_disposition": "modeled",
+        "declared_semantics_fingerprint": "",
+        "delegated_owner_inventory_id": "",
+        "delegates_to_primary_path": false,
+        "delegation_relation_type": "",
+        "discovery_evidence_ids": [],
+        "freshness_state": "current",
+        "in_scope": true,
+        "inventory_revision": "",
+        "label": "",
+        "metadata": {},
+        "native_artifact_id": "",
+        "native_evidence_ids": [],
+        "owner": "Local scheduled task",
+        "primary_path_id": "",
+        "rationale": "One Sleep-then-Dream task preserves strict status and exact terminal receipt identity.",
+        "scoped_out_reason": "",
+        "similarity_obligation_ids": [],
+        "similarity_relation_ids": [],
+        "source_authority_role": "normative",
+        "source_ref": "local_kb/local_cycle.py#run_local_maintenance_cycle",
+        "source_system_id": "",
+        "surface_id": "surface:local-cycle-receipt-v3",
+        "surface_kind": "process",
+        "validation_boundary": "local phase matrix, tamper, reuse, task-independence, and native receipt tests"
+      },
+      {
+        "business_intent_ids": [
+          "intent:prove-complete-scheduled-automation"
+        ],
+        "commitment_ids": [
+          "commitment:automation-proof-bound-depth-terminal"
+        ],
+        "content_fingerprint": "",
+        "coverage_disposition": "modeled",
+        "declared_semantics_fingerprint": "",
+        "delegated_owner_inventory_id": "",
+        "delegates_to_primary_path": false,
+        "delegation_relation_type": "",
+        "discovery_evidence_ids": [],
+        "freshness_state": "current",
+        "in_scope": true,
+        "inventory_revision": "",
+        "label": "",
+        "metadata": {},
+        "native_artifact_id": "",
+        "native_evidence_ids": [],
+        "owner": "Organization scheduled task",
+        "primary_path_id": "",
+        "rationale": "One organization task binds maintenance, contribution, and snapshot child evidence.",
+        "scoped_out_reason": "",
+        "similarity_obligation_ids": [],
+        "similarity_relation_ids": [],
+        "source_authority_role": "normative",
+        "source_ref": "local_kb/org_cycle.py#run_organization_cycle",
+        "source_system_id": "",
+        "surface_id": "surface:organization-cycle-receipt-v3",
+        "surface_kind": "process",
+        "validation_boundary": "organization phase matrix, tamper, reuse, task-independence, and native receipt tests"
+      },
+      {
+        "business_intent_ids": [
+          "intent:prove-complete-scheduled-automation"
+        ],
+        "commitment_ids": [
+          "commitment:automation-proof-bound-depth-terminal"
+        ],
+        "content_fingerprint": "",
+        "coverage_disposition": "modeled",
+        "declared_semantics_fingerprint": "",
+        "delegated_owner_inventory_id": "",
+        "delegates_to_primary_path": false,
+        "delegation_relation_type": "",
+        "discovery_evidence_ids": [],
+        "freshness_state": "current",
+        "in_scope": true,
+        "inventory_revision": "",
+        "label": "",
+        "metadata": {},
+        "native_artifact_id": "",
+        "native_evidence_ids": [],
+        "owner": "Automation receipt validator",
+        "primary_path_id": "",
+        "rationale": "The immutable Sleep child remains exact while the outer local-cycle payload may add later Dream, writer, reuse, timeout, and orchestration evidence.",
+        "scoped_out_reason": "",
+        "similarity_obligation_ids": [],
+        "similarity_relation_ids": [],
+        "source_authority_role": "normative",
+        "source_ref": "local_kb/automation_runtime.py#_real_artifact_issues",
+        "source_system_id": "",
+        "surface_id": "surface:automation-receipt-layering",
+        "surface_kind": "api",
+        "validation_boundary": "child-field equality, outer strict-superset acceptance, and native receipt tests"
       }
     ],
     "subject_lane": "normative_target",

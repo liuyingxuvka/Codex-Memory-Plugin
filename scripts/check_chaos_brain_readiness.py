@@ -2050,6 +2050,50 @@ def build_report(
         "proof_artifact_ref": alignment_ref,
         "report": alignment_report,
     }
+    terminal_mesh = alignment_report.get("test_mesh")
+    if not isinstance(terminal_mesh, dict):
+        terminal_mesh = {
+            "schema_version": "khaos-brain.test-mesh-terminal.v1",
+            "ok": False,
+            "terminal_status": "blocked",
+            "not_run_node_ids": [],
+        }
+    mesh_ref = _write_json(evidence_dir / "test-mesh-terminal.json", terminal_mesh)
+    results["model_test_mesh_terminal"] = {
+        "schema_version": EVIDENCE_SCHEMA,
+        "receipt_id": f"validation:model_test_mesh_terminal:{run_id}",
+        "name": "model_test_mesh_terminal",
+        "execution": "consumed",
+        "identity_fingerprint": hashlib.sha256(
+            json.dumps(
+                {
+                    "run_id": run_id,
+                    "alignment_receipt": results["model_code_test_alignment"]["receipt_id"],
+                    "required_nodes": terminal_mesh.get("required_node_ids", []),
+                    "passed_nodes": terminal_mesh.get("passed_node_ids", []),
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest(),
+        "command": [
+            sys.executable,
+            "scripts/check_kb_model_test_alignment.py",
+            "--evidence-manifest",
+            str(evidence_dir / "manifest.json"),
+        ],
+        "terminal_status": "passed" if terminal_mesh.get("ok") is True else "failed",
+        "timed_out": False,
+        "cleanup_confirmed": True,
+        "exit_code": 0 if terminal_mesh.get("ok") is True else 1,
+        "ok": terminal_mesh.get("ok") is True,
+        "consumed_receipt_ids": [
+            str(results["full_regression"].get("receipt_id") or ""),
+            str(results["model_code_test_alignment"].get("receipt_id") or ""),
+        ],
+        "proof_artifact_ref": mesh_ref,
+        "report": terminal_mesh,
+    }
 
     after = _source_snapshot(repo_root)
     component_inventory_after = _build_component_inventory(repo_root, codex_home)
@@ -2111,8 +2155,9 @@ def build_report(
             "Current final-source LogicGuard authority/model/mesh/projection, FlowGuard, "
             "OpenSpec, author-side contract audit, retirement, install, retrieval, performance, "
             "and one repository-wide regression execution or exact current immutable owner "
-            "receipt reuse. Each maintained skill owns distinct test evidence; Model-Test "
-            "Alignment checks ownership without consuming another skill's receipt. "
+            "receipt reuse. Each maintained skill owns distinct test evidence; terminal "
+            "Model-Test Alignment and TestMesh consume the exact JUnit receipt and require "
+            "every declared node to have actually passed without skip, error, or failure. "
             "OpenSpec archival and external release publication "
             "remain separate explicit operations. Installer calls inside the aggregate "
             "regression are isolated fixtures; the outer upgrade owns real migration and "

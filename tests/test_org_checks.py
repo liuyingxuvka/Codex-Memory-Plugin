@@ -9,30 +9,21 @@ import unittest
 from pathlib import Path
 
 from local_kb.org_checks import check_organization_repository, validate_shareable_payload
-from local_kb.store import write_yaml_file
+from local_kb.org_source_contract import materialize_current_source
+from local_kb.store import load_yaml_file, write_yaml_file
+from tests.org_helpers import base_card
 
 
 class OrganizationChecksTests(unittest.TestCase):
     def _write_org_repo(self, root: Path) -> None:
-        write_yaml_file(
-            root / "khaos_org_kb.yaml",
-            {
-                "kind": "khaos-organization-kb",
-                "schema_version": 1,
-                "organization_id": "sandbox",
-                "kb": {
-                    "main_path": "kb/main",
-                    "imports_path": "kb/imports",
-                },
-                "skills": {
-                    "registry_path": "skills/registry.yaml",
-                    "candidates_path": "skills/candidates",
-                },
-            },
+        materialize_current_source(
+            root,
+            organization_id="sandbox",
+            cards=[
+                ("kb/main/trusted/trusted.yaml", base_card("trusted-card", "Trusted", "Use trusted.")),
+                ("kb/main/candidates/candidate.yaml", base_card("candidate-card", "Candidate", "Use candidate.", status="candidate")),
+            ],
         )
-        write_yaml_file(root / "kb" / "main" / "trusted" / "trusted.yaml", {"id": "trusted-card", "status": "trusted"})
-        write_yaml_file(root / "kb" / "main" / "candidates" / "candidate.yaml", {"id": "candidate-card", "status": "candidate"})
-        (root / "kb" / "imports").mkdir(parents=True)
         write_yaml_file(
             root / "skills" / "registry.yaml",
             {
@@ -48,7 +39,7 @@ class OrganizationChecksTests(unittest.TestCase):
                 ]
             },
         )
-        (root / "skills" / "candidates").mkdir(parents=True)
+        (root / "skills" / "candidates").mkdir(parents=True, exist_ok=True)
 
     def test_low_risk_candidate_change_is_auto_merge_eligible(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -205,22 +196,10 @@ class OrganizationChecksTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             self._write_org_repo(root)
-            card = {
-                "id": "first",
-                "title": "Shared duplicate",
-                "type": "model",
-                "scope": "public",
-                "status": "trusted",
-                "domain_path": ["shared"],
-                "if": {"notes": "Same content."},
-                "action": {"description": "Use same content."},
-                "predict": {"expected_result": "Duplicate is detected."},
-                "use": {"guidance": "Do not keep exact duplicate payloads."},
-            }
+            card = load_yaml_file(root / "kb" / "main" / "trusted" / "trusted.yaml")
             duplicate = dict(card)
             duplicate["id"] = "second"
             duplicate["status"] = "candidate"
-            write_yaml_file(root / "kb" / "main" / "trusted" / "first.yaml", card)
             write_yaml_file(root / "kb" / "imports" / "alice" / "second.yaml", duplicate)
 
             result = check_organization_repository(root)
