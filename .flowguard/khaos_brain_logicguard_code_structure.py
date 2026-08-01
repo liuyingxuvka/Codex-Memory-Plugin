@@ -26,19 +26,30 @@ PROJECTION = "local_kb.model_projection"
 MAINTENANCE = "local_kb.model_maintenance"
 LIFECYCLE = "local_kb.lifecycle"
 DREAM = "local_kb.dream"
+AUTOMATION = "local_kb.automation_contracts"
 SEARCH = "local_kb.search"
 ACTIVE_INDEX = "local_kb.active_index"
 MIGRATION = "local_kb.maintenance_migration"
 DESKTOP = "local_kb.desktop_app"
+ORG_REVIEW = "local_kb.org_maintenance"
+ORG_MATERIALIZE = "local_kb.org_cleanup"
+ORG_PUBLISH = "local_kb.org_automation"
 
 
 FUNCTION_BLOCK_MAP = (
     ("BindCardModelBlock", MODELS),
     ("ValidateCardBindingBlock", PROJECTION),
     ("PlanSleepModelChangeBlock", MAINTENANCE),
+    ("FreezeRawCandidateUpgradeBlock", MAINTENANCE),
     ("CommitSleepModelChangeBlock", MAINTENANCE),
     ("ValidateDreamMeshBlock", MAINTENANCE),
+    ("BoundDreamOpportunityArtifactBlock", DREAM),
     ("RetrieveModelNeighborhoodBlock", MODELS),
+    ("RenderSearchEnvelopeBlock", SEARCH),
+    ("RecordForegroundObservationBlock", LIFECYCLE),
+    ("SelectNonOverlappingOrganizationPacketsBlock", ORG_REVIEW),
+    ("BuildOrganizationChangeInventoryBlock", ORG_MATERIALIZE),
+    ("PublishAndRestoreOrganizationMaintenanceBlock", ORG_PUBLISH),
     ("PublishAuthorityGenerationBlock", MIGRATION),
 )
 
@@ -49,15 +60,23 @@ STATE_OWNER_MAP = (
     ("projection_generation_stage", PROJECTION),
     ("projection_validation_state", PROJECTION),
     ("sleep_model_change_plan", MAINTENANCE),
+    ("sleep_raw_candidate_upgrade_inventory", MAINTENANCE),
     ("dream_experiment_state", MAINTENANCE),
     ("dream_handoff_state", MAINTENANCE),
+    ("dream_opportunity_inventory", DREAM),
+    ("local_cycle_timeout_policy", AUTOMATION),
     ("entry_lifecycle_state", LIFECYCLE),
     ("sleep_watermark", LIFECYCLE),
+    ("foreground_observation_intake", LIFECYCLE),
     ("retrieval_query_state", SEARCH),
+    ("organization_source_status", SEARCH),
     ("active_index_generation", ACTIVE_INDEX),
     ("authority_generation_pointer", MIGRATION),
     ("migration_rollback_state", MIGRATION),
     ("desktop_graph_view_state", DESKTOP),
+    ("organization_packet_path_reservations", ORG_REVIEW),
+    ("organization_pre_post_materialized_paths", ORG_MATERIALIZE),
+    ("organization_maintenance_branch_state", ORG_PUBLISH),
 )
 
 SIDE_EFFECT_OWNER_MAP = (
@@ -68,12 +87,19 @@ SIDE_EFFECT_OWNER_MAP = (
     ("dream_sleep_handoff_write", MAINTENANCE),
     ("lifecycle_event_commit", LIFECYCLE),
     ("sleep_watermark_advance", LIFECYCLE),
+    ("sleep_raw_candidate_repair_receipt_write", LIFECYCLE),
+    ("foreground_history_observation_append", LIFECYCLE),
     ("dream_experiment_receipt_write", DREAM),
+    ("dream_bounded_opportunity_artifact_write", DREAM),
     ("retrieval_receipt_write", SEARCH),
     ("active_index_publication", ACTIVE_INDEX),
     ("authority_pointer_cutover", MIGRATION),
     ("prior_generation_restore", MIGRATION),
     ("desktop_model_graph_render", DESKTOP),
+    ("organization_packet_selection", ORG_REVIEW),
+    ("organization_generation_rebuild", ORG_MATERIALIZE),
+    ("organization_deleted_path_commit", ORG_PUBLISH),
+    ("organization_base_branch_restore", ORG_PUBLISH),
 )
 
 CONFIG_OWNER_MAP = (
@@ -83,6 +109,8 @@ CONFIG_OWNER_MAP = (
     ("card_projection_schema_version", PROJECTION),
     ("sleep_model_diagnostic_thresholds", MAINTENANCE),
     ("dream_simulation_budgets", MAINTENANCE),
+    ("dream_max_recorded_opportunities", DREAM),
+    ("local_cycle_native_owner_timeouts", AUTOMATION),
     ("active_index_schema_version", ACTIVE_INDEX),
     ("maintenance_migration_version", MIGRATION),
 )
@@ -103,6 +131,16 @@ FIELD_OWNER_MAP = (
     ("card.use.guidance", PROJECTION),
     ("card.related_cards", PROJECTION),
     ("index.authority_generation_id", ACTIVE_INDEX),
+    ("search.response_schema_version", SEARCH),
+    ("search.results", SEARCH),
+    ("search.organization_status", SEARCH),
+    ("search.retrieval_receipt", SEARCH),
+    ("search.no_card", SEARCH),
+    ("feedback.suggested_action", LIFECYCLE),
+    ("organization.review.selected_action_ids", ORG_REVIEW),
+    ("organization.apply.changed_paths", ORG_MATERIALIZE),
+    ("organization.materialization.deleted", ORG_PUBLISH),
+    ("organization.maintenance.restore_base", ORG_PUBLISH),
     ("index.logicguard_model_id", ACTIVE_INDEX),
     ("index.logicguard_node_id", ACTIVE_INDEX),
     ("index.logicguard_revision_id", ACTIVE_INDEX),
@@ -115,10 +153,16 @@ FIELD_OWNER_MAP = (
     ("sleep.mesh_change_set", MAINTENANCE),
     ("sleep.diagnostics", MAINTENANCE),
     ("sleep.commit_receipt", MAINTENANCE),
+    ("sleep.raw_candidate_work", MAINTENANCE),
+    ("sleep.raw_candidate_repair", LIFECYCLE),
     ("dream.pinned_mesh_revision_id", MAINTENANCE),
     ("dream.simulation_plan", MAINTENANCE),
     ("dream.simulation_receipt", DREAM),
     ("dream.sleep_handoff", MAINTENANCE),
+    ("dream.opportunity_inventory_digest", DREAM),
+    ("dream.recorded_opportunity_count", DREAM),
+    ("automation.local_cycle.native_timeout_seconds", AUTOMATION),
+    ("automation.local_cycle.owner_timeout_seconds", AUTOMATION),
     ("migration.migration_version", MIGRATION),
     ("migration.input_generation_id", MIGRATION),
     ("migration.output_generation_id", MIGRATION),
@@ -151,10 +195,18 @@ FIELD_READER_MAP = (
     ("index.logicguard_revision_id", SEARCH),
     ("index.logicguard_mesh_revision_id", SEARCH),
     ("sleep.model_change_set", LIFECYCLE),
+    ("sleep.raw_candidate_work", LIFECYCLE),
     ("sleep.mesh_change_set", LIFECYCLE),
     ("dream.pinned_mesh_revision_id", DREAM),
     ("dream.simulation_plan", DREAM),
     ("dream.sleep_handoff", LIFECYCLE),
+    ("dream.opportunity_inventory_digest", DREAM),
+    ("dream.recorded_opportunity_count", DREAM),
+    ("automation.local_cycle.native_timeout_seconds", AUTOMATION),
+    ("automation.local_cycle.owner_timeout_seconds", AUTOMATION),
+    ("feedback.suggested_action", LIFECYCLE),
+    ("organization.review.selected_action_ids", ORG_MATERIALIZE),
+    ("organization.apply.changed_paths", ORG_PUBLISH),
     ("ui.model_graph", DESKTOP),
 )
 
@@ -177,14 +229,25 @@ FIELD_WRITER_MAP = (
     ("sleep.mesh_change_set", MAINTENANCE),
     ("sleep.diagnostics", MAINTENANCE),
     ("sleep.commit_receipt", MAINTENANCE),
+    ("sleep.raw_candidate_work", MAINTENANCE),
+    ("sleep.raw_candidate_repair", LIFECYCLE),
     ("dream.pinned_mesh_revision_id", MAINTENANCE),
     ("dream.simulation_plan", MAINTENANCE),
     ("dream.simulation_receipt", DREAM),
     ("dream.sleep_handoff", MAINTENANCE),
+    ("dream.opportunity_inventory_digest", DREAM),
+    ("dream.recorded_opportunity_count", DREAM),
+    ("automation.local_cycle.native_timeout_seconds", AUTOMATION),
+    ("automation.local_cycle.owner_timeout_seconds", AUTOMATION),
+    ("feedback.suggested_action", LIFECYCLE),
     ("migration.output_generation_id", MIGRATION),
     ("migration.rollback_pointer", MIGRATION),
     ("migration.residual_count", MIGRATION),
     ("migration.cutover_receipt", MIGRATION),
+    ("organization.review.selected_action_ids", ORG_REVIEW),
+    ("organization.apply.changed_paths", ORG_MATERIALIZE),
+    ("organization.materialization.deleted", ORG_PUBLISH),
+    ("organization.maintenance.restore_base", ORG_PUBLISH),
     ("ui.model_graph", DESKTOP),
     ("ui.selected_model_id", DESKTOP),
     ("ui.selected_node_id", DESKTOP),
@@ -193,11 +256,15 @@ FIELD_WRITER_MAP = (
 
 PUBLIC_ENTRYPOINT_MAP = (
     ("local_kb.lifecycle.run_incremental_sleep", LIFECYCLE),
+    (".agents.skills.local-kb-retrieve.scripts.kb_feedback.main", LIFECYCLE),
     ("local_kb.dream.run_dream_maintenance", DREAM),
     ("local_kb.search.search_with_receipt", SEARCH),
     ("local_kb.active_index.build_active_index", ACTIVE_INDEX),
     ("local_kb.desktop_app.KbDesktopApp", DESKTOP),
     ("local_kb.maintenance_migration.run_versioned_migration", MIGRATION),
+    ("local_kb.org_maintenance.build_organization_maintenance_report", ORG_REVIEW),
+    ("local_kb.org_cleanup.apply_organization_cleanup_proposal", ORG_MATERIALIZE),
+    ("local_kb.org_automation.run_organization_maintenance", ORG_PUBLISH),
 )
 
 VALIDATION_BOUNDARIES = (
@@ -206,10 +273,15 @@ VALIDATION_BOUNDARIES = (
     "unit:sleep-dream-model-maintenance-primitives",
     "integration:sleep-model-mesh-projection-index-atomic-generation",
     "integration:dream-pinned-simulation-read-only-handoff",
+    "integration:dream-bounded-opportunity-artifact-and-local-timeout-headroom",
     "integration:search-exact-model-neighborhood-no-flat-fallback",
     "integration:migration-direct-to-current-or-rollback",
     "integration:public-private-candidate-store-isolation",
     "ui:desktop-single-recommended-model-graph",
+    "integration:organization-nonoverlap-exact-selected-apply",
+    "integration:organization-deletion-aware-publish-and-clean-restore",
+    "integration:foreground-observation-only-and-sleep-owned-candidate-publication",
+    "integration:sleep-raw-candidate-upgrade-inventory-and-open-batch-recovery",
 )
 
 
@@ -253,19 +325,25 @@ def build_recommendation() -> CodeStructureRecommendation:
             MAINTENANCE,
             "local_kb/model_maintenance.py",
             "domain-service",
-            "Provides staged Sleep changes, model diagnostics, and read-only Dream simulation helpers without becoming a public controller.",
+            "Provides staged Sleep changes, exact raw-candidate upgrade discovery, model diagnostics, and read-only Dream simulation helpers without becoming a public controller or compatibility reader.",
         ),
         _module(
             LIFECYCLE,
             "local_kb/lifecycle.py",
             "facade",
-            "Retains the sole Sleep entrypoint, lifecycle decision, watermark, and completion boundary.",
+            "Retains the sole Sleep entrypoint, frozen repair work binding, lifecycle decision, watermark, and completion boundary.",
         ),
         _module(
             DREAM,
             "local_kb/dream.py",
             "facade",
-            "Retains the sole Dream entrypoint and immutable experiment-receipt owner.",
+            "Retains the sole Dream entrypoint, bounded opportunity projection, and immutable experiment-receipt owner.",
+        ),
+        _module(
+            AUTOMATION,
+            "local_kb/automation_contracts.py",
+            "process-policy",
+            "Owns the route-specific native/owner timeout hierarchy without executing or retrying a maintenance task.",
         ),
         _module(
             SEARCH,
@@ -290,6 +368,24 @@ def build_recommendation() -> CodeStructureRecommendation:
             "local_kb/desktop_app.py",
             "ui-facade",
             "Renders the recommended model graph and diagnostics without owning canonical data or route decisions.",
+        ),
+        _module(
+            ORG_REVIEW,
+            "local_kb/org_maintenance.py",
+            "organization-decision-owner",
+            "Selects one deterministic maximal non-overlapping packet set and leaves conflicts as visible next-generation reopen work.",
+        ),
+        _module(
+            ORG_MATERIALIZE,
+            "local_kb/org_cleanup.py",
+            "organization-materialization-owner",
+            "Rebuilds one current source generation and declares the complete union of pre/post materialized paths including deletions.",
+        ),
+        _module(
+            ORG_PUBLISH,
+            "local_kb/org_automation.py",
+            "organization-publication-facade",
+            "Stages, validates, commits, reads back, pushes, and restores the exact declared organization maintenance inventory.",
         ),
     )
     return CodeStructureRecommendation(

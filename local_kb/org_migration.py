@@ -13,14 +13,24 @@ from uuid import uuid4
 
 from local_kb.common import utc_now_iso
 from local_kb.org_source_contract import (
+    ORG_SOURCE_BUILDER,
     ORG_SOURCE_SCHEMA_VERSION,
+    authoring_card_from_projection,
     canonical_digest,
+    load_current_catalog,
     materialize_current_source,
 )
 from local_kb.store import load_yaml_file
 
 
 ORG_LAYOUT_MIGRATION_ID = "organization-source-direct-to-schema2-v2"
+ORG_BUILDER_MIGRATION_ID = "organization-source-builder-v2-portable-text-digest-v1"
+RETIRED_ORG_SOURCE_BUILDER_V1 = {
+    "name": "khaos-brain.organization-source-builder",
+    "version": 1,
+    "card_projection_schema": "khaos-brain.card-projection.v1",
+    "bundle_schema": "khaos-brain.organization-logicguard-bundle.v1",
+}
 CURRENT_MAIN_PATH = "kb/main"
 CURRENT_IMPORTS_PATH = "kb/imports"
 OBSOLETE_ROOTS = ("kb/trusted", "kb/candidates")
@@ -42,8 +52,8 @@ def _metadata_root(repo_root: Path) -> Path:
     return repo_root / ".git" if (repo_root / ".git").is_dir() else repo_root / ".khaos-brain-migrations"
 
 
-def _migration_receipt_path(repo_root: Path) -> Path:
-    return _metadata_root(repo_root) / "khaos-brain-migrations" / f"{ORG_LAYOUT_MIGRATION_ID}.json"
+def _migration_receipt_path(repo_root: Path, migration_id: str = ORG_LAYOUT_MIGRATION_ID) -> Path:
+    return _metadata_root(repo_root) / "khaos-brain-migrations" / f"{migration_id}.json"
 
 
 def _snapshot_root(repo_root: Path, run_id: str) -> Path:
@@ -255,7 +265,7 @@ def _prepare_cards(repo_root: Path, manifest: Mapping[str, Any]) -> tuple[list[t
 
 
 def migrate_organization_repo_to_current(repo_root: Path) -> dict[str, Any]:
-    """Upgrade schema 1 directly to schema 2, or verify schema 2 unchanged."""
+    """Upgrade the exact retired layout/builder directly to the sole current source."""
 
     from local_kb.org_sources import _run_git, current_git_commit, validate_organization_repo
 
@@ -266,16 +276,8 @@ def migrate_organization_repo_to_current(repo_root: Path) -> dict[str, Any]:
     manifest = load_yaml_file(manifest_path)
     if not isinstance(manifest, Mapping):
         return {"ok": False, "status": "blocked", "error": "organization manifest must be a mapping"}
-    if manifest.get("schema_version") == ORG_SOURCE_SCHEMA_VERSION:
-        validation = validate_organization_repo(repo_root)
-        return {
-            "ok": bool(validation.get("ok")),
-            "status": "no_delta" if validation.get("ok") else "blocked",
-            "migration_id": ORG_LAYOUT_MIGRATION_ID,
-            "validation": validation,
-            "error": "" if validation.get("ok") else "; ".join(validation.get("errors") or []),
-        }
-    if manifest.get("schema_version") != 1:
+    schema_version = manifest.get("schema_version")
+    if schema_version not in {1, ORG_SOURCE_SCHEMA_VERSION}:
         return {"ok": False, "status": "blocked", "error": "organization source schema is neither retired schema 1 nor current schema 2"}
     git_repo = (repo_root / ".git").is_dir()
     source_commit = current_git_commit(repo_root) if git_repo else ""
@@ -283,9 +285,59 @@ def migrate_organization_repo_to_current(repo_root: Path) -> dict[str, Any]:
         status = _run_git(["status", "--porcelain"], cwd=repo_root)
         if status.returncode != 0 or status.stdout.strip():
             return {"ok": False, "status": "blocked", "error": "organization repository must be clean before one-time migration"}
-    cards, dispositions, tombstones, errors = _prepare_cards(repo_root, manifest)
-    if errors:
-        return {"ok": False, "status": "blocked", "error": "; ".join(errors), "dispositions": dispositions}
+    migration_id = ORG_LAYOUT_MIGRATION_ID
+    commit_message = "Upgrade organization KB to schema 2"
+    if schema_version == ORG_SOURCE_SCHEMA_VERSION:
+        validation = validate_organization_repo(repo_root)
+        if validation.get("ok"):
+            return {
+                "ok": True,
+                "status": "no_delta",
+                "migration_id": ORG_BUILDER_MIGRATION_ID,
+                "validation": validation,
+                "error": "",
+            }
+        catalog = load_current_catalog(repo_root)
+        if catalog.get("builder_identity") != RETIRED_ORG_SOURCE_BUILDER_V1:
+            return {
+                "ok": False,
+                "status": "blocked",
+                "migration_id": ORG_BUILDER_MIGRATION_ID,
+                "validation": validation,
+                "error": "current-layout source is not the exact retired builder-v1 upgrade input",
+            }
+        cards = []
+        builder_errors: list[str] = []
+        for row in catalog.get("cards") or []:
+            if not isinstance(row, Mapping):
+                builder_errors.append("retired builder catalog row is not an object")
+                continue
+            source_path = str(row.get("source_path") or "").replace("\\", "/")
+            source_file = repo_root / source_path
+            if not source_path.startswith("kb/main/") or not source_file.is_file():
+                builder_errors.append(f"retired builder source path is missing or unsafe: {source_path or '?'}")
+                continue
+            projection = load_yaml_file(source_file)
+            if not isinstance(projection, Mapping) or str(projection.get("id") or "") != str(row.get("entry_id") or ""):
+                builder_errors.append(f"retired builder card identity mismatch: {source_path}")
+                continue
+            cards.append((source_path, authoring_card_from_projection(projection)))
+        if builder_errors or len(cards) != len(catalog.get("cards") or []):
+            return {
+                "ok": False,
+                "status": "blocked",
+                "migration_id": ORG_BUILDER_MIGRATION_ID,
+                "validation": validation,
+                "error": "; ".join(builder_errors or ["retired builder inventory is incomplete"]),
+            }
+        dispositions = [dict(item) for item in catalog.get("migration_dispositions") or [] if isinstance(item, Mapping)]
+        tombstones = [dict(item) for item in catalog.get("tombstones") or [] if isinstance(item, Mapping)]
+        migration_id = ORG_BUILDER_MIGRATION_ID
+        commit_message = "Upgrade organization source builder to portable digest v2"
+    else:
+        cards, dispositions, tombstones, errors = _prepare_cards(repo_root, manifest)
+        if errors:
+            return {"ok": False, "status": "blocked", "error": "; ".join(errors), "dispositions": dispositions}
     organization_id = str(manifest.get("organization_id") or "").strip()
     if not organization_id:
         return {"ok": False, "status": "blocked", "error": "organization_id is required"}
@@ -320,7 +372,7 @@ def migrate_organization_repo_to_current(repo_root: Path) -> dict[str, Any]:
             if add.returncode != 0:
                 raise RuntimeError(add.stderr.strip() or add.stdout.strip() or "git add failed")
             commit = _run_git(
-                ["-c", "user.name=Chaos Brain Upgrade", "-c", "user.email=chaos-brain-upgrade@local.invalid", "commit", "-m", "Upgrade organization KB to schema 2"],
+                ["-c", "user.name=Chaos Brain Upgrade", "-c", "user.email=chaos-brain-upgrade@local.invalid", "commit", "-m", commit_message],
                 cwd=repo_root,
             )
             if commit.returncode != 0:
@@ -328,7 +380,7 @@ def migrate_organization_repo_to_current(repo_root: Path) -> dict[str, Any]:
             target_commit = current_git_commit(repo_root)
         receipt = {
             "schema_version": 2,
-            "migration_id": ORG_LAYOUT_MIGRATION_ID,
+            "migration_id": migration_id,
             "status": "committed",
             "migrated_at": utc_now_iso(),
             "source_commit": source_commit,
@@ -340,14 +392,14 @@ def migrate_organization_repo_to_current(repo_root: Path) -> dict[str, Any]:
             "rollback_snapshot": str(backup),
             "validation_ok": True,
         }
-        _atomic_write_json(_migration_receipt_path(repo_root), receipt)
-        return {"ok": True, "status": "committed", "migration_id": ORG_LAYOUT_MIGRATION_ID, "receipt": receipt}
+        _atomic_write_json(_migration_receipt_path(repo_root, migration_id), receipt)
+        return {"ok": True, "status": "committed", "migration_id": migration_id, "receipt": receipt}
     except Exception as exc:
         _restore_backup(repo_root, backup)
         return {
             "ok": False,
             "status": "rolled_back",
-            "migration_id": ORG_LAYOUT_MIGRATION_ID,
+            "migration_id": migration_id,
             "error": f"{type(exc).__name__}: {exc}",
             "rollback_snapshot": str(backup),
         }

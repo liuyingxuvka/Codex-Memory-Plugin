@@ -11,6 +11,7 @@ from pathlib import Path
 
 from local_kb.model_maintenance import publish_sleep_model_generation
 from local_kb.search import search_with_receipt
+from local_kb.settings import ORGANIZATION_MODE, save_desktop_settings
 from tests.current_runtime_helpers import activate_current_kb_runtime
 
 
@@ -38,6 +39,30 @@ class KbPreflightEntryCurrentGrammarTests(unittest.TestCase):
             )
             self.assertEqual(completed.returncode, 2)
             self.assertIn("invalid choice", completed.stderr)
+
+    def test_launcher_rejects_retired_direct_candidate_capture(self) -> None:
+        repo_root, launcher_path = self._launcher()
+        env = os.environ.copy()
+        env["CODEX_PREDICTIVE_KB_ROOT"] = str(repo_root)
+        completed = subprocess.run(
+            [sys.executable, str(launcher_path), "capture-candidate", "--help"],
+            cwd=repo_root,
+            env=env,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(completed.returncode, 2)
+        self.assertIn("invalid choice", completed.stderr)
+        self.assertFalse(
+            (
+                repo_root
+                / ".agents"
+                / "skills"
+                / "local-kb-retrieve"
+                / "scripts"
+                / "kb_capture_candidate.py"
+            ).exists()
+        )
 
     def test_launcher_current_check_subcommand_succeeds(self) -> None:
         with tempfile.TemporaryDirectory():
@@ -70,6 +95,7 @@ class KbPreflightEntryCurrentGrammarTests(unittest.TestCase):
         self.assertEqual(completed.returncode, 0, completed.stderr)
         self.assertIn("--route-hint", completed.stdout)
         self.assertNotIn("--path-hint", completed.stdout)
+        self.assertNotIn("--with-receipt", completed.stdout)
 
     def test_local_search_rejects_retired_path_hint(self) -> None:
         repo_root = Path(__file__).resolve().parents[1]
@@ -91,6 +117,169 @@ class KbPreflightEntryCurrentGrammarTests(unittest.TestCase):
         )
         self.assertEqual(completed.returncode, 2)
         self.assertIn("unrecognized arguments: --path-hint", completed.stderr)
+
+    def test_local_search_rejects_retired_optional_envelope_flag(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        script_path = repo_root / ".agents" / "skills" / "local-kb-retrieve" / "scripts" / "kb_search.py"
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(script_path),
+                "--repo-root",
+                str(repo_root),
+                "--query",
+                "knowledge library retrieval",
+                "--with-receipt",
+            ],
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(completed.returncode, 2)
+        self.assertIn("unrecognized arguments: --with-receipt", completed.stderr)
+
+    def test_default_search_keeps_local_results_and_exposes_organization_failure(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        script_path = (
+            repo_root
+            / ".agents"
+            / "skills"
+            / "local-kb-retrieve"
+            / "scripts"
+            / "kb_search.py"
+        )
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            target = Path(tmp_dir) / "machine"
+            organization = Path(tmp_dir) / "organization"
+            activate_current_kb_runtime(target)
+            publication = publish_sleep_model_generation(
+                target,
+                reason="test:default-search-source-status",
+                card_upserts={
+                    "kb/public/source-status-card.yaml": {
+                        "id": "source-status-card",
+                        "title": "Visible local source status",
+                        "type": "model",
+                        "scope": "public",
+                        "status": "trusted",
+                        "confidence": 0.9,
+                        "domain_path": ["system", "knowledge-library", "retrieval"],
+                        "tags": ["visible", "local", "status"],
+                        "trigger_keywords": ["visible", "local", "status"],
+                        "if": {"notes": "Local retrieval succeeds while organization is unavailable."},
+                        "action": {"description": "Keep the local result and expose source health."},
+                        "predict": {"expected_result": "The default response shows both facts."},
+                        "use": {"guidance": "Inspect organization_status before claiming organization health."},
+                    }
+                },
+            )
+            self.assertTrue(publication["ok"], publication)
+            save_desktop_settings(
+                target,
+                {
+                    "mode": ORGANIZATION_MODE,
+                    "organization": {
+                        "repo_url": str(organization),
+                        "local_mirror_path": str(organization),
+                        "organization_id": "sandbox",
+                        "validated": True,
+                        "validation_status": "valid",
+                        "last_sync_commit": "missing-current-snapshot",
+                    },
+                },
+            )
+            json_result = subprocess.run(
+                [
+                    sys.executable,
+                    str(script_path),
+                    "--repo-root",
+                    str(target),
+                    "--query",
+                    "visible local status",
+                    "--json",
+                ],
+                cwd=repo_root,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            text_result = subprocess.run(
+                [
+                    sys.executable,
+                    str(script_path),
+                    "--repo-root",
+                    str(target),
+                    "--query",
+                    "visible local status",
+                ],
+                cwd=repo_root,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            no_card_result = subprocess.run(
+                [
+                    sys.executable,
+                    str(script_path),
+                    "--repo-root",
+                    str(target),
+                    "--query",
+                    "intentionally absent unrelated phrase qzxwvu",
+                    "--json",
+                ],
+                cwd=repo_root,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+        self.assertEqual(json_result.returncode, 0, json_result.stderr)
+        payload = json.loads(json_result.stdout)
+        self.assertEqual(payload["schema_version"], "khaos-brain.search-result.v1")
+        self.assertTrue(payload["results"])
+        self.assertEqual(payload["results"][0]["id"], "source-status-card")
+        self.assertEqual(payload["organization_status"][0]["status"], "unavailable")
+        self.assertTrue(payload["organization_status"][0]["reason"])
+        self.assertTrue(payload["retrieval_receipt"]["request_id"])
+        self.assertFalse(payload["no_card"])
+        self.assertEqual(text_result.returncode, 0, text_result.stderr)
+        self.assertIn("Organization source sandbox: unavailable", text_result.stdout)
+        self.assertIn("reason=", text_result.stdout)
+        self.assertEqual(no_card_result.returncode, 0, no_card_result.stderr)
+        no_card_payload = json.loads(no_card_result.stdout)
+        self.assertTrue(no_card_payload["no_card"])
+        self.assertEqual(no_card_payload["results"], [])
+        self.assertEqual(
+            no_card_payload["organization_status"][0]["status"],
+            "unavailable",
+        )
+
+    def test_preflight_launcher_search_returns_the_canonical_envelope(self) -> None:
+        repo_root, launcher_path = self._launcher()
+        env = os.environ.copy()
+        env["CODEX_PREDICTIVE_KB_ROOT"] = str(repo_root)
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(launcher_path),
+                "search",
+                "--query",
+                "knowledge library retrieval",
+                "--top-k",
+                "1",
+                "--json",
+            ],
+            cwd=repo_root,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        payload = json.loads(completed.stdout)
+        self.assertEqual(payload["schema_version"], "khaos-brain.search-result.v1")
+        self.assertIsInstance(payload["results"], list)
+        self.assertIsInstance(payload["organization_status"], list)
+        self.assertIsInstance(payload["retrieval_receipt"], dict)
 
     def test_feedback_help_does_not_boot_the_kb_runtime(self) -> None:
         repo_root, launcher_path = self._launcher()
@@ -167,6 +356,8 @@ class KbPreflightEntryCurrentGrammarTests(unittest.TestCase):
                     result_ref,
                     "--outcome",
                     "success",
+                    "--suggested-action",
+                    "new-candidate",
                     "--json",
                 ],
                 cwd=repo_root,
@@ -217,6 +408,7 @@ class KbPreflightEntryCurrentGrammarTests(unittest.TestCase):
             self.assertTrue(payload["ok"])
             self.assertEqual("success", payload["status"])
             self.assertEqual(event_id, payload["postflight"]["event_id"])
+            self.assertEqual([], list((Path(tmp_dir) / "kb" / "candidates").rglob("*.yaml")))
 
             inspected = subprocess.run(
                 [

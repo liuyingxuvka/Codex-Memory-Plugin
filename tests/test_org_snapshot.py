@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
 
-from local_kb.org_snapshot import load_current_organization_snapshot, stage_organization_snapshot
+from local_kb.org_snapshot import (
+    load_current_organization_snapshot,
+    snapshot_pointer_path,
+    stage_organization_snapshot,
+)
 from local_kb.org_source_contract import materialize_current_source
 from local_kb.store import load_current_organization_entries, write_yaml_file
 from tests.org_helpers import base_card
@@ -60,6 +65,47 @@ class OrganizationSnapshotTests(unittest.TestCase):
         self.assertTrue(second["ok"], second)
         self.assertEqual(first["generation_id"], second["generation_id"])
         self.assertEqual(second["status"], "reused")
+
+    def test_stage_replaces_retired_v2_pointer_with_v3_and_preserves_old_generation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            org = self._current_source(root)
+            pointer_path = snapshot_pointer_path(root, "sandbox")
+            legacy_generation = pointer_path.parent / "generations" / "legacy-v2"
+            legacy_generation.mkdir(parents=True)
+            (legacy_generation / "preserved.txt").write_text("legacy\n", encoding="utf-8")
+            pointer_path.parent.mkdir(parents=True, exist_ok=True)
+            pointer_path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 2,
+                        "organization_id": "sandbox",
+                        "generation_id": "legacy-v2",
+                        "active_count": 18,
+                        "active_entry_ids": [f"legacy-{index}" for index in range(18)],
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            rejected = load_current_organization_snapshot(root, "sandbox")
+            result = stage_organization_snapshot(
+                root,
+                org,
+                "sandbox",
+                source_commit="current-source",
+            )
+            current = load_current_organization_snapshot(root, "sandbox")
+            legacy_preserved = (legacy_generation / "preserved.txt").exists()
+
+        self.assertFalse(rejected["ok"])
+        self.assertEqual(rejected["status"], "missing-current-snapshot")
+        self.assertTrue(result["ok"], result)
+        self.assertEqual(current["schema_version"], 3)
+        self.assertNotEqual(current["generation_id"], "legacy-v2")
+        self.assertTrue(legacy_preserved)
 
     def test_invalid_changed_source_does_not_replace_previous_pointer(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

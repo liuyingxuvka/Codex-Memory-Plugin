@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.8.1 - 2026-08-01
+
+- Make the canonical search envelope always expose exact organization-source status, ordered local and foreign results, the combined retrieval receipt, and `no_card`; retire the optional receipt split and the foreground candidate writer so ordinary feedback remains history-only until Sleep publishes a current model generation.
+- Enforce the sole organization snapshot v3 runtime contract and direct-upgrade older sources through maintenance only. Every downloaded card remains a read-only portable LogicGuard bundle that tasks can use immediately from the prefetched snapshot without task-time network access or local adoption.
+- Repair organization GitHub publication with schema-2 catalog/bundle checking, portable UTF-8/LF digests, complete deletion-aware apply packets, a required automated status check, zero human approvals, and no administrator bypass. Two real update generations merged and a third generation converged with zero new proposal actions.
+- Bound Dream opportunity evidence to a compact 64-record diagnostic view and four selected experiments, preserve successful Sleep children across composite timeout handling, and let Sleep directly settle the exact schema-less candidate residuals that normal runtime no longer reads.
+- Activate FlowGuard model-system generation 13 for the repaired search, organization, Sleep, and Dream topology; refresh the five maintained Skill contracts, OpenSpec closure, installation projection, and exact terminal Model-Test Alignment/TestMesh evidence.
+
 ## v0.8.0 - 2026-07-31
 
 - Replace four independent maintenance schedules with two working-hours composite tasks: local maintenance runs Sleep and then a read-only Dream handoff, while organization maintenance refreshes the complete organization snapshot before maintaining and contributing cards. The two tasks have independent leases and share exactly one short-lived global writer when durable state overlaps.

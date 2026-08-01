@@ -1,0 +1,12 @@
+{
+  "candidate_snapshot_fingerprint": "sha256:2f50a51d6e8e7aedf803b47f78742bb8b6b16d11e3ae233a2b436f2df546e8ef",
+  "expected_head_fingerprint": "sha256:fde17b74931f205662301474e65b2253f3d5af0dc1a36cfacd23ff49f31fd243",
+  "fingerprint": "sha256:94c9065f74e0aaea83645fd2e7ca87fbba4a68f5226e26ee2fa16c5f33fe0758",
+  "next_generation": 13,
+  "previous_snapshot_fingerprint": "sha256:9abed6f143dcfd1ea8bf4c7a6be776e35852cdc63c4c62b3cb5cd9e777370e84",
+  "receipt_id": "activation:khaos-logicguard-native-organization-remote-gate-20260801",
+  "revision_set_fingerprint": "sha256:0c5f6a50516faed818da3edd531332736f591ee45d2343afa178fc4aa5f1ee89",
+  "schema": "flowguard.model_activation_receipt.v1",
+  "subject_revision": "source-inventory:6a62d61e09457923105a6e7849f5f6d9b6fb0ba8a6b7ae52305bbab9eb77737d",
+  "system_id": "flowguard"
+}

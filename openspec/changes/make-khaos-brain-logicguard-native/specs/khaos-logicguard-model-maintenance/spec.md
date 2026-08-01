@@ -55,6 +55,22 @@ Dream SHALL derive a stable fingerprint from the exact mesh revision, selected r
 - **WHEN** a bound model/mesh revision or decision-relevant evidence changes
 - **THEN** Dream MAY reopen the opportunity under a new fingerprint while preserving the prior immutable closure
 
+### Requirement: Dream persists a bounded opportunity projection
+Dream SHALL preserve the exact identity of the full evaluated opportunity
+inventory as a count, digest, and stable fingerprint set, but SHALL NOT persist
+an unbounded copy of every source action or task summary. The durable
+opportunity artifact SHALL contain at most 64 ranked, selected, or prior-closure
+examples, every source action SHALL use digest-bound bounded evidence samples,
+and executable selection SHALL remain capped at four experiments.
+
+#### Scenario: Historical evidence produces thousands of opportunities
+- **WHEN** the current Dream scan evaluates more than 64 route, taxonomy, or card-validation opportunities
+- **THEN** the report SHALL name the full count and inventory digest, `opportunities.json` SHALL record no more than 64 deterministic examples, omitted count SHALL reconcile exactly, and selected experiments SHALL still come from the full ranked inventory
+
+#### Scenario: A source action contains many events and task summaries
+- **WHEN** one consolidation action contains an arbitrarily large event-id or task-summary list
+- **THEN** Dream SHALL fingerprint exact counts and digests, retain only bounded display samples, and SHALL NOT duplicate the complete lists into every opportunity record
+
 ### Requirement: One local maintenance task composes Dream and Sleep phases
 The scheduler SHALL expose one local maintenance owner with permission-separated Sleep and Dream phases. A fresh cycle SHALL run the existing Sleep publisher first and then run bounded Dream only after Sleep reaches a clean terminal; a cycle with an open frozen Sleep batch SHALL resume Sleep and explicitly defer Dream for that trigger. Dream SHALL never become a second canonical publisher.
 
@@ -69,6 +85,10 @@ The scheduler SHALL expose one local maintenance owner with permission-separated
 #### Scenario: Dream phase fails or times out
 - **WHEN** Dream has an ordinary bounded experiment failure or a hard timeout whose descendants are confirmed cleaned up
 - **THEN** the cycle SHALL keep the failure visible, reject unsealed handoffs, and preserve the already-completed Sleep publication; cleanup uncertainty SHALL block later local descendants without changing organization-cycle eligibility
+
+#### Scenario: Atomic Sleep publication consumes most of the former hard timeout
+- **WHEN** Sleep reaches a clean durable terminal after a long atomic model/index publication and Dream remains eligible
+- **THEN** the combined local owner SHALL retain enough route-specific hard-timeout headroom for bounded Dream, while the enclosing owner remains strictly larger; expiry SHALL still fail visibly and require zero descendants rather than inferring success from the completed Sleep child
 
 ### Requirement: Local and organization cycles have independent failure domains
 The local and organization scheduled owners SHALL keep separate outer leases,

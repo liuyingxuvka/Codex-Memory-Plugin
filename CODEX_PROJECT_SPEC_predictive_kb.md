@@ -175,7 +175,6 @@ The repository should be organized so the file system itself supports the concep
 │        ├─ agents/openai.yaml
 │        └─ scripts/
 │           ├─ kb_search.py
-│           └─ kb_capture_candidate.py
 ├─ kb/
 │  ├─ public/
 │  ├─ private/
@@ -345,13 +344,13 @@ Tasks:
    - score
 4. Keep the logic file-based and deterministic.
 
-### Phase 3 — Refactor candidate capture
+### Phase 3 — Keep intake observational and candidate publication Sleep-owned
 
 Tasks:
 
-1. Update `kb_capture_candidate.py` so it can write predictive model fields.
-2. Support `domain_path`, `cross_index`, `action`, `expected_result`, and `guidance`.
-3. Continue writing to `kb/candidates/` only.
+1. Retire the direct candidate-capture command from normal runtime.
+2. Record reusable task evidence through the structured feedback/history intake.
+3. Let Sleep alone create or update `kb/candidates/`, bind current LogicGuard models and meshes, and publish the next active-index generation.
 
 ### Phase 4 — Update the skill and repository guidance
 

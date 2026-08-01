@@ -79,6 +79,7 @@
     "local_kb/maintenance_lanes.py",
     "tests/test_kb_dream.py",
     "tests/test_khaos_logicguard_models.py",
+    "tests/test_process_control.py",
     "local_kb/automation_contracts.py",
     "local_kb/automation_runtime.py",
     "local_kb/process_control.py",
@@ -184,6 +185,7 @@
       "evidence_class": "hard",
       "covers_obligation_ids": [
         "obligation:kb-dream-pass:stable-fingerprint",
+        "obligation:kb-dream-pass:bounded-opportunity-artifact",
         "obligation:kb-dream-pass:bounded-selection",
         "obligation:kb-dream-pass:sandbox-experiment",
         "obligation:kb-dream-pass:exact-model-simulation",
@@ -217,7 +219,8 @@
       "covers_obligation_ids": [
         "obligation:kb-dream-pass:no-direct-knowledge-write",
         "obligation:kb-dream-pass:canonical-generation-unchanged",
-        "obligation:kb-dream-pass:terminal-receipt"
+        "obligation:kb-dream-pass:terminal-receipt",
+        "obligation:kb-dream-pass:timeout-tree-cleanup"
       ],
       "timeout_seconds": 120,
       "execution_owner_id": "owner:kb-dream-pass:terminal-runtime",
@@ -321,6 +324,7 @@
       "covers_obligation_ids": [
         "obligation:kb-dream-pass:lane-evidence-intake",
         "obligation:kb-dream-pass:stable-fingerprint",
+        "obligation:kb-dream-pass:bounded-opportunity-artifact",
         "obligation:kb-dream-pass:bounded-selection",
         "obligation:kb-dream-pass:sandbox-experiment",
         "obligation:kb-dream-pass:exact-model-simulation",
@@ -328,7 +332,8 @@
         "obligation:kb-dream-pass:typed-handoff-once",
         "obligation:kb-dream-pass:no-direct-knowledge-write",
         "obligation:kb-dream-pass:canonical-generation-unchanged",
-        "obligation:kb-dream-pass:terminal-receipt"
+        "obligation:kb-dream-pass:terminal-receipt",
+        "obligation:kb-dream-pass:timeout-tree-cleanup"
       ],
       "claim_boundary": "This witness binds the immutable target-owned native receipt to its exact run, checks, and non-calibration native obligations."
     }
@@ -339,6 +344,7 @@
       "required_obligation_ids": [
         "obligation:kb-dream-pass:lane-evidence-intake",
         "obligation:kb-dream-pass:stable-fingerprint",
+        "obligation:kb-dream-pass:bounded-opportunity-artifact",
         "obligation:kb-dream-pass:bounded-selection",
         "obligation:kb-dream-pass:sandbox-experiment",
         "obligation:kb-dream-pass:exact-model-simulation",
@@ -347,6 +353,7 @@
         "obligation:kb-dream-pass:no-direct-knowledge-write",
         "obligation:kb-dream-pass:canonical-generation-unchanged",
         "obligation:kb-dream-pass:terminal-receipt",
+        "obligation:kb-dream-pass:timeout-tree-cleanup",
         "obligation:kb-dream-pass:depth-calibration"
       ]
     }

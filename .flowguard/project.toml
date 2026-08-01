@@ -1,8 +1,8 @@
 [flowguard]
 repository = "https://github.com/liuyingxuvka/FlowGuard"
-adopted_package_version = "0.68.0"
+adopted_package_version = "0.68.1"
 schema_version = "1.0"
-last_verified_at = "2026-07-31T19:44:49+00:00"
+last_verified_at = "2026-08-01T08:39:38+00:00"
 last_verified_by = "FlowGuard project-upgrade"
 agents_path = "AGENTS.md"
 
@@ -15,12 +15,12 @@ require_model_update_for_behavior_changes = true
 
 [model_authority]
 system_id = "flowguard"
-observed_snapshot_path = ".flowguard/model-mesh/snapshots/d7c2a6cd849a787ab77d5504a18206da2aea5bf4a7d88f2f8a49f2c4cb853f07.json"
-observed_snapshot_fingerprint = "sha256:d7c2a6cd849a787ab77d5504a18206da2aea5bf4a7d88f2f8a49f2c4cb853f07"
-subject_revision = "source-inventory:da47b1d4c4428439b7d7affbd71cb830b14586e1ea88c452e6b5549bdd34466c"
+observed_snapshot_path = ".flowguard/model-mesh/snapshots/2f50a51d6e8e7aedf803b47f78742bb8b6b16d11e3ae233a2b436f2df546e8ef.json"
+observed_snapshot_fingerprint = "sha256:2f50a51d6e8e7aedf803b47f78742bb8b6b16d11e3ae233a2b436f2df546e8ef"
+subject_revision = "source-inventory:6a62d61e09457923105a6e7849f5f6d9b6fb0ba8a6b7ae52305bbab9eb77737d"
 coverage_status = "incomplete_within_declared_boundary"
-generation = 7
-accepted_revision_set_fingerprint = "sha256:b511981133c65391f340f82480a03dbb32e7b87f6287f0825ad0d41415ec8e4a"
-previous_snapshot_fingerprint = "sha256:547b8d9ee7bf291cdb8bda1b7d86e7285719bdc5f1d0608fb69e1cb025780dca"
-activation_receipt_fingerprint = "sha256:c93ec91bc3dbc1fb5ca67b04251e3ac91ba17dd9d2a6e0008003f86482b09b7f"
-head_fingerprint = "sha256:2aec1bc957f126df24211e66ac6919c7dda68fa3914b90d76fe6ed431f19df9d"
+generation = 13
+accepted_revision_set_fingerprint = "sha256:0c5f6a50516faed818da3edd531332736f591ee45d2343afa178fc4aa5f1ee89"
+previous_snapshot_fingerprint = "sha256:9abed6f143dcfd1ea8bf4c7a6be776e35852cdc63c4c62b3cb5cd9e777370e84"
+activation_receipt_fingerprint = "sha256:94c9065f74e0aaea83645fd2e7ca87fbba4a68f5226e26ee2fa16c5f33fe0758"
+head_fingerprint = "sha256:13cc0f6d8e688403b62759464782edc0f02b53332327c6065acabeaaa6fe9a7b"

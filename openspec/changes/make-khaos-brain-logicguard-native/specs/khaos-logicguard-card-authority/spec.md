@@ -22,6 +22,48 @@ Each canonical predictive unit MUST contain one root ArgumentBlock whose root cl
 - **WHEN** a legacy card has only `if`, `action`, `predict`, and `use` text with no grounded evidence or warrant
 - **THEN** migration SHALL create only licensed context/method/claim content, record missing support roles as gaps, and SHALL NOT relabel AI-authored text as independent evidence
 
+### Requirement: Foreground intake records observations while Sleep alone publishes candidates
+Ordinary task postflight and feedback SHALL append bounded structured history only.
+The normal-runtime launcher MUST NOT expose a command or script that writes a
+candidate card directly. Sleep SHALL be the sole owner that admits an observation
+or upgrades a residual raw candidate into current card, model, mesh, projection,
+and active-index authority.
+
+#### Scenario: A task suggests a new candidate
+- **WHEN** foreground feedback records `new-candidate` as its suggested action
+- **THEN** it SHALL append one observation and matching terminal receipt, SHALL leave candidate/model/mesh/index authority byte-for-byte unchanged, and SHALL defer admission to Sleep
+
+#### Scenario: A retired or external writer left a raw candidate
+- **WHEN** Sleep freezes a batch containing a candidate without the current projection schema or exact LogicGuard binding
+- **THEN** Sleep SHALL either upgrade and publish it through one complete model-first generation or leave the prior generation authoritative with a visible blocked disposition; foreground retrieval SHALL NOT read the raw YAML as fallback
+
+#### Scenario: A raw candidate carries ambiguous partial current authority
+- **WHEN** a schema-less candidate declares any current projection binding field, or declares an unsupported projection schema
+- **THEN** Sleep SHALL block visibly without guessing the missing binding, publishing a partial generation, or enabling a compatibility reader
+
+#### Scenario: A pre-fix open batch omitted the residual raw candidate
+- **WHEN** an immutable Sleep batch was frozen before raw-candidate inventory existed and remains open when the exact residual is discovered
+- **THEN** one resumed Sleep owner MAY bind that exact path and content to the open batch, SHALL record `legacy_plan_omission_repaired`, and SHALL atomically upgrade it or preserve the prior generation; a newly frozen batch MUST represent the residual as an ordinary batch work item
+
+#### Scenario: A caller invokes the retired direct candidate command
+- **WHEN** a caller requests `capture-candidate` or the removed candidate-writer script
+- **THEN** the current launcher SHALL reject the command visibly and SHALL direct current integrations to structured feedback rather than preserve an alias
+
+### Requirement: Sleep freezes raw-candidate repair as explicit upgrade work
+Sleep MUST inventory schema-less, unbound candidate files under the candidate
+authority root before ordinary candidate catalog loading. Each admitted residual
+MUST have one deterministic work identity and one exact path/content digest. The
+repair loader MAY omit only those exact replacing paths while proving every
+remaining projection still matches the current generation manifest.
+
+#### Scenario: A new Sleep batch sees one raw candidate
+- **WHEN** Sleep inventories one schema-less, unbound `status=candidate` file before freezing the batch
+- **THEN** the frozen plan SHALL contain one deterministic raw-candidate-upgrade item and terminal success SHALL name its path, digest, batch binding, and current projection generation
+
+#### Scenario: Repair publication fails
+- **WHEN** model construction, projection validation, compare-and-swap publication, or final index validation fails for the raw-candidate upgrade
+- **THEN** the previous complete generation SHALL remain authoritative, the raw file SHALL remain excluded from retrieval, and the receipt SHALL expose the failed repair without a retry reader or partial success claim
+
 ### Requirement: Projection fields have no independent semantic authority
 The human-readable `if`, `action`, `predict`, `use`, and derived neighbor fields SHALL be generated from the bound model revision. Normal runtime MUST NOT accept edits to those fields as a canonical knowledge change or use `related_cards` as an independent relationship source.
 
@@ -85,6 +127,27 @@ before current source activation.
 #### Scenario: Merge or split is warranted
 - **WHEN** review evidence satisfies an exact merge or split action contract
 - **THEN** organization maintenance SHALL apply one reversible packet with old/new identity mapping, model/mesh reconstruction, rollback inventory, and current post-apply validation
+
+#### Scenario: Ready merge or split packets overlap in one source generation
+- **WHEN** two or more individually ready packets read or write any of the same materialized card paths
+- **THEN** organization maintenance SHALL select a deterministic maximal non-overlapping packet set, SHALL defer each conflicting packet with a concrete next-generation reopen reason, and SHALL apply every selected id exactly once
+
+#### Scenario: Maintenance removes or replaces materialized cards
+- **WHEN** an accepted action deletes, merges, splits, moves, or replaces a card and its bound projection, model, mesh, or bundle
+- **THEN** the publication inventory SHALL include the union of pre-apply and post-apply materialized paths, SHALL commit and verify every deletion and survivor, SHALL restore the configured base branch with a clean mirror, and SHALL leave every prior card identity with an exact audited disposition even when the active count changes
+
+#### Scenario: Remote organization gate receives a current maintenance packet
+- **WHEN** a reviewed maintenance PR contains source schema 2 cards, their exact LogicGuard model, mesh, projection, and bundle files, the current catalog and manifest, and the cleanup audit
+- **THEN** the installed GitHub checker SHALL validate that same current contract, SHALL reject missing or mismatched packet members, and SHALL license automatic merge only after the remote check succeeds; local maintenance success or an auto-merge label alone SHALL NOT claim organization-main adoption
+
+#### Scenario: The same generated packet crosses operating-system checkouts
+- **WHEN** the organization source is materialized in a Windows worktree with CRLF text and GitHub checks out the same Git content with LF text
+- **THEN** the catalog and remote checker SHALL use the declared UTF-8/LF-normalized text-digest policy, both checkouts SHALL identify the same projection content, and all semantic, binding, bundle, and exact-inventory checks SHALL remain required
+
+#### Scenario: Automatic organization maintenance does not depend on human approval
+- **GIVEN** the organization repository requires pull requests and the current `organization-kb-checks` status context
+- **WHEN** a maintenance PR carries the gated automatic-merge label and the remote content check succeeds
+- **THEN** the branch policy SHALL require zero approving reviews, the workflow SHALL merge without a human click, and administrator bypass, force push, or direct unreviewed adoption SHALL remain forbidden
 
 #### Scenario: An import carries a card-bound Skill bundle
 - **WHEN** an organization proposal contains nested Skill content and bundle metadata below the contributor import lane

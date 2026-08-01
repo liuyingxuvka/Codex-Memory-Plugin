@@ -797,6 +797,14 @@ def apply_organization_cleanup_proposal(
     if not validation.get("ok"):
         return {"ok": False, "dry_run": dry_run, "applied": [], "skipped": [], "errors": list(validation.get("errors") or [])}
     catalog = load_current_catalog(org_root)
+    catalog_fields = ("source_path", "model_path", "mesh_path", "projection_path", "bundle_path")
+    pre_materialized_paths = {
+        str(row.get(field) or "").replace("\\", "/")
+        for row in catalog.get("cards") or []
+        if isinstance(row, dict)
+        for field in catalog_fields
+        if str(row.get(field) or "")
+    }
     allowed = allow_actions or LOW_RISK_APPLY_ACTIONS
     selected = {str(item) for item in allow_action_ids} if allow_action_ids is not None else None
     cards: dict[str, dict[str, Any]] = {}
@@ -1009,18 +1017,21 @@ def apply_organization_cleanup_proposal(
             for item in applied:
                 _append_audit(org_root, {"event_type": "organization-cleanup-applied", **item, "created_at": now})
             rebuilt_catalog = load_current_catalog(org_root)
+            post_materialized_paths = {
+                str(row.get(field) or "").replace("\\", "/")
+                for row in rebuilt_catalog.get("cards") or []
+                if isinstance(row, dict)
+                for field in catalog_fields
+                if str(row.get(field) or "")
+            }
             changed_paths = sorted(
                 {
                     "khaos_org_kb.yaml",
                     "kb/organization_catalog.json",
                     "maintenance/cleanup_audit.jsonl",
                     *removed_imports,
-                    *(
-                        str(row.get(field) or "")
-                        for row in (rebuilt_catalog.get("cards") or [])
-                        if isinstance(row, dict)
-                        for field in ("source_path", "model_path", "mesh_path", "projection_path", "bundle_path")
-                    ),
+                    *pre_materialized_paths,
+                    *post_materialized_paths,
                 }
             )
         except Exception as exc:

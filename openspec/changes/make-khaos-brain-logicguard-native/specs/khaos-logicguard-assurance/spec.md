@@ -105,3 +105,14 @@ identity equality and terminal success.
 - **WHEN** the Sleep child receipt is immutable and the local cycle later adds Dream, writer-lease, reuse, timeout, or cycle-terminal fields
 - **THEN** validation SHALL require every child-owned field to remain exactly equal in the outer payload
 - **AND** it SHALL accept the outer payload as a strict superset without requiring outer-only fields to exist retroactively in the child receipt
+
+#### Scenario: A failed organization run is repaired
+- **WHEN** one immutable organization run ended failed or timed out, its process tree and leases are confirmed clear, and the failure owner is repaired
+- **THEN** a later authorized acceptance SHALL invoke the organization cycle wrapper once with a new run id and SHALL NOT replay, mutate, or resume the failed run id
+- **AND** code-level same-class regression evidence SHALL NOT be reported as proof that snapshot sync, organization maintenance, contribution, and terminal cleanup all completed in the real scheduled-owner environment
+
+#### Scenario: Current runtime acceptance is claimed
+- **WHEN** installation and the affected source checks are current
+- **THEN** acceptance SHALL require a terminal-success schema-v3 organization cycle receipt, an activated schema-v3 organization snapshot, and retrieval of at least one exact organization-only result through the default search envelope
+- **AND** it SHALL prove that every identity from the pre-maintenance active set has one exact preserved, migrated, merged, split, rejected, deprecated, or deleted disposition without substituting an equal card count
+- **AND** it SHALL keep installer currentness, source validation, runtime data health, and cycle completion as separate claims

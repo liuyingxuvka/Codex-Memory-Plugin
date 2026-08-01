@@ -1,0 +1,12 @@
+{
+  "candidate_snapshot_fingerprint": "sha256:2ba4922270a1cfea1c0579e96d366b647ee3471c789ce9397025126183642236",
+  "expected_head_fingerprint": "sha256:57326b3548b116d429e583c3fd801207b7e2a2afd78a8a2ea2ea982305d7fdff",
+  "fingerprint": "sha256:a778069be21687c5a1dfdccf650efb6c5748613aa45d44b6b2397c834ba149ad",
+  "next_generation": 11,
+  "previous_snapshot_fingerprint": "sha256:44fbc0b7b7e41aba6c07c83c2afbb6b72996dd94638937b3fb7ae79c0311d79a",
+  "receipt_id": "activation:khaos-sleep-raw-candidate-upgrade-v1",
+  "revision_set_fingerprint": "sha256:6c73e5cfef5627139d394e602215e99a0879e548a36bac740c0b752bac350558",
+  "schema": "flowguard.model_activation_receipt.v1",
+  "subject_revision": "source-inventory:390e55eff0c6312a964406378231f978050f5a7e61d4703c3697171e6b093f49",
+  "system_id": "flowguard"
+}

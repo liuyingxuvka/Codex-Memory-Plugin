@@ -211,6 +211,300 @@ def current_rows() -> tuple[FieldLifecycleRow, ...]:
             )
         )
 
+    for field_id, role in (
+        ("search.response_schema_version", "schema_version"),
+        ("search.results", "presentation"),
+        ("search.organization_status", "state"),
+        ("search.retrieval_receipt", "persisted"),
+        ("search.no_card", "state"),
+    ):
+        rows.append(
+            row(
+                field_id,
+                "group:search-envelope",
+                locations=(
+                    "local_kb/search.py",
+                    ".agents/skills/local-kb-retrieve/scripts/kb_search.py",
+                ),
+                role=role,
+                lifecycle="new",
+                impacts=("external_contract", "routing", "replay"),
+                readers=("AI/CLI search caller", "installed predictive-kb-preflight Skill"),
+                writers=("local_kb.search.render_search_envelope",),
+                obligation="req.organization.default-source-status",
+                contract="contract:organization.default_source_status_envelope",
+                inputs=("multi-source search result", "source states"),
+                outputs=(field_id,),
+                state_reads=("local active index", "organization snapshot status"),
+                state_writes=("canonical search response",),
+                side_effects=("combined retrieval receipt",),
+                errors=("hidden source failure", "bare-list downgrade", "receipt/result mismatch"),
+            )
+        )
+
+    for field_id, role in (
+        ("dream.opportunity_count", "persisted"),
+        ("dream.opportunity_inventory_digest", "persisted"),
+        ("dream.recorded_opportunity_count", "persisted"),
+        ("dream.omitted_opportunity_count", "persisted"),
+        ("dream.source_action.event_ids_digest", "persisted"),
+        ("dream.source_action.task_summaries_digest", "persisted"),
+        ("automation.local_cycle.native_timeout_seconds", "configuration"),
+        ("automation.local_cycle.owner_timeout_seconds", "configuration"),
+    ):
+        timeout_field = field_id.startswith("automation.")
+        rows.append(
+            row(
+                field_id,
+                "group:dream-bounded-opportunity-timeout",
+                locations=(
+                    "local_kb/automation_contracts.py"
+                    if timeout_field
+                    else "local_kb/dream.py",
+                    "scripts/run_kb_automation.py",
+                    "kb/history/dream/**",
+                ),
+                role=role,
+                lifecycle="new",
+                impacts=("state", "replay", "performance", "external_contract"),
+                readers=("Dream receipt validators", "local maintenance outer owner"),
+                writers=(
+                    "local_kb.automation_contracts.native_timeout_seconds"
+                    if timeout_field
+                    else "local_kb.dream.run_dream_maintenance",
+                ),
+                obligation=(
+                    "req.maintenance.local-cycle-timeout-budget"
+                    if timeout_field
+                    else "req.maintenance.dream-bounded-artifact"
+                ),
+                contract=(
+                    "contract:automation.local_cycle_timeout_tree"
+                    if timeout_field
+                    else "contract:dream.bounded_opportunity_projection"
+                ),
+                inputs=("full evaluated opportunity inventory", "route-specific timeout policy"),
+                outputs=(field_id,),
+                state_reads=("stable Dream fingerprints", "ordered timeout hierarchy"),
+                state_writes=("bounded Dream artifacts", "native owner policy"),
+                side_effects=("bounded diagnostic persistence",),
+                errors=("opportunity ocean", "timeout before Dream closure", "digest/count mismatch"),
+            )
+        )
+
+    rows.append(
+        row(
+            "feedback.suggested_action",
+            "group:foreground-observation-intake",
+            locations=(
+                ".agents/skills/local-kb-retrieve/scripts/kb_feedback.py",
+                "kb/history/events.jsonl",
+                "templates/predictive-kb-preflight/kb_launch.py",
+            ),
+            role="persisted",
+            lifecycle="new",
+            impacts=("state", "routing", "external_contract", "replay"),
+            readers=("local_kb.lifecycle.run_incremental_sleep",),
+            writers=("local_kb.lifecycle.record_observation_result",),
+            obligation="req.card.foreground-observation-only",
+            contract="contract:foreground.feedback_history_only",
+            inputs=("caller-stable event id", "structured task observation"),
+            outputs=("feedback.suggested_action", "one history event", "one terminal receipt"),
+            state_reads=("observation intake dedupe",),
+            state_writes=("history observation",),
+            side_effects=("bounded history append",),
+            errors=("direct candidate write", "authority mutation", "duplicate event"),
+        )
+    )
+
+    for field_id, role in (
+        ("sleep.raw_candidate_work.kind", "state"),
+        ("sleep.raw_candidate_work.relative_path", "persisted"),
+        ("sleep.raw_candidate_work.payload", "persisted"),
+        ("sleep.raw_candidate_repair.status", "state"),
+        ("sleep.raw_candidate_repair.count", "persisted"),
+        ("sleep.raw_candidate_repair.paths", "persisted"),
+        ("sleep.raw_candidate_repair.input_digest", "persisted"),
+        ("sleep.raw_candidate_repair.batch_bound", "persisted"),
+        ("sleep.raw_candidate_repair.legacy_plan_omission_repaired", "persisted"),
+    ):
+        rows.append(
+            row(
+                field_id,
+                "group:sleep-raw-candidate-upgrade",
+                locations=(
+                    "local_kb/model_maintenance.py",
+                    "local_kb/lifecycle.py",
+                    ".local/khaos-brain/sleep-batches/**",
+                    "kb/history/sleep-runs/**",
+                ),
+                role=role,
+                lifecycle="new",
+                impacts=("state", "migration", "replay", "external_contract"),
+                readers=("local_kb.lifecycle.run_incremental_sleep", "Sleep receipt validators"),
+                writers=(
+                    "local_kb.model_maintenance.discover_sleep_raw_candidate_upserts",
+                    "local_kb.lifecycle._run_incremental_sleep_locked",
+                ),
+                obligation="req.maintenance.raw-candidate-upgrade",
+                contract="contract:sleep.raw_candidate_upgrade_inventory",
+                inputs=("exact schema-less unbound candidate path and content",),
+                outputs=(field_id,),
+                state_reads=("current authority generation manifest", "open frozen Sleep batch"),
+                state_writes=("Sleep batch plan/item result", "immutable Sleep receipt"),
+                side_effects=("direct current projection replacement",),
+                errors=(
+                    "unsupported declared schema",
+                    "partial current binding",
+                    "raw candidate omitted before catalog read",
+                    "repair publication failure",
+                ),
+            )
+        )
+
+    rows.append(
+        row(
+            "organization.snapshot.schema_version",
+            "group:organization-snapshot-schema",
+            locations=(".local/organization_snapshots/*/current.json", "local_kb/org_snapshot.py"),
+            role="schema_version",
+            lifecycle="new",
+            impacts=("state", "migration", "external_contract", "routing"),
+            readers=("local_kb.org_snapshot.load_current_snapshot",),
+            writers=("local_kb.org_snapshot.stage_organization_snapshot",),
+            obligation="req.organization.snapshot-schema-cutover",
+            contract="contract:organization.snapshot_v3_only_runtime",
+            old_fields=("organization.snapshot.schema_version.v2",),
+            disposition="migrated",
+            disposition_refs=(DESIGN_REF, MODEL_REF),
+            inputs=("complete schema-3 manifest",),
+            outputs=("organization.snapshot.schema_version",),
+            state_reads=("staged organization generation",),
+            state_writes=("atomic current pointer",),
+            side_effects=("schema-v3 snapshot activation",),
+            errors=("retired schema", "partial generation", "pointer conflict"),
+        )
+    )
+
+    for field_id, role, writer, readers in (
+        (
+            "organization.review.selected_action_ids",
+            "persisted",
+            "local_kb.org_maintenance.build_organization_cleanup_review",
+            ("local_kb.org_cleanup.apply_organization_cleanup_proposal",),
+        ),
+        (
+            "organization.review.deferred_action_ids",
+            "state",
+            "local_kb.org_maintenance.build_organization_cleanup_review",
+            ("organization maintenance report",),
+        ),
+        (
+            "organization.apply.changed_paths",
+            "persisted",
+            "local_kb.org_cleanup.apply_organization_cleanup_proposal",
+            ("local_kb.org_automation._commit_and_push_organization_maintenance",),
+        ),
+        (
+            "organization.materialization.deleted",
+            "state",
+            "local_kb.org_automation._materialized_change_manifest",
+            ("organization final check", "organization commit readback"),
+        ),
+        (
+            "organization.maintenance.restore_base",
+            "persisted",
+            "local_kb.org_automation._commit_and_push_organization_maintenance",
+            ("organization cycle terminal gate",),
+        ),
+    ):
+        rows.append(
+            row(
+                field_id,
+                "group:organization-maintenance-publication",
+                locations=("local_kb/org_maintenance.py", "local_kb/org_cleanup.py", "local_kb/org_automation.py"),
+                role=role,
+                lifecycle="new",
+                impacts=("state", "side_effect", "replay", "external_contract"),
+                readers=readers,
+                writers=(writer,),
+                obligation="req.organization.merge-split",
+                contract="contract:organization.exact_nonoverlap_and_materialization",
+                inputs=("frozen organization source generation", "reviewed apply packets"),
+                outputs=(field_id,),
+                state_reads=("pre-apply catalog", "post-apply catalog", "organization Git mirror"),
+                state_writes=("organization maintenance receipt",),
+                side_effects=("organization source rebuild", "maintenance branch commit", "base branch restore"),
+                errors=("overlapping packet selection", "omitted deletion", "dirty base restore"),
+            )
+        )
+
+    for field_id, role, writer, readers, old_fields in (
+        (
+            "organization.source.builder_version",
+            "schema_version",
+            "local_kb.org_source_contract.build_organization_source",
+            ("templates.github.org_kb_check.check_manifest",),
+            ("organization.source.builder_version.v1",),
+        ),
+        (
+            "organization.source.text_digest_policy",
+            "persisted",
+            "local_kb.org_source_contract.file_sha256",
+            ("templates.github.org_kb_check.file_sha256",),
+            ("organization.source.checkout_specific_digest",),
+        ),
+        (
+            "organization.remote.required_status_checks",
+            "permission",
+            "local_kb.github_repo_config.build_branch_protection_payload",
+            ("templates.github.org-kb-auto-merge",),
+            (),
+        ),
+        (
+            "organization.remote.required_approving_review_count",
+            "permission",
+            "local_kb.github_repo_config.build_branch_protection_payload",
+            ("templates.github.org-kb-auto-merge",),
+            ("organization.remote.human_approval_required",),
+        ),
+        (
+            "organization.remote.administrator_bypass",
+            "permission",
+            "local_kb.github_repo_config.build_branch_protection_payload",
+            ("organization remote merge gate",),
+            ("organization.remote.admin_merge",),
+        ),
+    ):
+        rows.append(
+            row(
+                field_id,
+                "group:organization-remote-gate",
+                locations=(
+                    "local_kb/org_source_contract.py",
+                    "local_kb/github_repo_config.py",
+                    "templates/github/org_kb_check.py",
+                    "templates/github/org-kb-auto-merge.yml",
+                ),
+                role=role,
+                lifecycle="new" if not old_fields else "migrated",
+                impacts=("schema", "permission", "external_contract", "side_effect"),
+                readers=readers,
+                writers=(writer,),
+                obligation="req.organization.remote-gate-parity",
+                contract="contract:organization.remote_gate_portable_automatic",
+                old_fields=old_fields,
+                disposition="migrated" if old_fields else "not_applicable",
+                disposition_refs=(DESIGN_REF, MODEL_REF),
+                inputs=("current organization source packet", "declared GitHub repository policy"),
+                outputs=(field_id,),
+                state_reads=("organization source catalog", "GitHub branch protection"),
+                state_writes=("organization source manifest", "GitHub branch protection"),
+                side_effects=("remote content check", "gated automatic merge"),
+                errors=("schema drift", "CRLF/LF digest drift", "human approval blocker", "administrator bypass"),
+            )
+        )
+
     for field_id, obligation, contract in (
         ("sleep.model_revision_ids", "req.maintenance.sleep-owner", "contract:model_maintenance.execute_sleep_plan"),
         ("sleep.mesh_revision_id", "req.maintenance.mesh-consolidation", "contract:model_maintenance.execute_sleep_plan"),
@@ -317,6 +611,21 @@ def current_rows() -> tuple[FieldLifecycleRow, ...]:
         ("legacy.card.related_cards_authority", "card.logicguard_mesh_revision_id", "migrated"),
         ("legacy.runtime.flat_yaml_search", "active_index.logicguard_model_id", "deleted"),
         ("legacy.runtime.floating_model_head", "card.logicguard_revision_id", "blocked"),
+        (
+            "organization.snapshot.schema_version.v2",
+            "organization.snapshot.schema_version",
+            "migrated",
+        ),
+        (
+            "launcher.capture-candidate",
+            "feedback.suggested_action",
+            "deleted",
+        ),
+        (
+            "foreground.direct_candidate_yaml",
+            "feedback.suggested_action",
+            "deleted",
+        ),
     ):
         rows.append(
             row(
@@ -352,6 +661,13 @@ def build_plan() -> FieldLifecyclePlan:
         "group:card-current-binding",
         "group:card-derived-display",
         "group:active-index-binding",
+        "group:search-envelope",
+        "group:foreground-observation-intake",
+        "group:sleep-raw-candidate-upgrade",
+        "group:dream-bounded-opportunity-timeout",
+        "group:organization-snapshot-schema",
+        "group:organization-maintenance-publication",
+        "group:organization-remote-gate",
         "group:sleep-receipt",
         "group:dream-receipt",
         "group:migration-authority",
@@ -383,7 +699,7 @@ def build_plan() -> FieldLifecyclePlan:
         allow_scoped_confidence=False,
         notes=(
             "This inventory is complete for new/changed model-authority, projection, index, "
-            "maintenance, migration, UI, prompt, and directly retired legacy fields. Unchanged "
+            "maintenance, organization publication, migration, UI, prompt, and directly retired legacy fields. Unchanged "
             "general card metadata is outside this bounded cutover inventory."
         ),
     )

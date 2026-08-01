@@ -74,6 +74,7 @@
     "local_kb/org_automation.py",
     "local_kb/org_outbox.py",
     "tests/test_org_automation.py",
+    "tests/test_process_control.py",
     "tests/test_org_outbox.py",
     "tests/test_skill_sharing.py",
     "tests/test_e2e_skill_bundle_contribution_flow.py",
@@ -215,7 +216,8 @@
       "evidence_class": "hard",
       "covers_obligation_ids": [
         "obligation:kb-organization-contribute:postflight-terminal",
-        "obligation:kb-organization-contribute:lane-failure-recovery"
+        "obligation:kb-organization-contribute:lane-failure-recovery",
+        "obligation:kb-organization-contribute:timeout-tree-cleanup"
       ],
       "timeout_seconds": 120,
       "execution_owner_id": "owner:kb-organization-contribute:terminal-runtime",
@@ -324,7 +326,8 @@
         "obligation:kb-organization-contribute:skill-bundle-author-version",
         "obligation:kb-organization-contribute:branch-pr-auto-merge",
         "obligation:kb-organization-contribute:postflight-terminal",
-        "obligation:kb-organization-contribute:lane-failure-recovery"
+        "obligation:kb-organization-contribute:lane-failure-recovery",
+        "obligation:kb-organization-contribute:timeout-tree-cleanup"
       ],
       "claim_boundary": "This witness binds the immutable target-owned native receipt to its exact run, checks, and non-calibration native obligations."
     }
@@ -341,6 +344,7 @@
         "obligation:kb-organization-contribute:branch-pr-auto-merge",
         "obligation:kb-organization-contribute:postflight-terminal",
         "obligation:kb-organization-contribute:lane-failure-recovery",
+        "obligation:kb-organization-contribute:timeout-tree-cleanup",
         "obligation:kb-organization-contribute:depth-calibration"
       ]
     }

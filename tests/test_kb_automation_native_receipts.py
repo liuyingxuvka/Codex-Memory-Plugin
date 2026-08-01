@@ -10,7 +10,11 @@ from pathlib import Path
 from unittest.mock import patch
 
 from local_kb.automation_contracts import (
+    AGGREGATE_ASSURANCE_TIMEOUT_SECONDS,
     AUTOMATION_COMPLETION_CONTRACTS,
+    PRE_RESTORE_ASSURANCE_TIMEOUT_SECONDS,
+    SLEEP_CYCLE_NATIVE_TIMEOUT_SECONDS,
+    SLEEP_CYCLE_OWNER_TIMEOUT_SECONDS,
     SLEEP_NATIVE_SOFT_DEADLINE_SECONDS,
     obligation_id,
 )
@@ -358,6 +362,33 @@ def test_sleep_wrapper_binds_the_cooperative_deadline_once() -> None:
     assert command.count("--soft-deadline-seconds") == 1
     index = command.index("--soft-deadline-seconds")
     assert command[index + 1] == str(SLEEP_NATIVE_SOFT_DEADLINE_SECONDS)
+
+
+def test_sleep_wrapper_uses_cycle_budget_and_declares_the_complete_timeout_tree() -> None:
+    completed = subprocess.CompletedProcess(args=["sleep-native"], returncode=1, stdout="{}", stderr="")
+    with tempfile.TemporaryDirectory() as tmp, patch(
+        "scripts.run_kb_automation.run_with_timeout_cleanup",
+        return_value=completed,
+    ) as owner:
+        root = Path(tmp)
+        result = run_automation(
+            "kb-sleep-maintenance",
+            repo_root=root,
+            codex_home=root / ".codex",
+        )
+        receipt = json.loads(Path(result["native_receipt_path"]).read_text(encoding="utf-8"))
+
+    assert owner.call_args.kwargs["timeout"] == SLEEP_CYCLE_NATIVE_TIMEOUT_SECONDS
+    assert receipt["native_payload"]["_owner_timeout_policy"] == {
+        "soft_deadline_seconds": SLEEP_NATIVE_SOFT_DEADLINE_SECONDS,
+        "native_timeout_seconds": SLEEP_CYCLE_NATIVE_TIMEOUT_SECONDS,
+        "owner_timeout_seconds": SLEEP_CYCLE_OWNER_TIMEOUT_SECONDS,
+        "aggregate_timeout_seconds": AGGREGATE_ASSURANCE_TIMEOUT_SECONDS,
+        "installer_timeout_seconds": PRE_RESTORE_ASSURANCE_TIMEOUT_SECONDS,
+        "timed_out": False,
+        "cleanup_confirmed": True,
+        "remaining_process_count": 0,
+    }
 
 
 def test_sleep_hard_timeout_records_local_dream_as_not_run() -> None:

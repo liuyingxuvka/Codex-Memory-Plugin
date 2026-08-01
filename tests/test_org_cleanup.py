@@ -6,7 +6,7 @@ from pathlib import Path
 
 from local_kb.org_checks import check_organization_repository
 from local_kb.org_cleanup import apply_organization_cleanup_proposal, build_organization_cleanup_proposal
-from local_kb.org_source_contract import materialize_current_source
+from local_kb.org_source_contract import load_current_catalog, materialize_current_source
 from local_kb.store import load_yaml_file, write_yaml_file
 from local_kb.ui_data import build_search_payload
 from tests.org_helpers import activate_current_kb_runtime, base_card, write_valid_org_repo
@@ -304,6 +304,12 @@ class OrganizationCleanupTests(unittest.TestCase):
             materialize_current_source(root, organization_id="sandbox", cards=[("kb/main/left.yaml", left), ("kb/main/right.yaml", right)])
             proposal = build_organization_cleanup_proposal(root)
             merge = next(item for item in proposal["actions"] if item["action_type"] == "merge-cards")
+            removed_path = str(merge["related_path"])
+            removed_rows = [
+                row
+                for row in load_current_catalog(root)["cards"]
+                if isinstance(row, dict) and str(row.get("source_path") or "") == removed_path
+            ]
             result = apply_organization_cleanup_proposal(
                 root,
                 proposal,
@@ -318,6 +324,14 @@ class OrganizationCleanupTests(unittest.TestCase):
         self.assertTrue(result["ok"], result)
         self.assertEqual(result["applied_count"], 1)
         self.assertTrue(check["ok"], check)
+        self.assertEqual(len(removed_rows), 1, removed_rows)
+        self.assertTrue(
+            {
+                str(removed_rows[0].get(field) or "")
+                for field in ("source_path", "model_path", "mesh_path", "projection_path", "bundle_path")
+            }.issubset(set(result["changed_paths"])),
+            result["changed_paths"],
+        )
 
 
 if __name__ == "__main__":

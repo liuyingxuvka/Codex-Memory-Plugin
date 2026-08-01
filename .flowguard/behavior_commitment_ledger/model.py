@@ -9,7 +9,7 @@ from flowguard import BehaviorCommitmentLedger, load_behavior_commitment_ledger,
 
 
 LEDGER_PATH = Path(__file__).with_name("ledger.json")
-CURRENT_REVISION = "logicguard-org-windows-rollback-path-20260731"
+CURRENT_REVISION = "logicguard-dream-bounded-opportunity-timeout-20260801"
 
 
 def _surface(
@@ -53,9 +53,10 @@ def _apply_current_logicguard_upgrade(payload: dict[str, object]) -> dict[str, o
         {
             "label": "Rank current local and organization knowledge in one source-qualified retrieval",
             "expected_result": (
-                "one globally ranked result list and one receipt bind exact local "
-                "or foreign result references; foreign context remains read-only, "
-                "and foreground retrieval never replays lifecycle history"
+                "one versioned response envelope carries globally ranked results, "
+                "organization source status, and one receipt binding exact local or "
+                "foreign result references; foreign context remains read-only, and "
+                "foreground retrieval never replays lifecycle history"
             ),
             "expected_terminal": "combined_ranked_results_or_no_card",
             "failure_boundary": (
@@ -89,6 +90,8 @@ def _apply_current_logicguard_upgrade(payload: dict[str, object]) -> dict[str, o
                 "view-counted-as-use",
                 "foreign-card-adoption-or-skill-install",
                 "foreground-full-lifecycle-replay",
+                "bare-list-hides-organization-failure",
+                "optional-source-status-envelope",
             ],
         }
     )
@@ -117,6 +120,49 @@ def _apply_current_logicguard_upgrade(payload: dict[str, object]) -> dict[str, o
                 "lifecycle/model/index authority",
                 "organization source/snapshot authority",
                 "global writer/delegation lease state",
+            ],
+        }
+    )
+
+    sleep = commitments["commitment:sleep-no-delta-single-owner"]
+    sleep.update(
+        {
+            "expected_result": (
+                "foreground feedback appends one bounded history observation while Sleep alone "
+                "admits observations, freezes exact residual raw candidates as explicit upgrade work, publishes current LogicGuard "
+                "projections, and switches one complete active-index generation"
+            ),
+            "failure_boundary": (
+                "a foreground direct candidate writer, projection/index mutation before Sleep, "
+                "raw-YAML retrieval fallback, omitted or ambiguous raw-candidate repair inventory, duplicate Sleep publication, stale planning snapshot, "
+                "or unfinished authority activation blocks convergence visibly"
+            ),
+            "primary_owner_model_id": "khaos_brain_logicguard_system",
+            "supporting_model_ids": [
+                "kb_postflight_terminal_flow",
+                "khaos_brain_logicguard_runtime_model_miss",
+                "khaos_brain_two_maintenance_cycle_flow",
+            ],
+            "source_surface_ids": [
+                *[
+                    str(item)
+                    for item in sleep.get("source_surface_ids", [])
+                    if str(item) != "surface:postflight-observation-intake"
+                ],
+                "surface:postflight-observation-intake",
+            ],
+            "excluded_behavior_ids": [
+                *[
+                    str(item)
+                    for item in sleep.get("excluded_behavior_ids", [])
+                    if str(item)
+                    not in {
+                        "foreground-direct-candidate-write",
+                        "sleep-raw-candidate-repair-omitted",
+                    }
+                ],
+                "foreground-direct-candidate-write",
+                "sleep-raw-candidate-repair-omitted",
             ],
         }
     )
@@ -166,13 +212,18 @@ def _apply_current_logicguard_upgrade(payload: dict[str, object]) -> dict[str, o
             "label": "Upgrade, maintain, and snapshot one current organization card contract",
             "expected_result": (
                 "schema-2 catalog, exact card-bound LogicGuard bundles, reversible "
-                "maintenance decisions, and one complete content-addressed foreign snapshot"
+                "maintenance decisions, a parity-bound cross-platform current remote merge gate with "
+                "PR/status protection and zero human approvals, and one "
+                "complete content-addressed foreign snapshot"
             ),
             "expected_terminal": "current_source_and_snapshot_or_explicit_blocker",
             "failure_boundary": (
                 "old runtime reader, incomplete identity coverage, unsupported upgrade "
                 "item, incomplete Windows rollback copy, irreversible merge/split, or partial "
-                "pointer activation remains blocked"
+                "pointer activation, overlapping same-generation packets, an omitted deletion, "
+                "a dirty base restore, a stale schema-1 remote checker, rejected current "
+                "LogicGuard packet paths, checkout-specific CRLF/LF text hashes, a human-approval "
+                "requirement, an administrator merge bypass, or an unmerged maintenance PR remains blocked"
             ),
             "primary_owner_model_id": "khaos_brain_logicguard_system",
             "supporting_model_ids": ["khaos_brain_two_maintenance_cycle_flow"],
@@ -187,6 +238,7 @@ def _apply_current_logicguard_upgrade(payload: dict[str, object]) -> dict[str, o
                 "surface:organization-source-contract",
                 "surface:organization-snapshot",
                 "surface:organization-merge-split-packets",
+                "surface:organization-maintenance-materialization",
                 "surface:organization-migration-rollback",
             ],
             "excluded_behavior_ids": [
@@ -207,6 +259,7 @@ def _apply_current_logicguard_upgrade(payload: dict[str, object]) -> dict[str, o
         "local_kb/org_snapshot.py",
         "local_kb/org_cleanup.py",
         "local_kb/org_maintenance.py",
+        "local_kb/org_automation.py",
         "local_kb/org_cycle.py",
         "local_kb/org_outbox.py",
         "templates/github/org_kb_check.py",
@@ -221,12 +274,15 @@ def _apply_current_logicguard_upgrade(payload: dict[str, object]) -> dict[str, o
             "expected_result": (
                 "five maintained Skills are classified as two scheduled owners, two "
                 "composite children, and one explicit-user-only updater; each scheduled "
-                "owner writes one identity-bound immutable receipt-v3 terminal"
+                "owner writes one identity-bound immutable receipt-v3 terminal; Dream "
+                "keeps exact full-inventory fingerprints while persisting at most 64 "
+                "opportunity examples under a 2400/2700-second local timeout tree"
             ),
             "failure_boundary": (
                 "stale or partial child evidence, run-id-only reuse, cross-task not_run, "
                 "cleanup-unconfirmed timeout, child/outer receipt inversion, or planning-only "
-                "test evidence blocks completion"
+                "test evidence blocks completion; an unbounded Dream opportunity artifact "
+                "or the former under-budgeted local timeout is also a visible failure"
             ),
             "primary_owner_model_id": "khaos_brain_logicguard_system",
             "supporting_model_ids": ["khaos_brain_two_maintenance_cycle_flow"],
@@ -250,13 +306,16 @@ def _apply_current_logicguard_upgrade(payload: dict[str, object]) -> dict[str, o
 
     replaced_surface_ids = {
         "surface:organization-adoption",
+        "surface:postflight-observation-intake",
         "surface:organization-snapshot-retrieval",
+        "surface:retrieval-cli",
         "surface:retrieval-interactions",
         "surface:foreign-calibration-projection",
         "surface:global-maintenance-writer",
         "surface:organization-source-contract",
         "surface:organization-snapshot",
         "surface:organization-merge-split-packets",
+        "surface:organization-maintenance-materialization",
         "surface:organization-migration-rollback",
         "surface:local-cycle-receipt-v3",
         "surface:organization-cycle-receipt-v3",
@@ -276,6 +335,37 @@ def _apply_current_logicguard_upgrade(payload: dict[str, object]) -> dict[str, o
             )
     surfaces.extend(
         [
+            _surface(
+                "surface:postflight-observation-intake",
+                source_ref=".agents/skills/local-kb-retrieve/scripts/kb_feedback.py#main",
+                owner="Foreground observation intake owner",
+                commitment_id="commitment:sleep-no-delta-single-owner",
+                business_intent_id="intent:converge-sleep-without-duplicate-work",
+                rationale=(
+                    "Foreground feedback writes exactly one structured history event; Sleep alone "
+                    "creates or upgrades candidate, model, mesh, projection, and index authority."
+                ),
+                validation_boundary=(
+                    "retired capture-candidate rejection, feedback no-authority-mutation, residual raw-candidate Sleep upgrade, and runtime readiness tests"
+                ),
+                surface_kind="cli",
+            ),
+            _surface(
+                "surface:retrieval-cli",
+                source_ref=".agents/skills/local-kb-retrieve/scripts/kb_search.py#main",
+                owner="Canonical retrieval CLI envelope owner",
+                commitment_id="commitment:kb-retrieval-current-index",
+                business_intent_id="intent:serve-predictive-retrieval",
+                rationale=(
+                    "Every default machine response carries results, organization status, "
+                    "the combined receipt, and no-card state without an opt-in flag."
+                ),
+                validation_boundary=(
+                    "JSON/text local-success plus organization-failure, canonical schema, "
+                    "and retired optional-flag rejection tests"
+                ),
+                surface_kind="cli",
+            ),
             _surface(
                 "surface:organization-snapshot-retrieval",
                 source_ref="local_kb/search.py#search_with_receipt",
@@ -363,8 +453,23 @@ def _apply_current_logicguard_upgrade(payload: dict[str, object]) -> dict[str, o
                 owner="Organization maintenance decision owner",
                 commitment_id="commitment:organization-current-layout",
                 business_intent_id="intent:consume-organization-knowledge",
-                rationale="Every merge/split has an exact reversible apply packet or concrete reopen contract.",
-                validation_boundary="decision-id, apply-packet, reopen, rollback, and exact selected-id tests",
+                rationale=(
+                    "Every merge/split has an exact reversible apply packet or concrete reopen contract, "
+                    "and one source generation selects only a deterministic non-overlapping packet set."
+                ),
+                validation_boundary="decision-id, apply-packet, non-overlap, reopen, rollback, and exact selected-id tests",
+            ),
+            _surface(
+                "surface:organization-maintenance-materialization",
+                source_ref="local_kb/org_cleanup.py#apply_organization_cleanup_proposal",
+                owner="Organization maintenance materialization owner",
+                commitment_id="commitment:organization-current-layout",
+                business_intent_id="intent:consume-organization-knowledge",
+                rationale=(
+                    "Publication binds the union of pre-apply and post-apply card, projection, model, mesh, "
+                    "and bundle paths so deletions are staged, verified, committed, and restored cleanly."
+                ),
+                validation_boundary="pre/post path union, deleted-file manifest, Git commit readback, and clean base-restore tests",
             ),
             _surface(
                 "surface:local-cycle-receipt-v3",
@@ -372,8 +477,14 @@ def _apply_current_logicguard_upgrade(payload: dict[str, object]) -> dict[str, o
                 owner="Local scheduled task",
                 commitment_id="commitment:automation-proof-bound-depth-terminal",
                 business_intent_id="intent:prove-complete-scheduled-automation",
-                rationale="One Sleep-then-Dream task preserves strict status and exact terminal receipt identity.",
-                validation_boundary="local phase matrix, tamper, reuse, task-independence, and native receipt tests",
+                rationale=(
+                    "One Sleep-then-Dream task preserves strict status and exact terminal receipt identity, "
+                    "writes a bounded Dream opportunity projection, and retains route-specific timeout headroom."
+                ),
+                validation_boundary=(
+                    "local phase matrix, large-opportunity compaction, 2400/2700 timeout hierarchy, "
+                    "tamper, reuse, task-independence, and native receipt tests"
+                ),
             ),
             _surface(
                 "surface:organization-cycle-receipt-v3",

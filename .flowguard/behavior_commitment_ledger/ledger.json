@@ -50,9 +50,11 @@
           "task-time-organization-fetch",
           "view-counted-as-use",
           "foreign-card-adoption-or-skill-install",
-          "foreground-full-lifecycle-replay"
+          "foreground-full-lifecycle-replay",
+          "bare-list-hides-organization-failure",
+          "optional-source-status-envelope"
         ],
-        "expected_result": "one globally ranked result list and one receipt bind exact local or foreign result references; foreign context remains read-only, and foreground retrieval never replays lifecycle history",
+        "expected_result": "one versioned response envelope carries globally ranked results, organization source status, and one receipt binding exact local or foreign result references; foreign context remains read-only, and foreground retrieval never replays lifecycle history",
         "expected_terminal": "combined_ranked_results_or_no_card",
         "external_differences": [],
         "failure_boundary": "missing current local authority or foreign snapshot, local-first truncation, task-time network fetch, or ambiguous result identity fails visibly; missing or stale compact foreign calibration blocks foreign results without a replay fallback",
@@ -311,12 +313,14 @@
           "timeout-represented-as-sleep-success",
           "generic-entry-transition-global-invalidation",
           "restart-entire-batch-after-partial-progress",
-          "mutable-root-yaml-serving-authority"
+          "mutable-root-yaml-serving-authority",
+          "foreground-direct-candidate-write",
+          "sleep-raw-candidate-repair-omitted"
         ],
-        "expected_result": "Sleep freezes one bounded item batch, resumes its exact pending identities, checkpoints each completed or owned-blocked item, keeps the prior immutable generation readable during unfinished work, applies only exact-entry subtractive denies for current revokes or replacements, publishes one complete pointer-bound generation last, and reports previous/new/opening/target/completed/blocked/closing remainder movement",
+        "expected_result": "foreground feedback appends one bounded history observation while Sleep alone admits observations, freezes exact residual raw candidates as explicit upgrade work, publishes current LogicGuard projections, and switches one complete active-index generation",
         "expected_terminal": "progress_saved_or_current_pointer_published_once",
         "external_differences": [],
-        "failure_boundary": "a changed frozen boundary, duplicate item work, stale planning snapshot, per-candidate or per-handoff full lifecycle replay, quadratic duplicate-key work, unauthorized index publisher, over-broad deny, missing checkpoint, handoff acknowledgement before pointer commit, or hard timeout blocks convergence visibly; unfinished work preserves the prior generation and only proven exact-current corruption globally fails closed",
+        "failure_boundary": "a foreground direct candidate writer, projection/index mutation before Sleep, raw-YAML retrieval fallback, omitted or ambiguous raw-candidate repair inventory, duplicate Sleep publication, stale planning snapshot, or unfinished authority activation blocks convergence visibly",
         "in_scope": true,
         "label": "Converge no-delta Sleep through one model publication and one evidence watermark",
         "lookup_binding": {
@@ -381,7 +385,7 @@
         "preconditions": [
           "current model and lifecycle authorities are readable"
         ],
-        "primary_owner_model_id": "kb_convergence_upgrade_model.LifecycleConvergenceBlock",
+        "primary_owner_model_id": "khaos_brain_logicguard_system",
         "rationale": "A no-delta model identity and a same-state evidence checkpoint are different responsibilities; neither licenses repeating the complete publication pipeline.",
         "relations": [],
         "replacement_state": "active",
@@ -398,7 +402,8 @@
           "surface:dream-handoff-post-publication-ack",
           "surface:dream-handoff-lifecycle-batch",
           "surface:lifecycle-replay-linear-index",
-          "surface:sleep-no-delta-spec"
+          "surface:sleep-no-delta-spec",
+          "surface:postflight-observation-intake"
         ],
         "state_writes": [
           "entry calibration watermark",
@@ -407,7 +412,9 @@
           "current generation pointer and Sleep watermark after complete activation"
         ],
         "supporting_model_ids": [
-          "kb_sleep_timeout_model_miss"
+          "kb_postflight_terminal_flow",
+          "khaos_brain_logicguard_runtime_model_miss",
+          "khaos_brain_two_maintenance_cycle_flow"
         ],
         "surface_delegation_only": false,
         "trigger": "the current model is unchanged or parked evidence changes without satisfying reopening",
@@ -451,10 +458,10 @@
           "equal-card-count-coverage-substitution",
           "irreversible-similarity-only-merge"
         ],
-        "expected_result": "schema-2 catalog, exact card-bound LogicGuard bundles, reversible maintenance decisions, and one complete content-addressed foreign snapshot",
+        "expected_result": "schema-2 catalog, exact card-bound LogicGuard bundles, reversible maintenance decisions, a parity-bound cross-platform current remote merge gate with PR/status protection and zero human approvals, and one complete content-addressed foreign snapshot",
         "expected_terminal": "current_source_and_snapshot_or_explicit_blocker",
         "external_differences": [],
-        "failure_boundary": "old runtime reader, incomplete identity coverage, unsupported upgrade item, incomplete Windows rollback copy, irreversible merge/split, or partial pointer activation remains blocked",
+        "failure_boundary": "old runtime reader, incomplete identity coverage, unsupported upgrade item, incomplete Windows rollback copy, irreversible merge/split, or partial pointer activation, overlapping same-generation packets, an omitted deletion, a dirty base restore, a stale schema-1 remote checker, rejected current LogicGuard packet paths, checkout-specific CRLF/LF text hashes, a human-approval requirement, an administrator merge bypass, or an unmerged maintenance PR remains blocked",
         "in_scope": true,
         "label": "Upgrade, maintain, and snapshot one current organization card contract",
         "lookup_binding": {
@@ -467,6 +474,7 @@
             "local_kb/org_snapshot.py",
             "local_kb/org_cleanup.py",
             "local_kb/org_maintenance.py",
+            "local_kb/org_automation.py",
             "local_kb/org_cycle.py",
             "local_kb/org_outbox.py",
             "templates/github/org_kb_check.py"
@@ -529,6 +537,7 @@
           "surface:organization-source-contract",
           "surface:organization-snapshot",
           "surface:organization-merge-split-packets",
+          "surface:organization-maintenance-materialization",
           "surface:organization-migration-rollback"
         ],
         "state_writes": [],
@@ -677,10 +686,10 @@
           "background-full-validation-retry",
           "missing-target-native-receipt"
         ],
-        "expected_result": "five maintained Skills are classified as two scheduled owners, two composite children, and one explicit-user-only updater; each scheduled owner writes one identity-bound immutable receipt-v3 terminal",
+        "expected_result": "five maintained Skills are classified as two scheduled owners, two composite children, and one explicit-user-only updater; each scheduled owner writes one identity-bound immutable receipt-v3 terminal; Dream keeps exact full-inventory fingerprints while persisting at most 64 opportunity examples under a 2400/2700-second local timeout tree",
         "expected_terminal": "target_native_terminal_or_explicit_block",
         "external_differences": [],
-        "failure_boundary": "stale or partial child evidence, run-id-only reuse, cross-task not_run, cleanup-unconfirmed timeout, child/outer receipt inversion, or planning-only test evidence blocks completion",
+        "failure_boundary": "stale or partial child evidence, run-id-only reuse, cross-task not_run, cleanup-unconfirmed timeout, child/outer receipt inversion, or planning-only test evidence blocks completion; an unbounded Dream opportunity artifact or the former under-budgeted local timeout is also a visible failure",
         "in_scope": true,
         "label": "Close two scheduled owners from exact receipt-v3 terminal evidence",
         "lookup_binding": {
@@ -1479,7 +1488,7 @@
         "variant_of_business_intent_id": ""
       }
     ],
-    "current_revision": "logicguard-org-windows-rollback-path-20260731",
+    "current_revision": "logicguard-dream-bounded-opportunity-timeout-20260801",
     "expected_business_intent_ids": [
       "intent:serve-predictive-retrieval",
       "intent:serialize-lifecycle-mutation",
@@ -1508,7 +1517,6 @@
     ],
     "expected_source_surface_ids": [
       "surface:retrieval-api",
-      "surface:retrieval-cli",
       "surface:retrieval-spec",
       "surface:lifecycle-writer-lock",
       "surface:active-index-lifecycle-lock",
@@ -1550,6 +1558,8 @@
       "surface:manual-update-skill",
       "surface:update-automation-retirement",
       "surface:update-retirement-openspec",
+      "surface:postflight-observation-intake",
+      "surface:retrieval-cli",
       "surface:organization-snapshot-retrieval",
       "surface:retrieval-interactions",
       "surface:foreign-calibration-projection",
@@ -1558,6 +1568,7 @@
       "surface:organization-migration-rollback",
       "surface:organization-snapshot",
       "surface:organization-merge-split-packets",
+      "surface:organization-maintenance-materialization",
       "surface:local-cycle-receipt-v3",
       "surface:organization-cycle-receipt-v3",
       "surface:automation-receipt-layering"
@@ -1607,40 +1618,6 @@
         "surface_id": "surface:retrieval-api",
         "surface_kind": "api",
         "validation_boundary": "retrieval focused tests"
-      },
-      {
-        "business_intent_ids": [
-          "intent:serve-predictive-retrieval"
-        ],
-        "commitment_ids": [
-          "commitment:kb-retrieval-current-index"
-        ],
-        "content_fingerprint": "",
-        "coverage_disposition": "modeled",
-        "declared_semantics_fingerprint": "",
-        "delegated_owner_inventory_id": "",
-        "delegates_to_primary_path": false,
-        "delegation_relation_type": "",
-        "discovery_evidence_ids": [],
-        "freshness_state": "current",
-        "in_scope": true,
-        "inventory_revision": "",
-        "label": "",
-        "metadata": {},
-        "native_artifact_id": "",
-        "native_evidence_ids": [],
-        "owner": "LifecycleConvergenceBlock",
-        "primary_path_id": "",
-        "rationale": "Canonical machine retrieval command.",
-        "scoped_out_reason": "",
-        "similarity_obligation_ids": [],
-        "similarity_relation_ids": [],
-        "source_authority_role": "normative",
-        "source_ref": ".agents/skills/local-kb-retrieve/scripts/kb_search.py",
-        "source_system_id": "",
-        "surface_id": "surface:retrieval-cli",
-        "surface_kind": "cli",
-        "validation_boundary": "CLI contract tests"
       },
       {
         "business_intent_ids": [
@@ -3038,6 +3015,74 @@
       },
       {
         "business_intent_ids": [
+          "intent:converge-sleep-without-duplicate-work"
+        ],
+        "commitment_ids": [
+          "commitment:sleep-no-delta-single-owner"
+        ],
+        "content_fingerprint": "",
+        "coverage_disposition": "modeled",
+        "declared_semantics_fingerprint": "",
+        "delegated_owner_inventory_id": "",
+        "delegates_to_primary_path": false,
+        "delegation_relation_type": "",
+        "discovery_evidence_ids": [],
+        "freshness_state": "current",
+        "in_scope": true,
+        "inventory_revision": "",
+        "label": "",
+        "metadata": {},
+        "native_artifact_id": "",
+        "native_evidence_ids": [],
+        "owner": "Foreground observation intake owner",
+        "primary_path_id": "",
+        "rationale": "Foreground feedback writes exactly one structured history event; Sleep alone creates or upgrades candidate, model, mesh, projection, and index authority.",
+        "scoped_out_reason": "",
+        "similarity_obligation_ids": [],
+        "similarity_relation_ids": [],
+        "source_authority_role": "normative",
+        "source_ref": ".agents/skills/local-kb-retrieve/scripts/kb_feedback.py#main",
+        "source_system_id": "",
+        "surface_id": "surface:postflight-observation-intake",
+        "surface_kind": "cli",
+        "validation_boundary": "retired capture-candidate rejection, feedback no-authority-mutation, residual raw-candidate Sleep upgrade, and runtime readiness tests"
+      },
+      {
+        "business_intent_ids": [
+          "intent:serve-predictive-retrieval"
+        ],
+        "commitment_ids": [
+          "commitment:kb-retrieval-current-index"
+        ],
+        "content_fingerprint": "",
+        "coverage_disposition": "modeled",
+        "declared_semantics_fingerprint": "",
+        "delegated_owner_inventory_id": "",
+        "delegates_to_primary_path": false,
+        "delegation_relation_type": "",
+        "discovery_evidence_ids": [],
+        "freshness_state": "current",
+        "in_scope": true,
+        "inventory_revision": "",
+        "label": "",
+        "metadata": {},
+        "native_artifact_id": "",
+        "native_evidence_ids": [],
+        "owner": "Canonical retrieval CLI envelope owner",
+        "primary_path_id": "",
+        "rationale": "Every default machine response carries results, organization status, the combined receipt, and no-card state without an opt-in flag.",
+        "scoped_out_reason": "",
+        "similarity_obligation_ids": [],
+        "similarity_relation_ids": [],
+        "source_authority_role": "normative",
+        "source_ref": ".agents/skills/local-kb-retrieve/scripts/kb_search.py#main",
+        "source_system_id": "",
+        "surface_id": "surface:retrieval-cli",
+        "surface_kind": "cli",
+        "validation_boundary": "JSON/text local-success plus organization-failure, canonical schema, and retired optional-flag rejection tests"
+      },
+      {
+        "business_intent_ids": [
           "intent:serve-predictive-retrieval"
         ],
         "commitment_ids": [
@@ -3297,7 +3342,7 @@
         "native_evidence_ids": [],
         "owner": "Organization maintenance decision owner",
         "primary_path_id": "",
-        "rationale": "Every merge/split has an exact reversible apply packet or concrete reopen contract.",
+        "rationale": "Every merge/split has an exact reversible apply packet or concrete reopen contract, and one source generation selects only a deterministic non-overlapping packet set.",
         "scoped_out_reason": "",
         "similarity_obligation_ids": [],
         "similarity_relation_ids": [],
@@ -3306,7 +3351,41 @@
         "source_system_id": "",
         "surface_id": "surface:organization-merge-split-packets",
         "surface_kind": "process",
-        "validation_boundary": "decision-id, apply-packet, reopen, rollback, and exact selected-id tests"
+        "validation_boundary": "decision-id, apply-packet, non-overlap, reopen, rollback, and exact selected-id tests"
+      },
+      {
+        "business_intent_ids": [
+          "intent:consume-organization-knowledge"
+        ],
+        "commitment_ids": [
+          "commitment:organization-current-layout"
+        ],
+        "content_fingerprint": "",
+        "coverage_disposition": "modeled",
+        "declared_semantics_fingerprint": "",
+        "delegated_owner_inventory_id": "",
+        "delegates_to_primary_path": false,
+        "delegation_relation_type": "",
+        "discovery_evidence_ids": [],
+        "freshness_state": "current",
+        "in_scope": true,
+        "inventory_revision": "",
+        "label": "",
+        "metadata": {},
+        "native_artifact_id": "",
+        "native_evidence_ids": [],
+        "owner": "Organization maintenance materialization owner",
+        "primary_path_id": "",
+        "rationale": "Publication binds the union of pre-apply and post-apply card, projection, model, mesh, and bundle paths so deletions are staged, verified, committed, and restored cleanly.",
+        "scoped_out_reason": "",
+        "similarity_obligation_ids": [],
+        "similarity_relation_ids": [],
+        "source_authority_role": "normative",
+        "source_ref": "local_kb/org_cleanup.py#apply_organization_cleanup_proposal",
+        "source_system_id": "",
+        "surface_id": "surface:organization-maintenance-materialization",
+        "surface_kind": "process",
+        "validation_boundary": "pre/post path union, deleted-file manifest, Git commit readback, and clean base-restore tests"
       },
       {
         "business_intent_ids": [
@@ -3331,7 +3410,7 @@
         "native_evidence_ids": [],
         "owner": "Local scheduled task",
         "primary_path_id": "",
-        "rationale": "One Sleep-then-Dream task preserves strict status and exact terminal receipt identity.",
+        "rationale": "One Sleep-then-Dream task preserves strict status and exact terminal receipt identity, writes a bounded Dream opportunity projection, and retains route-specific timeout headroom.",
         "scoped_out_reason": "",
         "similarity_obligation_ids": [],
         "similarity_relation_ids": [],
@@ -3340,7 +3419,7 @@
         "source_system_id": "",
         "surface_id": "surface:local-cycle-receipt-v3",
         "surface_kind": "process",
-        "validation_boundary": "local phase matrix, tamper, reuse, task-independence, and native receipt tests"
+        "validation_boundary": "local phase matrix, large-opportunity compaction, 2400/2700 timeout hierarchy, tamper, reuse, task-independence, and native receipt tests"
       },
       {
         "business_intent_ids": [

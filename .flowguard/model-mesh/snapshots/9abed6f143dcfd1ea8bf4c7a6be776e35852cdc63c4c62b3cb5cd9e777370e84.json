@@ -1,0 +1,2790 @@
+{
+  "claim_boundary": "This snapshot is the sole finite project model-system view assembled from existing regression, ModelMesh, BehaviorCommitmentLedger, Model-Test Alignment, and TestMesh owner artifacts. Unresolved gaps remain explicit and cannot support a full-coverage claim.",
+  "coverage": {
+    "boundary_id": "flowguard:manifest-ledger-owner-boundary",
+    "claim_boundary": "Coverage is exhaustive only for the current regression manifest, the current behavior-commitment ledger, their resolved model inputs, and their declared contract and test references.",
+    "dimensions": [
+      {
+        "complete": false,
+        "covered_ids": [],
+        "dimension_id": "behavior_commitments",
+        "excluded_ids": [],
+        "extra_ids": [],
+        "missing_ids": [
+          "commitment:ai-manual-update-on-explicit-request",
+          "commitment:automatic-system-update-retired",
+          "commitment:automation-current-runtime-policy",
+          "commitment:automation-proof-bound-depth-terminal",
+          "commitment:installer-keeps-system-update-automation-absent",
+          "commitment:kb-retrieval-current-index",
+          "commitment:lifecycle-writer-exclusive-current-owner",
+          "commitment:manual-conversation-authorized-update",
+          "commitment:organization-current-layout",
+          "commitment:sleep-no-delta-single-owner",
+          "commitment:ui-readonly-upstream-status",
+          "commitment:upgrade-direct-canonicalization"
+        ],
+        "required_ids": [
+          "commitment:ai-manual-update-on-explicit-request",
+          "commitment:automatic-system-update-retired",
+          "commitment:automation-current-runtime-policy",
+          "commitment:automation-proof-bound-depth-terminal",
+          "commitment:installer-keeps-system-update-automation-absent",
+          "commitment:kb-retrieval-current-index",
+          "commitment:lifecycle-writer-exclusive-current-owner",
+          "commitment:manual-conversation-authorized-update",
+          "commitment:organization-current-layout",
+          "commitment:sleep-no-delta-single-owner",
+          "commitment:ui-readonly-upstream-status",
+          "commitment:upgrade-direct-canonicalization"
+        ],
+        "schema": "flowguard.coverage_dimension.v1",
+        "unresolved_ids": [
+          "commitment:ai-manual-update-on-explicit-request",
+          "commitment:automatic-system-update-retired",
+          "commitment:automation-current-runtime-policy",
+          "commitment:automation-proof-bound-depth-terminal",
+          "commitment:installer-keeps-system-update-automation-absent",
+          "commitment:kb-retrieval-current-index",
+          "commitment:lifecycle-writer-exclusive-current-owner",
+          "commitment:manual-conversation-authorized-update",
+          "commitment:organization-current-layout",
+          "commitment:sleep-no-delta-single-owner",
+          "commitment:ui-readonly-upstream-status",
+          "commitment:upgrade-direct-canonicalization"
+        ]
+      },
+      {
+        "complete": false,
+        "covered_ids": [
+          "contract:purpose:behavior_commitment_ledger",
+          "contract:purpose:khaos_brain_logicguard_system"
+        ],
+        "dimension_id": "code_contracts",
+        "excluded_ids": [],
+        "extra_ids": [],
+        "missing_ids": [
+          "contract:contract:automation-current-runtime-policy",
+          "contract:contract:automation-proof-bound-depth-terminal",
+          "contract:contract:desktop.update_status_read_only",
+          "contract:contract:installer.exact_update_automation_retirement",
+          "contract:contract:kb-retrieval-current-index",
+          "contract:contract:khaos-brain-update.activation",
+          "contract:contract:lifecycle-writer-exclusive-current-owner",
+          "contract:contract:manual_update.explicit_current_request",
+          "contract:contract:organization-current-layout",
+          "contract:contract:sleep-no-delta-single-owner",
+          "contract:contract:upgrade-direct-canonicalization"
+        ],
+        "required_ids": [
+          "contract:contract:automation-current-runtime-policy",
+          "contract:contract:automation-proof-bound-depth-terminal",
+          "contract:contract:desktop.update_status_read_only",
+          "contract:contract:installer.exact_update_automation_retirement",
+          "contract:contract:kb-retrieval-current-index",
+          "contract:contract:khaos-brain-update.activation",
+          "contract:contract:lifecycle-writer-exclusive-current-owner",
+          "contract:contract:manual_update.explicit_current_request",
+          "contract:contract:organization-current-layout",
+          "contract:contract:sleep-no-delta-single-owner",
+          "contract:contract:upgrade-direct-canonicalization",
+          "contract:purpose:behavior_commitment_ledger",
+          "contract:purpose:khaos_brain_logicguard_system"
+        ],
+        "schema": "flowguard.coverage_dimension.v1",
+        "unresolved_ids": [
+          "contract:contract:automation-current-runtime-policy",
+          "contract:contract:automation-proof-bound-depth-terminal",
+          "contract:contract:desktop.update_status_read_only",
+          "contract:contract:installer.exact_update_automation_retirement",
+          "contract:contract:kb-retrieval-current-index",
+          "contract:contract:khaos-brain-update.activation",
+          "contract:contract:lifecycle-writer-exclusive-current-owner",
+          "contract:contract:manual_update.explicit_current_request",
+          "contract:contract:organization-current-layout",
+          "contract:contract:sleep-no-delta-single-owner",
+          "contract:contract:upgrade-direct-canonicalization"
+        ]
+      },
+      {
+        "complete": false,
+        "covered_ids": [],
+        "dimension_id": "external_surfaces",
+        "excluded_ids": [],
+        "extra_ids": [],
+        "missing_ids": [
+          "surface:active-index-lifecycle-lock",
+          "surface:automation-contract-generation",
+          "surface:automation-depth-projection",
+          "surface:automation-frozen-supervision-session",
+          "surface:automation-installer",
+          "surface:automation-native-evidence",
+          "surface:automation-receipt-layering",
+          "surface:automation-runtime-resolver",
+          "surface:automation-terminal-builder",
+          "surface:card-skill-guidance-canonicalization",
+          "surface:consumer-skill-currentness",
+          "surface:desktop-launcher-current-runtime",
+          "surface:desktop-settings-canonicalization",
+          "surface:dream-handoff-lifecycle-batch",
+          "surface:dream-handoff-post-publication-ack",
+          "surface:foreign-calibration-projection",
+          "surface:global-maintenance-writer",
+          "surface:lifecycle-replay-linear-index",
+          "surface:lifecycle-writer-lock",
+          "surface:lifecycle-writer-lock-spec",
+          "surface:local-cycle-receipt-v3",
+          "surface:maintenance-migration",
+          "surface:manual-update-native",
+          "surface:manual-update-native-receipt",
+          "surface:manual-update-skill",
+          "surface:organization-connect",
+          "surface:organization-cycle-receipt-v3",
+          "surface:organization-decision-identity",
+          "surface:organization-github-check",
+          "surface:organization-maintenance",
+          "surface:organization-maintenance-materialization",
+          "surface:organization-merge-split-packets",
+          "surface:organization-migration-rollback",
+          "surface:organization-outbox-dedupe",
+          "surface:organization-runtime-reader",
+          "surface:organization-snapshot",
+          "surface:organization-snapshot-retrieval",
+          "surface:organization-source-contract",
+          "surface:organization-validation",
+          "surface:parked-calibration-watermark",
+          "surface:postflight-observation-intake",
+          "surface:preflight-launcher-canonicalization",
+          "surface:retrieval-api",
+          "surface:retrieval-cli",
+          "surface:retrieval-interactions",
+          "surface:retrieval-spec",
+          "surface:sleep-no-delta-owner",
+          "surface:sleep-no-delta-spec",
+          "surface:transactional-install-semantic-anti-downgrade",
+          "surface:update-automation-retirement",
+          "surface:update-retirement-openspec",
+          "surface:update-state-canonicalization",
+          "surface:update-state-pre-assurance-migration",
+          "surface:update-status-desktop",
+          "surface:update-status-inspector",
+          "surface:upgrade-installer"
+        ],
+        "required_ids": [
+          "surface:active-index-lifecycle-lock",
+          "surface:automation-contract-generation",
+          "surface:automation-depth-projection",
+          "surface:automation-frozen-supervision-session",
+          "surface:automation-installer",
+          "surface:automation-native-evidence",
+          "surface:automation-receipt-layering",
+          "surface:automation-runtime-resolver",
+          "surface:automation-terminal-builder",
+          "surface:card-skill-guidance-canonicalization",
+          "surface:consumer-skill-currentness",
+          "surface:desktop-launcher-current-runtime",
+          "surface:desktop-settings-canonicalization",
+          "surface:dream-handoff-lifecycle-batch",
+          "surface:dream-handoff-post-publication-ack",
+          "surface:foreign-calibration-projection",
+          "surface:global-maintenance-writer",
+          "surface:lifecycle-replay-linear-index",
+          "surface:lifecycle-writer-lock",
+          "surface:lifecycle-writer-lock-spec",
+          "surface:local-cycle-receipt-v3",
+          "surface:maintenance-migration",
+          "surface:manual-update-native",
+          "surface:manual-update-native-receipt",
+          "surface:manual-update-skill",
+          "surface:organization-connect",
+          "surface:organization-cycle-receipt-v3",
+          "surface:organization-decision-identity",
+          "surface:organization-github-check",
+          "surface:organization-maintenance",
+          "surface:organization-maintenance-materialization",
+          "surface:organization-merge-split-packets",
+          "surface:organization-migration-rollback",
+          "surface:organization-outbox-dedupe",
+          "surface:organization-runtime-reader",
+          "surface:organization-snapshot",
+          "surface:organization-snapshot-retrieval",
+          "surface:organization-source-contract",
+          "surface:organization-validation",
+          "surface:parked-calibration-watermark",
+          "surface:postflight-observation-intake",
+          "surface:preflight-launcher-canonicalization",
+          "surface:retrieval-api",
+          "surface:retrieval-cli",
+          "surface:retrieval-interactions",
+          "surface:retrieval-spec",
+          "surface:sleep-no-delta-owner",
+          "surface:sleep-no-delta-spec",
+          "surface:transactional-install-semantic-anti-downgrade",
+          "surface:update-automation-retirement",
+          "surface:update-retirement-openspec",
+          "surface:update-state-canonicalization",
+          "surface:update-state-pre-assurance-migration",
+          "surface:update-status-desktop",
+          "surface:update-status-inspector",
+          "surface:upgrade-installer"
+        ],
+        "schema": "flowguard.coverage_dimension.v1",
+        "unresolved_ids": [
+          "surface:active-index-lifecycle-lock",
+          "surface:automation-contract-generation",
+          "surface:automation-depth-projection",
+          "surface:automation-frozen-supervision-session",
+          "surface:automation-installer",
+          "surface:automation-native-evidence",
+          "surface:automation-receipt-layering",
+          "surface:automation-runtime-resolver",
+          "surface:automation-terminal-builder",
+          "surface:card-skill-guidance-canonicalization",
+          "surface:consumer-skill-currentness",
+          "surface:desktop-launcher-current-runtime",
+          "surface:desktop-settings-canonicalization",
+          "surface:dream-handoff-lifecycle-batch",
+          "surface:dream-handoff-post-publication-ack",
+          "surface:foreign-calibration-projection",
+          "surface:global-maintenance-writer",
+          "surface:lifecycle-replay-linear-index",
+          "surface:lifecycle-writer-lock",
+          "surface:lifecycle-writer-lock-spec",
+          "surface:local-cycle-receipt-v3",
+          "surface:maintenance-migration",
+          "surface:manual-update-native",
+          "surface:manual-update-native-receipt",
+          "surface:manual-update-skill",
+          "surface:organization-connect",
+          "surface:organization-cycle-receipt-v3",
+          "surface:organization-decision-identity",
+          "surface:organization-github-check",
+          "surface:organization-maintenance",
+          "surface:organization-maintenance-materialization",
+          "surface:organization-merge-split-packets",
+          "surface:organization-migration-rollback",
+          "surface:organization-outbox-dedupe",
+          "surface:organization-runtime-reader",
+          "surface:organization-snapshot",
+          "surface:organization-snapshot-retrieval",
+          "surface:organization-source-contract",
+          "surface:organization-validation",
+          "surface:parked-calibration-watermark",
+          "surface:postflight-observation-intake",
+          "surface:preflight-launcher-canonicalization",
+          "surface:retrieval-api",
+          "surface:retrieval-cli",
+          "surface:retrieval-interactions",
+          "surface:retrieval-spec",
+          "surface:sleep-no-delta-owner",
+          "surface:sleep-no-delta-spec",
+          "surface:transactional-install-semantic-anti-downgrade",
+          "surface:update-automation-retirement",
+          "surface:update-retirement-openspec",
+          "surface:update-state-canonicalization",
+          "surface:update-state-pre-assurance-migration",
+          "surface:update-status-desktop",
+          "surface:update-status-inspector",
+          "surface:upgrade-installer"
+        ]
+      },
+      {
+        "complete": false,
+        "covered_ids": [],
+        "dimension_id": "fields_state_side_effects",
+        "excluded_ids": [],
+        "extra_ids": [],
+        "missing_ids": [
+          "field-or-effect:acquire-identified-writer-lock",
+          "field-or-effect:archive-retained-evidence",
+          "field-or-effect:automation-state",
+          "field-or-effect:card-Skill-guidance-schema",
+          "field-or-effect:combined-retrieval-receipt",
+          "field-or-effect:current-generation-pointer-and-Sleep-watermark-after-complete-activation",
+          "field-or-effect:current-update-status",
+          "field-or-effect:desktop-repaint",
+          "field-or-effect:desktop-settings-schema",
+          "field-or-effect:entry-calibration-watermark",
+          "field-or-effect:exact-entry-deny-projection-when-current-eligibility-is-revoked",
+          "field-or-effect:fast-forward-source",
+          "field-or-effect:frozen-Sleep-batch-plan-and-per-item-checkpoint",
+          "field-or-effect:global-writer/delegation-lease-state",
+          "field-or-effect:install-composite-child-and-explicit-user-only-Skills",
+          "field-or-effect:installation-receipt",
+          "field-or-effect:installed-managed-runtime",
+          "field-or-effect:installed-skills",
+          "field-or-effect:invoke-the-guarded-manual-updater",
+          "field-or-effect:lifecycle/model/index-authority",
+          "field-or-effect:maintenance-standard",
+          "field-or-effect:managed-automation-inventory",
+          "field-or-effect:managed-skill-inventory",
+          "field-or-effect:one-launch-time-background-fetch",
+          "field-or-effect:organization-schema",
+          "field-or-effect:organization-source/snapshot-authority",
+          "field-or-effect:preserve-both-scheduled-owner-states",
+          "field-or-effect:publish-migration-receipts",
+          "field-or-effect:release-exact-owner-token",
+          "field-or-effect:remove-exact-managed-automation-directory",
+          "field-or-effect:remove-former-authority",
+          "field-or-effect:restore-both-scheduled-composite-automations-after-closure",
+          "field-or-effect:run-direct-migration",
+          "field-or-effect:software-revision",
+          "field-or-effect:status-cache-write",
+          "field-or-effect:status-only-update-cache",
+          "field-or-effect:transactionally-install-managed-surfaces",
+          "field-or-effect:update-state-schema",
+          "field-or-effect:validate-current-active-index",
+          "field-or-effect:viewed/selected/used/outcome-evidence"
+        ],
+        "required_ids": [
+          "field-or-effect:acquire-identified-writer-lock",
+          "field-or-effect:archive-retained-evidence",
+          "field-or-effect:automation-state",
+          "field-or-effect:card-Skill-guidance-schema",
+          "field-or-effect:combined-retrieval-receipt",
+          "field-or-effect:current-generation-pointer-and-Sleep-watermark-after-complete-activation",
+          "field-or-effect:current-update-status",
+          "field-or-effect:desktop-repaint",
+          "field-or-effect:desktop-settings-schema",
+          "field-or-effect:entry-calibration-watermark",
+          "field-or-effect:exact-entry-deny-projection-when-current-eligibility-is-revoked",
+          "field-or-effect:fast-forward-source",
+          "field-or-effect:frozen-Sleep-batch-plan-and-per-item-checkpoint",
+          "field-or-effect:global-writer/delegation-lease-state",
+          "field-or-effect:install-composite-child-and-explicit-user-only-Skills",
+          "field-or-effect:installation-receipt",
+          "field-or-effect:installed-managed-runtime",
+          "field-or-effect:installed-skills",
+          "field-or-effect:invoke-the-guarded-manual-updater",
+          "field-or-effect:lifecycle/model/index-authority",
+          "field-or-effect:maintenance-standard",
+          "field-or-effect:managed-automation-inventory",
+          "field-or-effect:managed-skill-inventory",
+          "field-or-effect:one-launch-time-background-fetch",
+          "field-or-effect:organization-schema",
+          "field-or-effect:organization-source/snapshot-authority",
+          "field-or-effect:preserve-both-scheduled-owner-states",
+          "field-or-effect:publish-migration-receipts",
+          "field-or-effect:release-exact-owner-token",
+          "field-or-effect:remove-exact-managed-automation-directory",
+          "field-or-effect:remove-former-authority",
+          "field-or-effect:restore-both-scheduled-composite-automations-after-closure",
+          "field-or-effect:run-direct-migration",
+          "field-or-effect:software-revision",
+          "field-or-effect:status-cache-write",
+          "field-or-effect:status-only-update-cache",
+          "field-or-effect:transactionally-install-managed-surfaces",
+          "field-or-effect:update-state-schema",
+          "field-or-effect:validate-current-active-index",
+          "field-or-effect:viewed/selected/used/outcome-evidence"
+        ],
+        "schema": "flowguard.coverage_dimension.v1",
+        "unresolved_ids": [
+          "field-or-effect:acquire-identified-writer-lock",
+          "field-or-effect:archive-retained-evidence",
+          "field-or-effect:automation-state",
+          "field-or-effect:card-Skill-guidance-schema",
+          "field-or-effect:combined-retrieval-receipt",
+          "field-or-effect:current-generation-pointer-and-Sleep-watermark-after-complete-activation",
+          "field-or-effect:current-update-status",
+          "field-or-effect:desktop-repaint",
+          "field-or-effect:desktop-settings-schema",
+          "field-or-effect:entry-calibration-watermark",
+          "field-or-effect:exact-entry-deny-projection-when-current-eligibility-is-revoked",
+          "field-or-effect:fast-forward-source",
+          "field-or-effect:frozen-Sleep-batch-plan-and-per-item-checkpoint",
+          "field-or-effect:global-writer/delegation-lease-state",
+          "field-or-effect:install-composite-child-and-explicit-user-only-Skills",
+          "field-or-effect:installation-receipt",
+          "field-or-effect:installed-managed-runtime",
+          "field-or-effect:installed-skills",
+          "field-or-effect:invoke-the-guarded-manual-updater",
+          "field-or-effect:lifecycle/model/index-authority",
+          "field-or-effect:maintenance-standard",
+          "field-or-effect:managed-automation-inventory",
+          "field-or-effect:managed-skill-inventory",
+          "field-or-effect:one-launch-time-background-fetch",
+          "field-or-effect:organization-schema",
+          "field-or-effect:organization-source/snapshot-authority",
+          "field-or-effect:preserve-both-scheduled-owner-states",
+          "field-or-effect:publish-migration-receipts",
+          "field-or-effect:release-exact-owner-token",
+          "field-or-effect:remove-exact-managed-automation-directory",
+          "field-or-effect:remove-former-authority",
+          "field-or-effect:restore-both-scheduled-composite-automations-after-closure",
+          "field-or-effect:run-direct-migration",
+          "field-or-effect:software-revision",
+          "field-or-effect:status-cache-write",
+          "field-or-effect:status-only-update-cache",
+          "field-or-effect:transactionally-install-managed-surfaces",
+          "field-or-effect:update-state-schema",
+          "field-or-effect:validate-current-active-index",
+          "field-or-effect:viewed/selected/used/outcome-evidence"
+        ]
+      },
+      {
+        "complete": true,
+        "covered_ids": [
+          "behavior_commitment_ledger",
+          "khaos_brain_logicguard_system"
+        ],
+        "dimension_id": "model_instances",
+        "excluded_ids": [],
+        "extra_ids": [],
+        "missing_ids": [],
+        "required_ids": [
+          "behavior_commitment_ledger",
+          "khaos_brain_logicguard_system"
+        ],
+        "schema": "flowguard.coverage_dimension.v1",
+        "unresolved_ids": []
+      },
+      {
+        "complete": false,
+        "covered_ids": [
+          "check:model-regression:behavior-commitment-ledger",
+          "check:model-regression:khaos-brain-logicguard-system"
+        ],
+        "dimension_id": "tests_evidence",
+        "excluded_ids": [],
+        "extra_ids": [],
+        "missing_ids": [
+          "test:test:ai-manual-update-on-explicit-request",
+          "test:test:automation-current-runtime-policy",
+          "test:test:automation-proof-bound-depth-terminal",
+          "test:test:installer-keeps-system-update-automation-absent",
+          "test:test:kb-retrieval-current-index",
+          "test:test:lifecycle-writer-exclusive-current-owner",
+          "test:test:manual-conversation-authorized-update",
+          "test:test:organization-current-layout",
+          "test:test:sleep-no-delta-single-owner",
+          "test:test:tests/test_kb_lifecycle.py::KbLifecycleTests::test_candidate_events_commit_in_one_bounded_batch",
+          "test:test:tests/test_kb_lifecycle.py::KbLifecycleTests::test_candidate_transition_family_retry_is_bounded",
+          "test:test:tests/test_kb_retrieval_calibration.py::KbRetrievalCalibrationTests::test_rebuild_requires_authorized_publisher",
+          "test:test:tests/test_khaos_model_native_retrieval.py::KhaosModelNativeRetrievalTests::test_current_mesh_view_is_reused_across_distinct_cards_in_one_generation",
+          "test:test:tests/test_khaos_model_runtime_readiness.py::KhaosModelRuntimeReadinessTests::test_catalog_latency_is_measured_without_memory_instrumentation",
+          "test:test:ui-readonly-upstream-status",
+          "test:test:upgrade-direct-canonicalization"
+        ],
+        "required_ids": [
+          "check:model-regression:behavior-commitment-ledger",
+          "check:model-regression:khaos-brain-logicguard-system",
+          "test:test:ai-manual-update-on-explicit-request",
+          "test:test:automation-current-runtime-policy",
+          "test:test:automation-proof-bound-depth-terminal",
+          "test:test:installer-keeps-system-update-automation-absent",
+          "test:test:kb-retrieval-current-index",
+          "test:test:lifecycle-writer-exclusive-current-owner",
+          "test:test:manual-conversation-authorized-update",
+          "test:test:organization-current-layout",
+          "test:test:sleep-no-delta-single-owner",
+          "test:test:tests/test_kb_lifecycle.py::KbLifecycleTests::test_candidate_events_commit_in_one_bounded_batch",
+          "test:test:tests/test_kb_lifecycle.py::KbLifecycleTests::test_candidate_transition_family_retry_is_bounded",
+          "test:test:tests/test_kb_retrieval_calibration.py::KbRetrievalCalibrationTests::test_rebuild_requires_authorized_publisher",
+          "test:test:tests/test_khaos_model_native_retrieval.py::KhaosModelNativeRetrievalTests::test_current_mesh_view_is_reused_across_distinct_cards_in_one_generation",
+          "test:test:tests/test_khaos_model_runtime_readiness.py::KhaosModelRuntimeReadinessTests::test_catalog_latency_is_measured_without_memory_instrumentation",
+          "test:test:ui-readonly-upstream-status",
+          "test:test:upgrade-direct-canonicalization"
+        ],
+        "schema": "flowguard.coverage_dimension.v1",
+        "unresolved_ids": [
+          "test:test:ai-manual-update-on-explicit-request",
+          "test:test:automation-current-runtime-policy",
+          "test:test:automation-proof-bound-depth-terminal",
+          "test:test:installer-keeps-system-update-automation-absent",
+          "test:test:kb-retrieval-current-index",
+          "test:test:lifecycle-writer-exclusive-current-owner",
+          "test:test:manual-conversation-authorized-update",
+          "test:test:organization-current-layout",
+          "test:test:sleep-no-delta-single-owner",
+          "test:test:tests/test_kb_lifecycle.py::KbLifecycleTests::test_candidate_events_commit_in_one_bounded_batch",
+          "test:test:tests/test_kb_lifecycle.py::KbLifecycleTests::test_candidate_transition_family_retry_is_bounded",
+          "test:test:tests/test_kb_retrieval_calibration.py::KbRetrievalCalibrationTests::test_rebuild_requires_authorized_publisher",
+          "test:test:tests/test_khaos_model_native_retrieval.py::KhaosModelNativeRetrievalTests::test_current_mesh_view_is_reused_across_distinct_cards_in_one_generation",
+          "test:test:tests/test_khaos_model_runtime_readiness.py::KhaosModelRuntimeReadinessTests::test_catalog_latency_is_measured_without_memory_instrumentation",
+          "test:test:ui-readonly-upstream-status",
+          "test:test:upgrade-direct-canonicalization"
+        ]
+      }
+    ],
+    "fingerprint": "sha256:a12888db8d0a5fde52779ec3073cf90241ea24bb70f1a5635d064e462f5efd98",
+    "schema": "flowguard.coverage_universe.v1",
+    "source_inventory_fingerprint": "sha256:11dbd01aa53b22bc93f75ba24ac63c33c1343159c0786fbc11f4de9a4a5e917a",
+    "status": "incomplete_within_declared_boundary"
+  },
+  "coverage_status": "incomplete_within_declared_boundary",
+  "fingerprint": "sha256:9abed6f143dcfd1ea8bf4c7a6be776e35852cdc63c4c62b3cb5cd9e777370e84",
+  "lifecycle": "active",
+  "model_instances": [
+    {
+      "fingerprint": "sha256:18bf89c9b1206c5695343a9f895c0fa3cd925e7122068a63a6b85553c93cdcd3",
+      "input_inventory_fingerprint": "sha256:913a6c33a55dec45192e97dbd56fa4886bdb807f883eedc6578511e74150bfd6",
+      "inputs": [
+        {
+          "path": ".agents/skills/local-kb-retrieve/SKILL.md",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:281206e02e89bfb87aaac4cf76f4aa5ac9e7e72c7167d7602db5b2040b90e2ab"
+        },
+        {
+          "path": ".agents/skills/local-kb-retrieve/scripts/kb_feedback.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:f9ba7da4016dab2c735dd7245aac621f52d9f0563a4c22cb22fc0bd02b7598cd"
+        },
+        {
+          "path": ".agents/skills/local-kb-retrieve/scripts/kb_search.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:2fee65211d8c644a5fc7cd68dd0993941e7b47f71b1de0c0f3e8f8bb7a2b3b26"
+        },
+        {
+          "path": ".flowguard/kb_dream_opportunity_timeout_model_miss.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:e62c85558b6f4009b533edb113a77ee8e81efe8ca99776786fb5a2966a3e0d1f"
+        },
+        {
+          "path": ".flowguard/khaos_brain_logicguard_system/model.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:bdca28e101410aac30699f2f878937fa9a68645b0415182f3fbd22de5bf93873"
+        },
+        {
+          "path": ".flowguard/khaos_brain_logicguard_system/run_checks.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:f0aacc1ce3a2eca3d5f9f05ae1c33b4b54d05966befef7ef319af3c453180b8a"
+        },
+        {
+          "path": ".flowguard/khaos_brain_two_maintenance_cycle_flow.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:c21a22e970d6dd183c65a971d55f803ea6f8e9c489363a0af7d4a44ecd14e567"
+        },
+        {
+          "path": "local_kb/adoption.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:9550eb9872ed60d702070e666b9358ee3c6bcc2b1f2476062b74dc9f3865cda9"
+        },
+        {
+          "path": "local_kb/automation_contracts.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:fb7e1bfba853e4e47bce1a104953e76419fc8ae18b5721be6caee1bf2b69d7e9"
+        },
+        {
+          "path": "local_kb/automation_runtime.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:991a7056a05aa65512fa63c7e5f05ed26cf0f457758ba49e9353eb5da6fedfa0"
+        },
+        {
+          "path": "local_kb/dream.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:7bae6cfa066f4dcf7a410201b9ce8c58450f1989d06b5fd1ea24be75edbfb745"
+        },
+        {
+          "path": "local_kb/lifecycle.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:b5e189faef5d17279926cfc0607b08af75d6f6e7ed7712579f906175241cc49e"
+        },
+        {
+          "path": "local_kb/local_cycle.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:ba5217b683c4524fef0b8315064deac1da11399d10d40d7ef98069b1b685ff29"
+        },
+        {
+          "path": "local_kb/model_maintenance.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:016ea9ca97a43bf89a68cfd9514f29dcb2576123912060be62ec66a46c0d15a0"
+        },
+        {
+          "path": "local_kb/org_automation.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:2d51bf6b43e344c3f475b0b583d1aefdcb6776ddcd6a014df587c9baef521ff2"
+        },
+        {
+          "path": "local_kb/org_cleanup.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:c1984c82c0c9bed95f9d0fe990ee771ae20998caebd191be1bf1ea5b8348781f"
+        },
+        {
+          "path": "local_kb/org_cycle.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:051e0881fbb7f803024a6e33fccef7e14a671eb860180067c7a82ca7bfc10543"
+        },
+        {
+          "path": "local_kb/org_maintenance.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:aafca6f4041fc6722265b4077b4c1747dc1ed9d513f3cad8f71f2cf5b6da0c69"
+        },
+        {
+          "path": "local_kb/org_migration.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:ce6aaa3b91ebf009826af3b5848a9cf2c5f7a8e1ebf0d89186c1e355aafdfa2d"
+        },
+        {
+          "path": "local_kb/org_snapshot.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:d944963f176ad02bc44e4803bf59db955fe572e3515bdaf21bd31c3423ddf340"
+        },
+        {
+          "path": "local_kb/search.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:1b202456c6babe8a5134536020011b9f5e211b85a593c9477a49d6219fdecc4e"
+        },
+        {
+          "path": "openspec/changes/make-khaos-brain-logicguard-native/design.md",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:2d131fbecb2723178867ec576c11e0ffe61476ff20b213ee2247d1a5fbe8d22a"
+        },
+        {
+          "path": "openspec/changes/make-khaos-brain-logicguard-native/proposal.md",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:7dec311e629d6326f5acd3bd70aad523599008d753485e8046545b8057f2a402"
+        },
+        {
+          "path": "openspec/changes/make-khaos-brain-logicguard-native/specs/khaos-logicguard-assurance/spec.md",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:435ac44c7af6b4b783eebcf849cc08143e35293ad90ada1527fe96a8514060c6"
+        },
+        {
+          "path": "openspec/changes/make-khaos-brain-logicguard-native/specs/khaos-logicguard-card-authority/spec.md",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:65f71544311d1be4135d1786d106c06e91f2a497809eac16ab024943a8550a33"
+        },
+        {
+          "path": "openspec/changes/make-khaos-brain-logicguard-native/specs/khaos-logicguard-migration/spec.md",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:090bd38ddc12a58955a1b0b1b96a78aff50fccb1339b10a9d15f1eb869857db2"
+        },
+        {
+          "path": "openspec/changes/make-khaos-brain-logicguard-native/specs/khaos-logicguard-model-maintenance/spec.md",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:e40c2a13787ca600ea09df79deed59f822dbdd8f7790b22a69ab6d205c27e944"
+        },
+        {
+          "path": "openspec/changes/make-khaos-brain-logicguard-native/specs/khaos-logicguard-retrieval/spec.md",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:4ffc9172b92a69b6ad896b9f69c787995d2f1078f7941ad1811fe8b1b6c60725"
+        },
+        {
+          "path": "scripts/run_kb_automation.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:6f417fc7f6510becbef9c43107604bc1e195237b22ea00217f17623f68fddb00"
+        },
+        {
+          "path": "templates/predictive-kb-preflight/SKILL.md.template",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:26e7297e3fd2b3b4abb61c45eb72eb7ff5d6638b3b4d5f31e4e0387ed53b1995"
+        },
+        {
+          "path": "templates/predictive-kb-preflight/kb_launch.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:d8640b4a692b43239d059149f5b306f90ffa183b242168f66fa4326f35dfb089"
+        },
+        {
+          "path": "tests/test_cli_output_contract.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:afe6b3431630805e784425b3d6ff9219d9a4b78606926359aeb33fe2c88f7b3b"
+        },
+        {
+          "path": "tests/test_kb_automation_native_receipts.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:2b32213139ea92794a42e98d3b59e8b9fedc4463e78a092996978718f70a5f5b"
+        },
+        {
+          "path": "tests/test_kb_dream.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:639fdf510437e7fb5e3b0bf1f186e91af51f690669c2eaf9e258f6e018bcc45a"
+        },
+        {
+          "path": "tests/test_kb_lifecycle_sleep_batch_integration.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:55fc8a3b8af0d75a284538e9b8b94481cae743f10a1ffadc80c78b018c616b4a"
+        },
+        {
+          "path": "tests/test_kb_preflight_entry_compat.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:5cbc020aaa37f2ccc9785f16667d452014bd1a89afdd7568f75256ba1a404420"
+        },
+        {
+          "path": "tests/test_khaos_sleep_model_maintenance.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:734fadf3808ce7b3d67b70ef6fdd182b30a9f1e0833c2b6e829cf9e27866507d"
+        },
+        {
+          "path": "tests/test_org_automation.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:90cabe2f6b968fb423b78070be4002d80dc0b25de853cd2443465fb03bc48421"
+        },
+        {
+          "path": "tests/test_org_cleanup.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:b8d28e054a69e24fcfbeb030fecc95bb5f65d2e02d043ccff711d32052712526"
+        },
+        {
+          "path": "tests/test_org_maintenance.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:b34b8b59e138b34d130403e7de01dfb49e31e227ba65b83bbc36084b82079c29"
+        },
+        {
+          "path": "tests/test_org_snapshot.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:b593e010044db3f761f049c40da5496ca21cb26736dd1622a40ac70f298f1af9"
+        }
+      ],
+      "logical_model_id": "khaos_brain_logicguard_system",
+      "model_kind": "executable_workflow",
+      "model_path": ".flowguard/khaos_brain_logicguard_system/model.py",
+      "model_sha256": "sha256:bdca28e101410aac30699f2f878937fa9a68645b0415182f3fbd22de5bf93873",
+      "purpose_closure_fingerprint": "sha256:58a4b8985d17926cfff997d6ed9f56a804e2144c942fd445c51cad2d9b381058",
+      "runner_path": ".flowguard/khaos_brain_logicguard_system/run_checks.py",
+      "runner_sha256": "sha256:f0aacc1ce3a2eca3d5f9f05ae1c33b4b54d05966befef7ef319af3c453180b8a",
+      "schema": "flowguard.model_instance_ref.v2"
+    },
+    {
+      "fingerprint": "sha256:8fb5afca528e6d1ec1a3ad7d29ed57b9f7460f95b93f04b4a4262c05148dde1b",
+      "input_inventory_fingerprint": "sha256:6989a20ee62f5adeb0160a7314e12563b17cdacd8dbf3d897b34f4b3fa26d514",
+      "inputs": [
+        {
+          "path": ".flowguard/behavior_commitment_ledger/ledger.json",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+        },
+        {
+          "path": ".flowguard/behavior_commitment_ledger/model.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:80064231b711b4049ba5efb0feeb5e65059ff6fa34b45781f7a0dacdcbec5e8e"
+        },
+        {
+          "path": ".flowguard/behavior_commitment_ledger/run_checks.py",
+          "schema": "flowguard.model_input_ref.v1",
+          "sha256": "sha256:d49445e49b4975db731f94e0bb650e4faeb8c588dc6b00004dac1859a02d6406"
+        }
+      ],
+      "logical_model_id": "behavior_commitment_ledger",
+      "model_kind": "executable_workflow",
+      "model_path": ".flowguard/behavior_commitment_ledger/model.py",
+      "model_sha256": "sha256:80064231b711b4049ba5efb0feeb5e65059ff6fa34b45781f7a0dacdcbec5e8e",
+      "purpose_closure_fingerprint": "sha256:7f1b49b612a9fe33fa58304f2cbacdcaa499169d440e9080c872c98d2570e68a",
+      "runner_path": ".flowguard/behavior_commitment_ledger/run_checks.py",
+      "runner_sha256": "sha256:d49445e49b4975db731f94e0bb650e4faeb8c588dc6b00004dac1859a02d6406",
+      "schema": "flowguard.model_instance_ref.v2"
+    }
+  ],
+  "owner_artifact_refs": [
+    {
+      "endpoint_id": "commitment:ai-manual-update-on-explicit-request",
+      "endpoint_kind": "behavior_commitment",
+      "fingerprint": "sha256:6fc0fbf93b76aba5a9e1162419e5695801d7329564125031d79a43cf7a2922f4",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "commitment:automatic-system-update-retired",
+      "endpoint_kind": "behavior_commitment",
+      "fingerprint": "sha256:eb7a3c6829aee39d02d6baa86be53819798fcf2ff8cd10fb9cab26bd1f52990a",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "commitment:automation-current-runtime-policy",
+      "endpoint_kind": "behavior_commitment",
+      "fingerprint": "sha256:39ac0a16203aafb1d13995a5b84cbe6099a19bb577c682bdb9e8fbf9ff3a2012",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "commitment:automation-proof-bound-depth-terminal",
+      "endpoint_kind": "behavior_commitment",
+      "fingerprint": "sha256:5857a61dd4d1acc3cc39fecee5933167efa5bc9c2593cb9a9f918b773169ac4d",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "commitment:installer-keeps-system-update-automation-absent",
+      "endpoint_kind": "behavior_commitment",
+      "fingerprint": "sha256:b9473221cdb4439e7cdd09c97fce941359fe734bb66121b70fdfc03b0a4a4a73",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "commitment:kb-retrieval-current-index",
+      "endpoint_kind": "behavior_commitment",
+      "fingerprint": "sha256:537ea16b158eaf3aa2512c4e43208ba70e7de4dfec350f6db868fac1d78b5cd1",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "commitment:lifecycle-writer-exclusive-current-owner",
+      "endpoint_kind": "behavior_commitment",
+      "fingerprint": "sha256:7cf49d07814248b19ce6255474ed0c0d7d889c16fb5f2ff1026e2fbc0b5106d0",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "commitment:manual-conversation-authorized-update",
+      "endpoint_kind": "behavior_commitment",
+      "fingerprint": "sha256:c026d551f24e42f31f0593d286da7c5122acd2cd05fbc187fd2ce5f1d9e40a03",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "commitment:organization-current-layout",
+      "endpoint_kind": "behavior_commitment",
+      "fingerprint": "sha256:2bdce5a65d115552553a08e4a2496c6879f65d05abf5b9710d6454b86d394dca",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "commitment:sleep-no-delta-single-owner",
+      "endpoint_kind": "behavior_commitment",
+      "fingerprint": "sha256:a276d485ce9847281f657463d7bcd84d19039d8728a8b10d776e9db9f37e0a83",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "commitment:ui-readonly-upstream-status",
+      "endpoint_kind": "behavior_commitment",
+      "fingerprint": "sha256:4cf3ead7e4213249a2c46c79edca6ba47d116fea19282d87d3b4a1dfdffd5008",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "commitment:upgrade-direct-canonicalization",
+      "endpoint_kind": "behavior_commitment",
+      "fingerprint": "sha256:76cbac359008c5c38b045e9f9a0045872d3fe9521004b3465e2d6031bd3eb84f",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:active-index-lifecycle-lock",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:9349d9a31d1c0d96ddcd26ed327a31a6ca841671badb0d14f00baa329928fc42",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:automation-contract-generation",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:58df208cbc50bbca555cad3c2fe717753ba17813f71ff91655491d998b54047c",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:automation-depth-projection",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:23dd69131030a9556ea50ae87b73876706d57dcfff584f324e8f31aaea2ad05e",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:automation-frozen-supervision-session",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:18f8326612988d2d12562afd309241f53181aee2038eac885be3a96c3a2c64ea",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:automation-installer",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:cf0c5c26fc016b4f972cf88538b4e60aa5d352f3ea23cc86a78855d09cdde60b",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:automation-native-evidence",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:31609b25597353d5518283941afa0575bfed4375804f7834caabf44b3bbe50ef",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:automation-receipt-layering",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:c8263629f116bf00e3dd82112552531eec0561196f8f04324c45dd5e697dfd55",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:automation-runtime-resolver",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:a703db0541d8f4e0e7291e61c0f89a59bd0ca2f2c2a7831bb93b23e8400e3ed3",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:automation-terminal-builder",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:cb31b71aa3e8eb7f9ba573f128fe526f8f760ed6b75ad4a31661760467635ada",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:card-skill-guidance-canonicalization",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:1a2176bbd302c4e50fe6446faa1572ef44b93d33507685a7969f759419ab0a04",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:consumer-skill-currentness",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:cf37365d288956f18874d5fc1161d3c5ec6f466727c842f0e1dfb2ba9ae66a9b",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:desktop-launcher-current-runtime",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:aa0396feebccacea2c69c781ec2cebd702f0d350479178f56d0417eae18a3c9d",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:desktop-settings-canonicalization",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:ee30873f7995e567957ecad7ad82e5222d8d3a255605f9ed8d82f14bb7ec10f3",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:dream-handoff-lifecycle-batch",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:9e5a89eddeab8fda35daab9c8988e7781d001bc800e909186b7914c5bfdf6fcc",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:dream-handoff-post-publication-ack",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:1306d8d73500a336cc20dc9959da9f2948441a81b8606a2aa67fe2a727a29f88",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:foreign-calibration-projection",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:1f7c46c0c1583b66d5114e879bf058d258be3344afc50565525862ff8c468166",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:global-maintenance-writer",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:5882d706f4c91c5bb8d62ba691bea67de2a579d5b6cd403eb32294b7d6883983",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:lifecycle-replay-linear-index",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:709fe63397f38c19f55c05838c7615390142e08562ee1b3357d02f019faca058",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:lifecycle-writer-lock",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:773be94c1a1bcbec678a9b92c75242b4b9e01bdcab1adfd4eef7ff82563f2863",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:lifecycle-writer-lock-spec",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:160f44fc2b82f9aeb93869ba73eff6b2905dd9fc85d8aad630f89492cb972ca6",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:local-cycle-receipt-v3",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:b3a240deb4c2fa35929953ea9f2bcd870e26b16fad6d2f9b71cffebb41a3a754",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:maintenance-migration",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:bb1d49a3ef3f3003b5adc1cb29ba0507c3bbd9e824e5fc4b8077754c765bdd1e",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:manual-update-native",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:6b843696431a1d36bd8df62eae96e451141438e70dc02abb3db901b385e2421a",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:manual-update-native-receipt",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:4819d2b5d90e5aa6be176dd1a9f9094734ffb85634abd7898e9926bc63169cc0",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:manual-update-skill",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:4dd5d11aa449183fc1a47b039ee022a33ca383d99e993cb513374145ea986628",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:organization-connect",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:ab6efc70b555582520c3e7bfd13f23a76b1f7b2304f8d0d1cfd8ba2ae11b72e8",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:organization-cycle-receipt-v3",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:c50389b6108f1369cd7e5a82c21a467d196cb6c210d310ab711abd01b41f13db",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:organization-decision-identity",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:bcf3b5b7b0efca2c566a087708ca73a17b29d699044a61c2e525dcf8a81d789c",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:organization-github-check",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:0345e705352f6b48c9392b26a3dac3d0d0f7ac2955e964e7941ccdbb644b9da5",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:organization-maintenance",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:68739270de42461502410c036016333a93cf16b8fc3b137568686624323deecd",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:organization-maintenance-materialization",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:fdcf42dcb312bf5ba47082688d1471cffddd8964c3a5024feab191e6b0ae91b7",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:organization-merge-split-packets",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:ded29872f1723dbb9f2c2212be5ddd149ca8dc64bfd9ab59836762c17b62e607",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:organization-migration-rollback",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:f846f8085c541378f2952d38e3424419221d5383ea75ecf94f3ac30fd89ebc94",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:organization-outbox-dedupe",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:c46b5586cf1c80492aeec5c32f131fcab4ecb6586e967566e1f27424ce2bf53e",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:organization-runtime-reader",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:ba2c07a158c6b06c7052bc187a49583c2431438ed2ee3653da0c81d0a1c11110",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:organization-snapshot",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:4399b21ab788bde60c88b466f7ee38d508892d867423f4eeb40b6abdddbe9b8d",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:organization-snapshot-retrieval",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:a2d050b6d03852f903e4b64e9daea4b36a0bed5f2a7db5b5e99b71e604705bf6",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:organization-source-contract",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:a702f165be982ab8c95a0590ecddeac468f94c63601a2456355fd62f11d18b37",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:organization-validation",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:ad1228832d62edf4966b7ea8b699f5ab6a338089812ea88ccb0b496e127b6701",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:parked-calibration-watermark",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:9a6f60149430a8ca8877fff190fcd50aac90d63f802bbd20cd87182aca698044",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:postflight-observation-intake",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:d925d181c9ba78c4637a544a6f630643e63790d36cb1492a812f27c5bca36152",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:preflight-launcher-canonicalization",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:65287bd79d069f1577e1bfaed484542a813bd4ad435c9bd61f12243165b88881",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:retrieval-api",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:b5461a4ee0aeab6141538c8691d79afa23a91ca0edee82f9640bd366f4d6064a",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:retrieval-cli",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:c940e44c9400be6b57c9156840880b863e00147d5d221afe5df4d132d5ddaae7",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:retrieval-interactions",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:ebd2c0d6633b8f9fa42ca4616e36f246ed583c72aa09e232678f52d4cd006731",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:retrieval-spec",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:543ab206da5d87c2950cafab0ab734db06563486fbabbd13337c34935551bd5e",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:sleep-no-delta-owner",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:ca554df7074f03a7ccf4f82e241c4fde087cbc8acd785308b334226b272b4dab",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:sleep-no-delta-spec",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:9bcac35f37a28702c2e5cff4db209702849c482543572eda1b203fc9acd8f067",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:transactional-install-semantic-anti-downgrade",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:ebc0ae9c7134660b933a018b59b0e3e8fcfb11dffc56195d3bc660b23e37e8e4",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:update-automation-retirement",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:1977cfabfec9c0f1c44597dfbdbb525f91bf4e9b128d50ab5dcba9e277874943",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:update-retirement-openspec",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:275077a49630c60281bf5e638a7fb630bc096aed3ffa0ac4704d265af5dc7227",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:update-state-canonicalization",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:8946ef4c3b143bc19bc69436282432fe537c70edee9b3eca840e98729365a2f5",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:update-state-pre-assurance-migration",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:87f5fc16622631a7092ced0530e40e2d4196ba79692792db9057f893d6befeb1",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:update-status-desktop",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:593bcc0eedc84ce52c62e13a13882ccf1b8bc83d8dea4958b6165485bd4d4531",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:update-status-inspector",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:8cd25f18ffa6a7a325e95d80bd5eb6859b5c4e6f0285492e31d3e6bd0211241f",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "surface:upgrade-installer",
+      "endpoint_kind": "external_surface",
+      "fingerprint": "sha256:54b2c2973bff878e6eecd9aa62673eb6162de7feb678aaed5137b1e0c8fa5334",
+      "owner_route": "behavior_commitment_ledger",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "purpose:behavior_commitment_ledger",
+      "endpoint_kind": "parent_closure",
+      "fingerprint": "sha256:7f1b49b612a9fe33fa58304f2cbacdcaa499169d440e9080c872c98d2570e68a",
+      "owner_route": "model_test_alignment",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "purpose:khaos_brain_logicguard_system",
+      "endpoint_kind": "parent_closure",
+      "fingerprint": "sha256:58a4b8985d17926cfff997d6ed9f56a804e2144c942fd445c51cad2d9b381058",
+      "owner_route": "model_test_alignment",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    },
+    {
+      "endpoint_id": "system:flowguard:model-regression-manifest",
+      "endpoint_kind": "parent_closure",
+      "fingerprint": "sha256:d694dc5d000dab365272093e9d8cbd9b509b97a3470a0dd80677898f9d3272f3",
+      "owner_route": "model_mesh_maintenance",
+      "schema": "flowguard.authority_endpoint_ref.v1"
+    }
+  ],
+  "relations": [
+    {
+      "evidence_fingerprints": [
+        "sha256:7f1b49b612a9fe33fa58304f2cbacdcaa499169d440e9080c872c98d2570e68a"
+      ],
+      "kind": "realizes",
+      "relation_id": "relation:model-realizes-purpose:behavior_commitment_ledger",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "model:behavior_commitment_ledger",
+        "endpoint_kind": "model_instance",
+        "fingerprint": "sha256:8fb5afca528e6d1ec1a3ad7d29ed57b9f7460f95b93f04b4a4262c05148dde1b",
+        "owner_route": "model_regression_manifest",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "purpose:behavior_commitment_ledger",
+        "endpoint_kind": "parent_closure",
+        "fingerprint": "sha256:7f1b49b612a9fe33fa58304f2cbacdcaa499169d440e9080c872c98d2570e68a",
+        "owner_route": "model_test_alignment",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:58a4b8985d17926cfff997d6ed9f56a804e2144c942fd445c51cad2d9b381058"
+      ],
+      "kind": "realizes",
+      "relation_id": "relation:model-realizes-purpose:khaos_brain_logicguard_system",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "model:khaos_brain_logicguard_system",
+        "endpoint_kind": "model_instance",
+        "fingerprint": "sha256:18bf89c9b1206c5695343a9f895c0fa3cd925e7122068a63a6b85553c93cdcd3",
+        "owner_route": "model_regression_manifest",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "purpose:khaos_brain_logicguard_system",
+        "endpoint_kind": "parent_closure",
+        "fingerprint": "sha256:58a4b8985d17926cfff997d6ed9f56a804e2144c942fd445c51cad2d9b381058",
+        "owner_route": "model_test_alignment",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:7cf49d07814248b19ce6255474ed0c0d7d889c16fb5f2ff1026e2fbc0b5106d0",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:active-index-lifecycle-lock--commitment:lifecycle-writer-exclusive-current-owner",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:active-index-lifecycle-lock",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:9349d9a31d1c0d96ddcd26ed327a31a6ca841671badb0d14f00baa329928fc42",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:lifecycle-writer-exclusive-current-owner",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:7cf49d07814248b19ce6255474ed0c0d7d889c16fb5f2ff1026e2fbc0b5106d0",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:5857a61dd4d1acc3cc39fecee5933167efa5bc9c2593cb9a9f918b773169ac4d",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:automation-contract-generation--commitment:automation-proof-bound-depth-terminal",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:automation-contract-generation",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:58df208cbc50bbca555cad3c2fe717753ba17813f71ff91655491d998b54047c",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:automation-proof-bound-depth-terminal",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:5857a61dd4d1acc3cc39fecee5933167efa5bc9c2593cb9a9f918b773169ac4d",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:5857a61dd4d1acc3cc39fecee5933167efa5bc9c2593cb9a9f918b773169ac4d",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:automation-depth-projection--commitment:automation-proof-bound-depth-terminal",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:automation-depth-projection",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:23dd69131030a9556ea50ae87b73876706d57dcfff584f324e8f31aaea2ad05e",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:automation-proof-bound-depth-terminal",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:5857a61dd4d1acc3cc39fecee5933167efa5bc9c2593cb9a9f918b773169ac4d",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:5857a61dd4d1acc3cc39fecee5933167efa5bc9c2593cb9a9f918b773169ac4d",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:automation-frozen-supervision-session--commitment:automation-proof-bound-depth-terminal",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:automation-frozen-supervision-session",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:18f8326612988d2d12562afd309241f53181aee2038eac885be3a96c3a2c64ea",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:automation-proof-bound-depth-terminal",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:5857a61dd4d1acc3cc39fecee5933167efa5bc9c2593cb9a9f918b773169ac4d",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:39ac0a16203aafb1d13995a5b84cbe6099a19bb577c682bdb9e8fbf9ff3a2012",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:automation-installer--commitment:automation-current-runtime-policy",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:automation-installer",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:cf0c5c26fc016b4f972cf88538b4e60aa5d352f3ea23cc86a78855d09cdde60b",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:automation-current-runtime-policy",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:39ac0a16203aafb1d13995a5b84cbe6099a19bb577c682bdb9e8fbf9ff3a2012",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:5857a61dd4d1acc3cc39fecee5933167efa5bc9c2593cb9a9f918b773169ac4d",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:automation-native-evidence--commitment:automation-proof-bound-depth-terminal",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:automation-native-evidence",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:31609b25597353d5518283941afa0575bfed4375804f7834caabf44b3bbe50ef",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:automation-proof-bound-depth-terminal",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:5857a61dd4d1acc3cc39fecee5933167efa5bc9c2593cb9a9f918b773169ac4d",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:5857a61dd4d1acc3cc39fecee5933167efa5bc9c2593cb9a9f918b773169ac4d",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:automation-receipt-layering--commitment:automation-proof-bound-depth-terminal",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:automation-receipt-layering",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:c8263629f116bf00e3dd82112552531eec0561196f8f04324c45dd5e697dfd55",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:automation-proof-bound-depth-terminal",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:5857a61dd4d1acc3cc39fecee5933167efa5bc9c2593cb9a9f918b773169ac4d",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:39ac0a16203aafb1d13995a5b84cbe6099a19bb577c682bdb9e8fbf9ff3a2012",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:automation-runtime-resolver--commitment:automation-current-runtime-policy",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:automation-runtime-resolver",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:a703db0541d8f4e0e7291e61c0f89a59bd0ca2f2c2a7831bb93b23e8400e3ed3",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:automation-current-runtime-policy",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:39ac0a16203aafb1d13995a5b84cbe6099a19bb577c682bdb9e8fbf9ff3a2012",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:5857a61dd4d1acc3cc39fecee5933167efa5bc9c2593cb9a9f918b773169ac4d",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:automation-terminal-builder--commitment:automation-proof-bound-depth-terminal",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:automation-terminal-builder",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:cb31b71aa3e8eb7f9ba573f128fe526f8f760ed6b75ad4a31661760467635ada",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:automation-proof-bound-depth-terminal",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:5857a61dd4d1acc3cc39fecee5933167efa5bc9c2593cb9a9f918b773169ac4d",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:76cbac359008c5c38b045e9f9a0045872d3fe9521004b3465e2d6031bd3eb84f",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:card-skill-guidance-canonicalization--commitment:upgrade-direct-canonicalization",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:card-skill-guidance-canonicalization",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:1a2176bbd302c4e50fe6446faa1572ef44b93d33507685a7969f759419ab0a04",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:upgrade-direct-canonicalization",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:76cbac359008c5c38b045e9f9a0045872d3fe9521004b3465e2d6031bd3eb84f",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:76cbac359008c5c38b045e9f9a0045872d3fe9521004b3465e2d6031bd3eb84f",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:consumer-skill-currentness--commitment:upgrade-direct-canonicalization",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:consumer-skill-currentness",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:cf37365d288956f18874d5fc1161d3c5ec6f466727c842f0e1dfb2ba9ae66a9b",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:upgrade-direct-canonicalization",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:76cbac359008c5c38b045e9f9a0045872d3fe9521004b3465e2d6031bd3eb84f",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:76cbac359008c5c38b045e9f9a0045872d3fe9521004b3465e2d6031bd3eb84f",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:desktop-launcher-current-runtime--commitment:upgrade-direct-canonicalization",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:desktop-launcher-current-runtime",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:aa0396feebccacea2c69c781ec2cebd702f0d350479178f56d0417eae18a3c9d",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:upgrade-direct-canonicalization",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:76cbac359008c5c38b045e9f9a0045872d3fe9521004b3465e2d6031bd3eb84f",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:76cbac359008c5c38b045e9f9a0045872d3fe9521004b3465e2d6031bd3eb84f",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:desktop-settings-canonicalization--commitment:upgrade-direct-canonicalization",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:desktop-settings-canonicalization",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:ee30873f7995e567957ecad7ad82e5222d8d3a255605f9ed8d82f14bb7ec10f3",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:upgrade-direct-canonicalization",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:76cbac359008c5c38b045e9f9a0045872d3fe9521004b3465e2d6031bd3eb84f",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:a276d485ce9847281f657463d7bcd84d19039d8728a8b10d776e9db9f37e0a83",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:dream-handoff-lifecycle-batch--commitment:sleep-no-delta-single-owner",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:dream-handoff-lifecycle-batch",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:9e5a89eddeab8fda35daab9c8988e7781d001bc800e909186b7914c5bfdf6fcc",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:sleep-no-delta-single-owner",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:a276d485ce9847281f657463d7bcd84d19039d8728a8b10d776e9db9f37e0a83",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:a276d485ce9847281f657463d7bcd84d19039d8728a8b10d776e9db9f37e0a83",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:dream-handoff-post-publication-ack--commitment:sleep-no-delta-single-owner",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:dream-handoff-post-publication-ack",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:1306d8d73500a336cc20dc9959da9f2948441a81b8606a2aa67fe2a727a29f88",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:sleep-no-delta-single-owner",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:a276d485ce9847281f657463d7bcd84d19039d8728a8b10d776e9db9f37e0a83",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:537ea16b158eaf3aa2512c4e43208ba70e7de4dfec350f6db868fac1d78b5cd1",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:foreign-calibration-projection--commitment:kb-retrieval-current-index",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:foreign-calibration-projection",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:1f7c46c0c1583b66d5114e879bf058d258be3344afc50565525862ff8c468166",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:kb-retrieval-current-index",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:537ea16b158eaf3aa2512c4e43208ba70e7de4dfec350f6db868fac1d78b5cd1",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:7cf49d07814248b19ce6255474ed0c0d7d889c16fb5f2ff1026e2fbc0b5106d0",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:global-maintenance-writer--commitment:lifecycle-writer-exclusive-current-owner",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:global-maintenance-writer",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:5882d706f4c91c5bb8d62ba691bea67de2a579d5b6cd403eb32294b7d6883983",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:lifecycle-writer-exclusive-current-owner",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:7cf49d07814248b19ce6255474ed0c0d7d889c16fb5f2ff1026e2fbc0b5106d0",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:a276d485ce9847281f657463d7bcd84d19039d8728a8b10d776e9db9f37e0a83",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:lifecycle-replay-linear-index--commitment:sleep-no-delta-single-owner",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:lifecycle-replay-linear-index",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:709fe63397f38c19f55c05838c7615390142e08562ee1b3357d02f019faca058",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:sleep-no-delta-single-owner",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:a276d485ce9847281f657463d7bcd84d19039d8728a8b10d776e9db9f37e0a83",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:7cf49d07814248b19ce6255474ed0c0d7d889c16fb5f2ff1026e2fbc0b5106d0",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:lifecycle-writer-lock--commitment:lifecycle-writer-exclusive-current-owner",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:lifecycle-writer-lock",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:773be94c1a1bcbec678a9b92c75242b4b9e01bdcab1adfd4eef7ff82563f2863",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:lifecycle-writer-exclusive-current-owner",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:7cf49d07814248b19ce6255474ed0c0d7d889c16fb5f2ff1026e2fbc0b5106d0",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:7cf49d07814248b19ce6255474ed0c0d7d889c16fb5f2ff1026e2fbc0b5106d0",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:lifecycle-writer-lock-spec--commitment:lifecycle-writer-exclusive-current-owner",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:lifecycle-writer-lock-spec",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:160f44fc2b82f9aeb93869ba73eff6b2905dd9fc85d8aad630f89492cb972ca6",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:lifecycle-writer-exclusive-current-owner",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:7cf49d07814248b19ce6255474ed0c0d7d889c16fb5f2ff1026e2fbc0b5106d0",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:5857a61dd4d1acc3cc39fecee5933167efa5bc9c2593cb9a9f918b773169ac4d",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:local-cycle-receipt-v3--commitment:automation-proof-bound-depth-terminal",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:local-cycle-receipt-v3",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:b3a240deb4c2fa35929953ea9f2bcd870e26b16fad6d2f9b71cffebb41a3a754",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:automation-proof-bound-depth-terminal",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:5857a61dd4d1acc3cc39fecee5933167efa5bc9c2593cb9a9f918b773169ac4d",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:76cbac359008c5c38b045e9f9a0045872d3fe9521004b3465e2d6031bd3eb84f",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:maintenance-migration--commitment:upgrade-direct-canonicalization",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:maintenance-migration",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:bb1d49a3ef3f3003b5adc1cb29ba0507c3bbd9e824e5fc4b8077754c765bdd1e",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:upgrade-direct-canonicalization",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:76cbac359008c5c38b045e9f9a0045872d3fe9521004b3465e2d6031bd3eb84f",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:c026d551f24e42f31f0593d286da7c5122acd2cd05fbc187fd2ce5f1d9e40a03",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:manual-update-native--commitment:manual-conversation-authorized-update",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:manual-update-native",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:6b843696431a1d36bd8df62eae96e451141438e70dc02abb3db901b385e2421a",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:manual-conversation-authorized-update",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:c026d551f24e42f31f0593d286da7c5122acd2cd05fbc187fd2ce5f1d9e40a03",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:c026d551f24e42f31f0593d286da7c5122acd2cd05fbc187fd2ce5f1d9e40a03",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:manual-update-native-receipt--commitment:manual-conversation-authorized-update",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:manual-update-native-receipt",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:4819d2b5d90e5aa6be176dd1a9f9094734ffb85634abd7898e9926bc63169cc0",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:manual-conversation-authorized-update",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:c026d551f24e42f31f0593d286da7c5122acd2cd05fbc187fd2ce5f1d9e40a03",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:6fc0fbf93b76aba5a9e1162419e5695801d7329564125031d79a43cf7a2922f4",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:manual-update-skill--commitment:ai-manual-update-on-explicit-request",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:manual-update-skill",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:4dd5d11aa449183fc1a47b039ee022a33ca383d99e993cb513374145ea986628",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:ai-manual-update-on-explicit-request",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:6fc0fbf93b76aba5a9e1162419e5695801d7329564125031d79a43cf7a2922f4",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:2bdce5a65d115552553a08e4a2496c6879f65d05abf5b9710d6454b86d394dca",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:organization-connect--commitment:organization-current-layout",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:organization-connect",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:ab6efc70b555582520c3e7bfd13f23a76b1f7b2304f8d0d1cfd8ba2ae11b72e8",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:organization-current-layout",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:2bdce5a65d115552553a08e4a2496c6879f65d05abf5b9710d6454b86d394dca",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:5857a61dd4d1acc3cc39fecee5933167efa5bc9c2593cb9a9f918b773169ac4d",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:organization-cycle-receipt-v3--commitment:automation-proof-bound-depth-terminal",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:organization-cycle-receipt-v3",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:c50389b6108f1369cd7e5a82c21a467d196cb6c210d310ab711abd01b41f13db",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:automation-proof-bound-depth-terminal",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:5857a61dd4d1acc3cc39fecee5933167efa5bc9c2593cb9a9f918b773169ac4d",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:2bdce5a65d115552553a08e4a2496c6879f65d05abf5b9710d6454b86d394dca",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:organization-decision-identity--commitment:organization-current-layout",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:organization-decision-identity",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:bcf3b5b7b0efca2c566a087708ca73a17b29d699044a61c2e525dcf8a81d789c",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:organization-current-layout",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:2bdce5a65d115552553a08e4a2496c6879f65d05abf5b9710d6454b86d394dca",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:2bdce5a65d115552553a08e4a2496c6879f65d05abf5b9710d6454b86d394dca",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:organization-github-check--commitment:organization-current-layout",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:organization-github-check",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:0345e705352f6b48c9392b26a3dac3d0d0f7ac2955e964e7941ccdbb644b9da5",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:organization-current-layout",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:2bdce5a65d115552553a08e4a2496c6879f65d05abf5b9710d6454b86d394dca",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:2bdce5a65d115552553a08e4a2496c6879f65d05abf5b9710d6454b86d394dca",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:organization-maintenance--commitment:organization-current-layout",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:organization-maintenance",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:68739270de42461502410c036016333a93cf16b8fc3b137568686624323deecd",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:organization-current-layout",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:2bdce5a65d115552553a08e4a2496c6879f65d05abf5b9710d6454b86d394dca",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:2bdce5a65d115552553a08e4a2496c6879f65d05abf5b9710d6454b86d394dca",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:organization-maintenance-materialization--commitment:organization-current-layout",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:organization-maintenance-materialization",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:fdcf42dcb312bf5ba47082688d1471cffddd8964c3a5024feab191e6b0ae91b7",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:organization-current-layout",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:2bdce5a65d115552553a08e4a2496c6879f65d05abf5b9710d6454b86d394dca",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:2bdce5a65d115552553a08e4a2496c6879f65d05abf5b9710d6454b86d394dca",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:organization-merge-split-packets--commitment:organization-current-layout",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:organization-merge-split-packets",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:ded29872f1723dbb9f2c2212be5ddd149ca8dc64bfd9ab59836762c17b62e607",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:organization-current-layout",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:2bdce5a65d115552553a08e4a2496c6879f65d05abf5b9710d6454b86d394dca",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:2bdce5a65d115552553a08e4a2496c6879f65d05abf5b9710d6454b86d394dca",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:organization-migration-rollback--commitment:organization-current-layout",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:organization-migration-rollback",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:f846f8085c541378f2952d38e3424419221d5383ea75ecf94f3ac30fd89ebc94",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:organization-current-layout",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:2bdce5a65d115552553a08e4a2496c6879f65d05abf5b9710d6454b86d394dca",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:2bdce5a65d115552553a08e4a2496c6879f65d05abf5b9710d6454b86d394dca",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:organization-outbox-dedupe--commitment:organization-current-layout",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:organization-outbox-dedupe",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:c46b5586cf1c80492aeec5c32f131fcab4ecb6586e967566e1f27424ce2bf53e",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:organization-current-layout",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:2bdce5a65d115552553a08e4a2496c6879f65d05abf5b9710d6454b86d394dca",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:2bdce5a65d115552553a08e4a2496c6879f65d05abf5b9710d6454b86d394dca",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:organization-runtime-reader--commitment:organization-current-layout",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:organization-runtime-reader",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:ba2c07a158c6b06c7052bc187a49583c2431438ed2ee3653da0c81d0a1c11110",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:organization-current-layout",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:2bdce5a65d115552553a08e4a2496c6879f65d05abf5b9710d6454b86d394dca",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:2bdce5a65d115552553a08e4a2496c6879f65d05abf5b9710d6454b86d394dca",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:organization-snapshot--commitment:organization-current-layout",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:organization-snapshot",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:4399b21ab788bde60c88b466f7ee38d508892d867423f4eeb40b6abdddbe9b8d",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:organization-current-layout",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:2bdce5a65d115552553a08e4a2496c6879f65d05abf5b9710d6454b86d394dca",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:537ea16b158eaf3aa2512c4e43208ba70e7de4dfec350f6db868fac1d78b5cd1",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:organization-snapshot-retrieval--commitment:kb-retrieval-current-index",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:organization-snapshot-retrieval",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:a2d050b6d03852f903e4b64e9daea4b36a0bed5f2a7db5b5e99b71e604705bf6",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:kb-retrieval-current-index",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:537ea16b158eaf3aa2512c4e43208ba70e7de4dfec350f6db868fac1d78b5cd1",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:2bdce5a65d115552553a08e4a2496c6879f65d05abf5b9710d6454b86d394dca",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:organization-source-contract--commitment:organization-current-layout",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:organization-source-contract",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:a702f165be982ab8c95a0590ecddeac468f94c63601a2456355fd62f11d18b37",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:organization-current-layout",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:2bdce5a65d115552553a08e4a2496c6879f65d05abf5b9710d6454b86d394dca",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:2bdce5a65d115552553a08e4a2496c6879f65d05abf5b9710d6454b86d394dca",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:organization-validation--commitment:organization-current-layout",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:organization-validation",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:ad1228832d62edf4966b7ea8b699f5ab6a338089812ea88ccb0b496e127b6701",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:organization-current-layout",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:2bdce5a65d115552553a08e4a2496c6879f65d05abf5b9710d6454b86d394dca",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:a276d485ce9847281f657463d7bcd84d19039d8728a8b10d776e9db9f37e0a83",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:parked-calibration-watermark--commitment:sleep-no-delta-single-owner",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:parked-calibration-watermark",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:9a6f60149430a8ca8877fff190fcd50aac90d63f802bbd20cd87182aca698044",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:sleep-no-delta-single-owner",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:a276d485ce9847281f657463d7bcd84d19039d8728a8b10d776e9db9f37e0a83",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:a276d485ce9847281f657463d7bcd84d19039d8728a8b10d776e9db9f37e0a83",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:postflight-observation-intake--commitment:sleep-no-delta-single-owner",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:postflight-observation-intake",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:d925d181c9ba78c4637a544a6f630643e63790d36cb1492a812f27c5bca36152",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:sleep-no-delta-single-owner",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:a276d485ce9847281f657463d7bcd84d19039d8728a8b10d776e9db9f37e0a83",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:76cbac359008c5c38b045e9f9a0045872d3fe9521004b3465e2d6031bd3eb84f",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:preflight-launcher-canonicalization--commitment:upgrade-direct-canonicalization",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:preflight-launcher-canonicalization",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:65287bd79d069f1577e1bfaed484542a813bd4ad435c9bd61f12243165b88881",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:upgrade-direct-canonicalization",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:76cbac359008c5c38b045e9f9a0045872d3fe9521004b3465e2d6031bd3eb84f",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:537ea16b158eaf3aa2512c4e43208ba70e7de4dfec350f6db868fac1d78b5cd1",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:retrieval-api--commitment:kb-retrieval-current-index",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:retrieval-api",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:b5461a4ee0aeab6141538c8691d79afa23a91ca0edee82f9640bd366f4d6064a",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:kb-retrieval-current-index",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:537ea16b158eaf3aa2512c4e43208ba70e7de4dfec350f6db868fac1d78b5cd1",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:537ea16b158eaf3aa2512c4e43208ba70e7de4dfec350f6db868fac1d78b5cd1",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:retrieval-cli--commitment:kb-retrieval-current-index",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:retrieval-cli",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:c940e44c9400be6b57c9156840880b863e00147d5d221afe5df4d132d5ddaae7",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:kb-retrieval-current-index",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:537ea16b158eaf3aa2512c4e43208ba70e7de4dfec350f6db868fac1d78b5cd1",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:537ea16b158eaf3aa2512c4e43208ba70e7de4dfec350f6db868fac1d78b5cd1",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:retrieval-interactions--commitment:kb-retrieval-current-index",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:retrieval-interactions",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:ebd2c0d6633b8f9fa42ca4616e36f246ed583c72aa09e232678f52d4cd006731",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:kb-retrieval-current-index",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:537ea16b158eaf3aa2512c4e43208ba70e7de4dfec350f6db868fac1d78b5cd1",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:537ea16b158eaf3aa2512c4e43208ba70e7de4dfec350f6db868fac1d78b5cd1",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:retrieval-spec--commitment:kb-retrieval-current-index",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:retrieval-spec",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:543ab206da5d87c2950cafab0ab734db06563486fbabbd13337c34935551bd5e",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:kb-retrieval-current-index",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:537ea16b158eaf3aa2512c4e43208ba70e7de4dfec350f6db868fac1d78b5cd1",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:a276d485ce9847281f657463d7bcd84d19039d8728a8b10d776e9db9f37e0a83",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:sleep-no-delta-owner--commitment:sleep-no-delta-single-owner",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:sleep-no-delta-owner",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:ca554df7074f03a7ccf4f82e241c4fde087cbc8acd785308b334226b272b4dab",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:sleep-no-delta-single-owner",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:a276d485ce9847281f657463d7bcd84d19039d8728a8b10d776e9db9f37e0a83",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:a276d485ce9847281f657463d7bcd84d19039d8728a8b10d776e9db9f37e0a83",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:sleep-no-delta-spec--commitment:sleep-no-delta-single-owner",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:sleep-no-delta-spec",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:9bcac35f37a28702c2e5cff4db209702849c482543572eda1b203fc9acd8f067",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:sleep-no-delta-single-owner",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:a276d485ce9847281f657463d7bcd84d19039d8728a8b10d776e9db9f37e0a83",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:76cbac359008c5c38b045e9f9a0045872d3fe9521004b3465e2d6031bd3eb84f",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:transactional-install-semantic-anti-downgrade--commitment:upgrade-direct-canonicalization",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:transactional-install-semantic-anti-downgrade",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:ebc0ae9c7134660b933a018b59b0e3e8fcfb11dffc56195d3bc660b23e37e8e4",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:upgrade-direct-canonicalization",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:76cbac359008c5c38b045e9f9a0045872d3fe9521004b3465e2d6031bd3eb84f",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:b9473221cdb4439e7cdd09c97fce941359fe734bb66121b70fdfc03b0a4a4a73",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:update-automation-retirement--commitment:installer-keeps-system-update-automation-absent",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:update-automation-retirement",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:1977cfabfec9c0f1c44597dfbdbb525f91bf4e9b128d50ab5dcba9e277874943",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:installer-keeps-system-update-automation-absent",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:b9473221cdb4439e7cdd09c97fce941359fe734bb66121b70fdfc03b0a4a4a73",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:b9473221cdb4439e7cdd09c97fce941359fe734bb66121b70fdfc03b0a4a4a73",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:update-retirement-openspec--commitment:installer-keeps-system-update-automation-absent",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:update-retirement-openspec",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:275077a49630c60281bf5e638a7fb630bc096aed3ffa0ac4704d265af5dc7227",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:installer-keeps-system-update-automation-absent",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:b9473221cdb4439e7cdd09c97fce941359fe734bb66121b70fdfc03b0a4a4a73",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:76cbac359008c5c38b045e9f9a0045872d3fe9521004b3465e2d6031bd3eb84f",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:update-state-canonicalization--commitment:upgrade-direct-canonicalization",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:update-state-canonicalization",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:8946ef4c3b143bc19bc69436282432fe537c70edee9b3eca840e98729365a2f5",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:upgrade-direct-canonicalization",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:76cbac359008c5c38b045e9f9a0045872d3fe9521004b3465e2d6031bd3eb84f",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:76cbac359008c5c38b045e9f9a0045872d3fe9521004b3465e2d6031bd3eb84f",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:update-state-pre-assurance-migration--commitment:upgrade-direct-canonicalization",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:update-state-pre-assurance-migration",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:87f5fc16622631a7092ced0530e40e2d4196ba79692792db9057f893d6befeb1",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:upgrade-direct-canonicalization",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:76cbac359008c5c38b045e9f9a0045872d3fe9521004b3465e2d6031bd3eb84f",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:4cf3ead7e4213249a2c46c79edca6ba47d116fea19282d87d3b4a1dfdffd5008",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:update-status-desktop--commitment:ui-readonly-upstream-status",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:update-status-desktop",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:593bcc0eedc84ce52c62e13a13882ccf1b8bc83d8dea4958b6165485bd4d4531",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:ui-readonly-upstream-status",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:4cf3ead7e4213249a2c46c79edca6ba47d116fea19282d87d3b4a1dfdffd5008",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:4cf3ead7e4213249a2c46c79edca6ba47d116fea19282d87d3b4a1dfdffd5008",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:update-status-inspector--commitment:ui-readonly-upstream-status",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:update-status-inspector",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:8cd25f18ffa6a7a325e95d80bd5eb6859b5c4e6f0285492e31d3e6bd0211241f",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:ui-readonly-upstream-status",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:4cf3ead7e4213249a2c46c79edca6ba47d116fea19282d87d3b4a1dfdffd5008",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:76cbac359008c5c38b045e9f9a0045872d3fe9521004b3465e2d6031bd3eb84f",
+        "sha256:c0be1748080c8f64125a66eabaf36254be3946e8f41b456faa1304d34f31d9cd"
+      ],
+      "kind": "produces_for",
+      "relation_id": "relation:surface-produces-for-commitment:surface:upgrade-installer--commitment:upgrade-direct-canonicalization",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "surface:upgrade-installer",
+        "endpoint_kind": "external_surface",
+        "fingerprint": "sha256:54b2c2973bff878e6eecd9aa62673eb6162de7feb678aaed5137b1e0c8fa5334",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "commitment:upgrade-direct-canonicalization",
+        "endpoint_kind": "behavior_commitment",
+        "fingerprint": "sha256:76cbac359008c5c38b045e9f9a0045872d3fe9521004b3465e2d6031bd3eb84f",
+        "owner_route": "behavior_commitment_ledger",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:d694dc5d000dab365272093e9d8cbd9b509b97a3470a0dd80677898f9d3272f3"
+      ],
+      "kind": "contains",
+      "relation_id": "relation:system-contains:behavior_commitment_ledger",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "system:flowguard:model-regression-manifest",
+        "endpoint_kind": "parent_closure",
+        "fingerprint": "sha256:d694dc5d000dab365272093e9d8cbd9b509b97a3470a0dd80677898f9d3272f3",
+        "owner_route": "model_mesh_maintenance",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "model:behavior_commitment_ledger",
+        "endpoint_kind": "model_instance",
+        "fingerprint": "sha256:8fb5afca528e6d1ec1a3ad7d29ed57b9f7460f95b93f04b4a4262c05148dde1b",
+        "owner_route": "model_regression_manifest",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    },
+    {
+      "evidence_fingerprints": [
+        "sha256:d694dc5d000dab365272093e9d8cbd9b509b97a3470a0dd80677898f9d3272f3"
+      ],
+      "kind": "contains",
+      "relation_id": "relation:system-contains:khaos_brain_logicguard_system",
+      "schema": "flowguard.model_relation.v1",
+      "source": {
+        "endpoint_id": "system:flowguard:model-regression-manifest",
+        "endpoint_kind": "parent_closure",
+        "fingerprint": "sha256:d694dc5d000dab365272093e9d8cbd9b509b97a3470a0dd80677898f9d3272f3",
+        "owner_route": "model_mesh_maintenance",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      },
+      "target": {
+        "endpoint_id": "model:khaos_brain_logicguard_system",
+        "endpoint_kind": "model_instance",
+        "fingerprint": "sha256:18bf89c9b1206c5695343a9f895c0fa3cd925e7122068a63a6b85553c93cdcd3",
+        "owner_route": "model_regression_manifest",
+        "schema": "flowguard.authority_endpoint_ref.v1"
+      }
+    }
+  ],
+  "root_instance_fingerprints": [
+    "sha256:8fb5afca528e6d1ec1a3ad7d29ed57b9f7460f95b93f04b4a4262c05148dde1b"
+  ],
+  "schema": "flowguard.model_system_snapshot.v2",
+  "snapshot_id": "snapshot:khaos-logicguard-native-generation-12",
+  "subject_lane": "observed_implementation",
+  "subject_revision": "source-inventory:f9b144483245b6251ebb40dd3c6ebd8a647ca49daa78266a1ac2935b9584f420",
+  "system_id": "flowguard",
+  "unresolved_gap_ids": [
+    "gap:behavior_commitments:commitment:ai-manual-update-on-explicit-request",
+    "gap:behavior_commitments:commitment:automatic-system-update-retired",
+    "gap:behavior_commitments:commitment:automation-current-runtime-policy",
+    "gap:behavior_commitments:commitment:automation-proof-bound-depth-terminal",
+    "gap:behavior_commitments:commitment:installer-keeps-system-update-automation-absent",
+    "gap:behavior_commitments:commitment:kb-retrieval-current-index",
+    "gap:behavior_commitments:commitment:lifecycle-writer-exclusive-current-owner",
+    "gap:behavior_commitments:commitment:manual-conversation-authorized-update",
+    "gap:behavior_commitments:commitment:organization-current-layout",
+    "gap:behavior_commitments:commitment:sleep-no-delta-single-owner",
+    "gap:behavior_commitments:commitment:ui-readonly-upstream-status",
+    "gap:behavior_commitments:commitment:upgrade-direct-canonicalization",
+    "gap:code_contracts:contract:contract:automation-current-runtime-policy",
+    "gap:code_contracts:contract:contract:automation-proof-bound-depth-terminal",
+    "gap:code_contracts:contract:contract:desktop.update_status_read_only",
+    "gap:code_contracts:contract:contract:installer.exact_update_automation_retirement",
+    "gap:code_contracts:contract:contract:kb-retrieval-current-index",
+    "gap:code_contracts:contract:contract:khaos-brain-update.activation",
+    "gap:code_contracts:contract:contract:lifecycle-writer-exclusive-current-owner",
+    "gap:code_contracts:contract:contract:manual_update.explicit_current_request",
+    "gap:code_contracts:contract:contract:organization-current-layout",
+    "gap:code_contracts:contract:contract:sleep-no-delta-single-owner",
+    "gap:code_contracts:contract:contract:upgrade-direct-canonicalization",
+    "gap:external_surfaces:surface:active-index-lifecycle-lock",
+    "gap:external_surfaces:surface:automation-contract-generation",
+    "gap:external_surfaces:surface:automation-depth-projection",
+    "gap:external_surfaces:surface:automation-frozen-supervision-session",
+    "gap:external_surfaces:surface:automation-installer",
+    "gap:external_surfaces:surface:automation-native-evidence",
+    "gap:external_surfaces:surface:automation-receipt-layering",
+    "gap:external_surfaces:surface:automation-runtime-resolver",
+    "gap:external_surfaces:surface:automation-terminal-builder",
+    "gap:external_surfaces:surface:card-skill-guidance-canonicalization",
+    "gap:external_surfaces:surface:consumer-skill-currentness",
+    "gap:external_surfaces:surface:desktop-launcher-current-runtime",
+    "gap:external_surfaces:surface:desktop-settings-canonicalization",
+    "gap:external_surfaces:surface:dream-handoff-lifecycle-batch",
+    "gap:external_surfaces:surface:dream-handoff-post-publication-ack",
+    "gap:external_surfaces:surface:foreign-calibration-projection",
+    "gap:external_surfaces:surface:global-maintenance-writer",
+    "gap:external_surfaces:surface:lifecycle-replay-linear-index",
+    "gap:external_surfaces:surface:lifecycle-writer-lock",
+    "gap:external_surfaces:surface:lifecycle-writer-lock-spec",
+    "gap:external_surfaces:surface:local-cycle-receipt-v3",
+    "gap:external_surfaces:surface:maintenance-migration",
+    "gap:external_surfaces:surface:manual-update-native",
+    "gap:external_surfaces:surface:manual-update-native-receipt",
+    "gap:external_surfaces:surface:manual-update-skill",
+    "gap:external_surfaces:surface:organization-connect",
+    "gap:external_surfaces:surface:organization-cycle-receipt-v3",
+    "gap:external_surfaces:surface:organization-decision-identity",
+    "gap:external_surfaces:surface:organization-github-check",
+    "gap:external_surfaces:surface:organization-maintenance",
+    "gap:external_surfaces:surface:organization-maintenance-materialization",
+    "gap:external_surfaces:surface:organization-merge-split-packets",
+    "gap:external_surfaces:surface:organization-migration-rollback",
+    "gap:external_surfaces:surface:organization-outbox-dedupe",
+    "gap:external_surfaces:surface:organization-runtime-reader",
+    "gap:external_surfaces:surface:organization-snapshot",
+    "gap:external_surfaces:surface:organization-snapshot-retrieval",
+    "gap:external_surfaces:surface:organization-source-contract",
+    "gap:external_surfaces:surface:organization-validation",
+    "gap:external_surfaces:surface:parked-calibration-watermark",
+    "gap:external_surfaces:surface:postflight-observation-intake",
+    "gap:external_surfaces:surface:preflight-launcher-canonicalization",
+    "gap:external_surfaces:surface:retrieval-api",
+    "gap:external_surfaces:surface:retrieval-cli",
+    "gap:external_surfaces:surface:retrieval-interactions",
+    "gap:external_surfaces:surface:retrieval-spec",
+    "gap:external_surfaces:surface:sleep-no-delta-owner",
+    "gap:external_surfaces:surface:sleep-no-delta-spec",
+    "gap:external_surfaces:surface:transactional-install-semantic-anti-downgrade",
+    "gap:external_surfaces:surface:update-automation-retirement",
+    "gap:external_surfaces:surface:update-retirement-openspec",
+    "gap:external_surfaces:surface:update-state-canonicalization",
+    "gap:external_surfaces:surface:update-state-pre-assurance-migration",
+    "gap:external_surfaces:surface:update-status-desktop",
+    "gap:external_surfaces:surface:update-status-inspector",
+    "gap:external_surfaces:surface:upgrade-installer",
+    "gap:fields_state_side_effects:field-or-effect:acquire-identified-writer-lock",
+    "gap:fields_state_side_effects:field-or-effect:archive-retained-evidence",
+    "gap:fields_state_side_effects:field-or-effect:automation-state",
+    "gap:fields_state_side_effects:field-or-effect:card-Skill-guidance-schema",
+    "gap:fields_state_side_effects:field-or-effect:combined-retrieval-receipt",
+    "gap:fields_state_side_effects:field-or-effect:current-generation-pointer-and-Sleep-watermark-after-complete-activation",
+    "gap:fields_state_side_effects:field-or-effect:current-update-status",
+    "gap:fields_state_side_effects:field-or-effect:desktop-repaint",
+    "gap:fields_state_side_effects:field-or-effect:desktop-settings-schema",
+    "gap:fields_state_side_effects:field-or-effect:entry-calibration-watermark",
+    "gap:fields_state_side_effects:field-or-effect:exact-entry-deny-projection-when-current-eligibility-is-revoked",
+    "gap:fields_state_side_effects:field-or-effect:fast-forward-source",
+    "gap:fields_state_side_effects:field-or-effect:frozen-Sleep-batch-plan-and-per-item-checkpoint",
+    "gap:fields_state_side_effects:field-or-effect:global-writer/delegation-lease-state",
+    "gap:fields_state_side_effects:field-or-effect:install-composite-child-and-explicit-user-only-Skills",
+    "gap:fields_state_side_effects:field-or-effect:installation-receipt",
+    "gap:fields_state_side_effects:field-or-effect:installed-managed-runtime",
+    "gap:fields_state_side_effects:field-or-effect:installed-skills",
+    "gap:fields_state_side_effects:field-or-effect:invoke-the-guarded-manual-updater",
+    "gap:fields_state_side_effects:field-or-effect:lifecycle/model/index-authority",
+    "gap:fields_state_side_effects:field-or-effect:maintenance-standard",
+    "gap:fields_state_side_effects:field-or-effect:managed-automation-inventory",
+    "gap:fields_state_side_effects:field-or-effect:managed-skill-inventory",
+    "gap:fields_state_side_effects:field-or-effect:one-launch-time-background-fetch",
+    "gap:fields_state_side_effects:field-or-effect:organization-schema",
+    "gap:fields_state_side_effects:field-or-effect:organization-source/snapshot-authority",
+    "gap:fields_state_side_effects:field-or-effect:preserve-both-scheduled-owner-states",
+    "gap:fields_state_side_effects:field-or-effect:publish-migration-receipts",
+    "gap:fields_state_side_effects:field-or-effect:release-exact-owner-token",
+    "gap:fields_state_side_effects:field-or-effect:remove-exact-managed-automation-directory",
+    "gap:fields_state_side_effects:field-or-effect:remove-former-authority",
+    "gap:fields_state_side_effects:field-or-effect:restore-both-scheduled-composite-automations-after-closure",
+    "gap:fields_state_side_effects:field-or-effect:run-direct-migration",
+    "gap:fields_state_side_effects:field-or-effect:software-revision",
+    "gap:fields_state_side_effects:field-or-effect:status-cache-write",
+    "gap:fields_state_side_effects:field-or-effect:status-only-update-cache",
+    "gap:fields_state_side_effects:field-or-effect:transactionally-install-managed-surfaces",
+    "gap:fields_state_side_effects:field-or-effect:update-state-schema",
+    "gap:fields_state_side_effects:field-or-effect:validate-current-active-index",
+    "gap:fields_state_side_effects:field-or-effect:viewed/selected/used/outcome-evidence",
+    "gap:tests_evidence:test:test:ai-manual-update-on-explicit-request",
+    "gap:tests_evidence:test:test:automation-current-runtime-policy",
+    "gap:tests_evidence:test:test:automation-proof-bound-depth-terminal",
+    "gap:tests_evidence:test:test:installer-keeps-system-update-automation-absent",
+    "gap:tests_evidence:test:test:kb-retrieval-current-index",
+    "gap:tests_evidence:test:test:lifecycle-writer-exclusive-current-owner",
+    "gap:tests_evidence:test:test:manual-conversation-authorized-update",
+    "gap:tests_evidence:test:test:organization-current-layout",
+    "gap:tests_evidence:test:test:sleep-no-delta-single-owner",
+    "gap:tests_evidence:test:test:tests/test_kb_lifecycle.py::KbLifecycleTests::test_candidate_events_commit_in_one_bounded_batch",
+    "gap:tests_evidence:test:test:tests/test_kb_lifecycle.py::KbLifecycleTests::test_candidate_transition_family_retry_is_bounded",
+    "gap:tests_evidence:test:test:tests/test_kb_retrieval_calibration.py::KbRetrievalCalibrationTests::test_rebuild_requires_authorized_publisher",
+    "gap:tests_evidence:test:test:tests/test_khaos_model_native_retrieval.py::KhaosModelNativeRetrievalTests::test_current_mesh_view_is_reused_across_distinct_cards_in_one_generation",
+    "gap:tests_evidence:test:test:tests/test_khaos_model_runtime_readiness.py::KhaosModelRuntimeReadinessTests::test_catalog_latency_is_measured_without_memory_instrumentation",
+    "gap:tests_evidence:test:test:ui-readonly-upstream-status",
+    "gap:tests_evidence:test:test:upgrade-direct-canonicalization"
+  ]
+}

@@ -80,6 +80,12 @@ Routine task retrieval SHALL search the current local canonical authority and th
 #### Scenario: No current organization snapshot exists
 - **WHEN** a task requests organization context but no complete validated snapshot has ever been activated
 - **THEN** retrieval SHALL keep working for local knowledge and SHALL return organization context as unavailable rather than attempting a lazy download
+- **AND** every default CLI and AI machine response SHALL include the unavailable status and exact reason even when local results are non-empty
+
+#### Scenario: The organization snapshot exists but is not current-compatible
+- **WHEN** the local organization pointer resolves to a stale, malformed, or retired snapshot schema
+- **THEN** retrieval SHALL keep valid local results, exclude organization rows, and emit one visible `organization_status` failure in the canonical response envelope
+- **AND** it SHALL NOT collapse the response to a bare result list or add a retired-schema runtime reader
 
 #### Scenario: Local and foreign cards conflict
 - **WHEN** a foreign organization card conflicts with a current local canonical card for the same task boundary
@@ -91,6 +97,11 @@ deduplication and ranking pass. Exact content duplicates SHALL collapse to the
 current local authority, while distinct organization cards MUST remain able to
 outrank weaker local matches. One call SHALL persist one combined receipt whose
 ordered rows exactly equal the rows returned to CLI, UI, and AI callers.
+
+The default machine interface SHALL return one versioned envelope containing
+the ordered `results`, source statuses, the same combined receipt, and `no_card`.
+Source status MUST NOT require a diagnostic flag. The text projection SHALL
+preserve the same unavailable/failure reason.
 
 #### Scenario: Local candidates fill top-k before merge
 - **WHEN** a distinct organization card has a higher final score than one or more local candidates

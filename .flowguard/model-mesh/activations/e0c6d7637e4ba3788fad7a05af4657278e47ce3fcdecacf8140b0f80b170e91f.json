@@ -1,0 +1,12 @@
+{
+  "candidate_snapshot_fingerprint": "sha256:8636159b526fd6284b51178e6f12ef7fab3fab2177ce0a5d20277835b430aac4",
+  "expected_head_fingerprint": "sha256:1575e248db8d0f0bd0941539843e42fa996867a1d2fa7ec956bd25a88db6b51c",
+  "fingerprint": "sha256:e0c6d7637e4ba3788fad7a05af4657278e47ce3fcdecacf8140b0f80b170e91f",
+  "next_generation": 9,
+  "previous_snapshot_fingerprint": "sha256:a544536992e218f6b7329d953576e47d5c3eaf8fa925c991402cd043a7c1f098",
+  "receipt_id": "activation:khaos-organization-exact-batch-v1",
+  "revision_set_fingerprint": "sha256:41fdb2dd563bd975170f756a2ecdf9eb85cf33b096e9aa0fb3339d6efe8f58d4",
+  "schema": "flowguard.model_activation_receipt.v1",
+  "subject_revision": "source-inventory:01549e58394a24fb30dabe27327cede46f9587f19a99b52ec465e3c0786165e6",
+  "system_id": "flowguard"
+}

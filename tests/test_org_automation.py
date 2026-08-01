@@ -569,6 +569,18 @@ class OrganizationAutomationTests(unittest.TestCase):
                     ("kb/main/candidates/weak-card.yaml", base_card("weak-card", "Weak org card", "Weak shared candidate.", status="candidate", confidence=0.2)),
                     ("kb/main/candidates/strong-card.yaml", base_card("strong-card", "Strong org card", "Strong shared candidate.", status="candidate", confidence=0.9)),
                     ("kb/main/trusted/trusted-low.yaml", base_card("trusted-low", "Trusted low card", "Trusted but weak.", status="trusted", confidence=0.4)),
+                    (
+                        "kb/main/candidates/duplicate-a.yaml",
+                        {**base_card("duplicate-a", "Same route", "Use the same route.", status="candidate", confidence=0.7), "evidence": ["shared-evidence"]},
+                    ),
+                    (
+                        "kb/main/candidates/duplicate-b.yaml",
+                        {**base_card("duplicate-b", "Same route!", "Use the same route.", status="candidate", confidence=0.7), "evidence": ["shared-evidence"]},
+                    ),
+                    (
+                        "kb/main/candidates/duplicate-c.yaml",
+                        {**base_card("duplicate-c", "Same route?", "Use the same route.", status="candidate", confidence=0.7), "evidence": ["shared-evidence"]},
+                    ),
                 ],
             )
             self.assertEqual(0, _run_git(["init"], cwd=org).returncode)
@@ -595,6 +607,7 @@ class OrganizationAutomationTests(unittest.TestCase):
             lane_status = read_lane_status(repo, "kb-org-maintenance")
             branches = _run_git(["branch", "--list", "maintenance/*"], cwd=remote)
             current_branch = _run_git(["branch", "--show-current"], cwd=org).stdout.strip()
+            clean_status = _run_git(["status", "--porcelain"], cwd=org).stdout.strip()
 
         self.assertTrue(result["ok"], result)
         self.assertGreater(result["report"]["cleanup"]["apply"]["applied_count"], 0, result)
@@ -609,6 +622,18 @@ class OrganizationAutomationTests(unittest.TestCase):
         self.assertTrue(result["maintenance_branch"]["organization_check"]["checks"]["privacy_scan"]["ok"])
         self.assertTrue(result["maintenance_branch"]["organization_check"]["checks"]["skill_registry"]["ok"])
         self.assertTrue(result["maintenance_branch"]["restore_base"]["ok"], result)
+        self.assertEqual(clean_status, "", result)
+        self.assertIn(
+            "kb/main/candidates/duplicate-b.yaml",
+            result["maintenance_branch"]["materialization_receipt"]["declared_changed_files"],
+        )
+        self.assertTrue(
+            any(
+                row.get("deleted") is True and row.get("path") == "kb/main/candidates/duplicate-b.yaml"
+                for row in result["maintenance_branch"]["materialization_receipt"]["materialized_files"]
+            ),
+            result["maintenance_branch"]["materialization_receipt"],
+        )
         self.assertEqual(current_branch, "main")
         self.assertEqual(0, branches.returncode, branches.stderr)
         self.assertIn("maintenance/", branches.stdout)
