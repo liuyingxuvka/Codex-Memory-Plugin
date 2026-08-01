@@ -66,5 +66,11 @@ def test_ci_pins_final_flowguard_validation_commit() -> None:
     assert (
         "flowguard @ "
         "git+https://github.com/liuyingxuvka/FlowGuard.git"
-        "@0e66a912e7673b3441cbf05c3bf0a9a4bb9c693a"
+        "@1758b0910e9a08927254230aa62db58104536600"
     ) in requirements
+
+
+def test_pinned_flowguard_exports_current_model_maturation_receipt_contract() -> None:
+    from flowguard import MODEL_MATURATION_RECEIPT_STATUS_PASS
+
+    assert MODEL_MATURATION_RECEIPT_STATUS_PASS == "pass"
