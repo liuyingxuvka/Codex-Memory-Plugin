@@ -36,6 +36,39 @@ def _is_temporary_fixture_home(codex_home: Path) -> bool:
     return resolved_home != default_codex_home().resolve()
 
 
+def _seed_isolated_fixture_provider_metadata(codex_home: Path) -> None:
+    """Give temporary installer fixtures a deterministic Luna provider record.
+
+    Real installs must read the user's current provider metadata and fail
+    closed when the pinned model is unavailable.  Temporary aggregate/encoding
+    fixtures have no live Codex provider cache, so they receive the smallest
+    explicit record needed to exercise the same validation path.
+    """
+
+    path = codex_home / "models_cache.json"
+    if path.exists():
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "models": [
+                    {
+                        "slug": "gpt-5.6-luna",
+                        "provider": "isolated-fixture",
+                        "revision": "isolated-fixture-luna",
+                        "supported_reasoning_levels": [{"effort": "max"}],
+                    }
+                ]
+            },
+            ensure_ascii=True,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
 def _bounded_text(value: object, *, limit: int = 2_000) -> str:
     text = str(value or "")
     if len(text) <= limit:
@@ -367,6 +400,8 @@ def main() -> int:
     lightweight_fixture = (
         isolated_fixture or assurance_child
     ) and _is_temporary_fixture_home(codex_home)
+    if lightweight_fixture:
+        _seed_isolated_fixture_provider_metadata(codex_home)
     fixture_shell_bin = (
         (codex_home.parent / "codex-shell-bin").resolve()
         if lightweight_fixture
