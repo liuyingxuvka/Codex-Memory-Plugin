@@ -42,6 +42,24 @@ jobs:
           npm install --global @fission-ai/openspec@1.6.0
           echo "KHAOS_BRAIN_SKILLGUARD_VALIDATION_ROOT=$RUNNER_TEMP/skillguard/.agents/skills/skillguard" >> "$GITHUB_ENV"
 
+      - name: Seed explicit automation provider metadata
+        run: |
+          mkdir -p "$HOME/.codex"
+          cat > "$HOME/.codex/models_cache.json" <<'JSON'
+          {
+            "models": [
+              {
+                "slug": "gpt-5.6-luna",
+                "provider": "ci-provider-metadata",
+                "revision": "ci-luna-revision",
+                "supported_reasoning_levels": [
+                  {"effort": "max"}
+                ]
+              }
+            ]
+          }
+          JSON
+
       - name: Install Codex KB integration
         run: python scripts/install_codex_kb.py --json
 
