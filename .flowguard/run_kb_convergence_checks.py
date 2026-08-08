@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import inspect
 import json
 import os
 from pathlib import Path
@@ -66,6 +67,34 @@ CHILD_MODEL_PATHS = {
     "khaos-brain-update": FLOWGUARD_ROOT
     / "khaos_brain_update_skill_contract_model.py",
 }
+
+
+def _template_review_kwargs() -> dict[str, Any]:
+    """Close the template-review contract on FlowGuard releases that expose it.
+
+    The repository's pinned validation release (0.68.0) requires explicit
+    reuse and harvest closure.  Later FlowGuard releases removed those plan
+    fields after making the closure implicit, so only the supported current
+    contract is passed to the installed checker.
+    """
+
+    parameters = inspect.signature(FlowGuardCheckPlan).parameters
+    if "template_reuse_review" not in parameters:
+        return {}
+    return {
+        "template_reuse_review": TemplateReuseReview(
+            searched_layers=("project-local", "installed-public"),
+            no_match_reason=(
+                "No reusable FlowGuard template matches this consumer-"
+                "independence boundary."
+            ),
+        ),
+        "template_harvest_review": TemplateHarvestReview(
+            disposition="not_harvestable",
+            not_harvestable_reason="not_reusable_project_specific",
+            local_root=str(FLOWGUARD_ROOT),
+        ),
+    }
 
 
 def _digest(path: Path) -> str:
@@ -671,10 +700,6 @@ def _model_report() -> dict[str, Any]:
         blindspots=(
             "third-party skills on other machines are outside the guarantee",
         ),
-        template_no_match_reason=(
-            "The existing project-specific consumer boundary model is smaller "
-            "and more exact than a generic template."
-        ),
     )
     plan = FlowGuardCheckPlan(
         workflow=model.consumer_independence_workflow(),
@@ -709,14 +734,6 @@ def _model_report() -> dict[str, Any]:
             risk_classes=("module_boundary", "conformance", "side_effect"),
             risk_intent=risk_intent,
         ),
-        template_reuse_review=TemplateReuseReview(
-            no_match_reason=risk_intent.template_no_match_reason,
-            searched_layers=("project-local",),
-        ),
-        template_harvest_review=TemplateHarvestReview(
-            disposition="not_harvestable",
-            not_harvestable_reason="not_reusable_project_specific",
-        ),
         minimum_model_contract=MinimumModelContract(
             protected_error_classes=risk_intent.protected_error_classes,
             modeled_state=risk_intent.must_model_state,
@@ -742,6 +759,7 @@ def _model_report() -> dict[str, Any]:
                 evidence_id="kb-consumer-boundary:shared-evidence",
             ),
         ),
+        **_template_review_kwargs(),
         progress_config=_progress_config(),
         metadata={
             "model_path": str(MODEL_PATH.relative_to(REPO_ROOT)),
@@ -986,9 +1004,6 @@ def _lifecycle_model_report() -> dict[str, Any]:
             "pointer or deny-projection race",
         ),
         blindspots=("physical storage throughput remains production evidence",),
-        template_no_match_reason=(
-            "The existing LifecycleConvergenceBlock is the exact product owner."
-        ),
     )
     plan = FlowGuardCheckPlan(
         workflow=model.lifecycle_convergence_workflow(),
@@ -1012,14 +1027,6 @@ def _lifecycle_model_report() -> dict[str, Any]:
             risk_classes=("conformance", "performance", "side_effect"),
             risk_intent=risk_intent,
         ),
-        template_reuse_review=TemplateReuseReview(
-            no_match_reason=risk_intent.template_no_match_reason,
-            searched_layers=("project-local",),
-        ),
-        template_harvest_review=TemplateHarvestReview(
-            disposition="not_harvestable",
-            not_harvestable_reason="not_reusable_project_specific",
-        ),
         minimum_model_contract=MinimumModelContract(
             protected_error_classes=risk_intent.protected_error_classes,
             modeled_state=risk_intent.must_model_state,
@@ -1041,6 +1048,7 @@ def _lifecycle_model_report() -> dict[str, Any]:
                 ),
             ),
         ),
+        **_template_review_kwargs(),
         metadata={
             "observed_timeout_run_id": (
                 "native-kb-sleep-maintenance-20260720T100219848122Z-58af370c"

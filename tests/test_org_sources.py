@@ -22,6 +22,8 @@ from local_kb.org_sources import (
     connect_organization_source,
     default_org_mirror_path,
     guess_organization_source_id,
+    cleanup_organization_worktree,
+    prepare_organization_worktree,
     validate_organization_repo,
 )
 from local_kb.store import load_organization_entries, load_yaml_file, write_yaml_file
@@ -230,6 +232,50 @@ class OrganizationSourceTests(unittest.TestCase):
         self.assertTrue(mirror_valid)
         self.assertTrue(connected["ok"], connected)
         self.assertEqual(connected["settings"]["organization_id"], "sandbox")
+
+    def test_dirty_git_source_uses_clean_disposable_worktree_and_preserves_mirror(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "source"
+            self._write_valid_org_repo(source)
+            (source / "README.md").write_text("organization mirror", encoding="utf-8")
+            self.assertEqual(0, _run_git(["init"], cwd=source).returncode)
+            self.assertEqual(0, _run_git(["add", "."], cwd=source).returncode)
+            self.assertEqual(
+                0,
+                _run_git(
+                    ["-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-m", "seed"],
+                    cwd=source,
+                ).returncode,
+            )
+            self.assertEqual(0, _run_git(["branch", "-M", "main"], cwd=source).returncode)
+            self.assertEqual(0, _run_git(["update-ref", "refs/remotes/origin/main", "HEAD"], cwd=source).returncode)
+            (source / "README.md").unlink()
+
+            prepared = prepare_organization_worktree(
+                repo_root=root,
+                source_root=source,
+                organization_id="sandbox",
+                run_id="dirty-asset-check",
+                base_branch="main",
+            )
+            self.assertTrue(prepared["ok"], prepared)
+            self.assertEqual(prepared["mode"], "isolated")
+            effective = Path(prepared["worktree_path"])
+            self.assertTrue(effective.is_dir())
+            self.assertTrue((effective / "README.md").is_file())
+            self.assertEqual(
+                _run_git(["status", "--porcelain"], cwd=source).stdout.strip(),
+                "D README.md",
+            )
+
+            cleaned = cleanup_organization_worktree(prepared, success=True)
+            self.assertTrue(cleaned["ok"], cleaned)
+            self.assertFalse(effective.exists())
+            self.assertEqual(
+                _run_git(["status", "--porcelain"], cwd=source).stdout.strip(),
+                "D README.md",
+            )
 
     def test_paths_and_missing_manifest(self) -> None:
         self.assertEqual(default_org_mirror_path(Path("repo"), "acme/org kb").as_posix(), "repo/.local/organization_sources/acme-org-kb")

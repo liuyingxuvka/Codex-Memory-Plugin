@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 from researchguard.logic import (
     MeshNodeOverride,
@@ -272,6 +272,36 @@ def _logicguard_dream_probe(repo_root: Path, entry_data: dict[str, Any]) -> dict
         )
 
     primary = perturbations[0]
+    by_kind = {str(item.get("kind") or ""): item for item in perturbations}
+    perturbation_dispositions = []
+    for kind in DREAM_MODEL_PERTURBATION_KINDS:
+        item = by_kind.get(kind)
+        if item is None:
+            perturbation_dispositions.append(
+                {
+                    "kind": kind,
+                    "disposition": "not_applicable",
+                    "status": "not_applicable",
+                    "reason": "no-eligible-model-or-mesh-element",
+                    "evidence_ref": "",
+                    "materialization_fingerprint": "",
+                }
+            )
+        else:
+            perturbation_dispositions.append(
+                {
+                    "kind": kind,
+                    "disposition": "performed",
+                    "status": "performed",
+                    "reason": "bounded-read-only-simulation",
+                    "evidence_ref": str(
+                        item.get("materialization", {}).get("materialization_fingerprint") or ""
+                    ),
+                    "materialization_fingerprint": str(
+                        item.get("materialization", {}).get("materialization_fingerprint") or ""
+                    ),
+                }
+            )
     return {
         "authority": "simulation-only",
         "authority_generation_id": str(entry_data.get("authority_generation_id") or ""),
@@ -283,6 +313,10 @@ def _logicguard_dream_probe(repo_root: Path, entry_data: dict[str, Any]) -> dict
         "executed_perturbation_kinds": [item["kind"] for item in perturbations],
         "perturbation_count": len(perturbations),
         "perturbations": perturbations,
+        "perturbation_dispositions": perturbation_dispositions,
+        "perturbation_disposition_kinds": [
+            str(item.get("disposition") or "") for item in perturbation_dispositions
+        ],
         "delta": primary["delta"],
         "simulation_receipt": primary["simulation_receipt"],
         "overlay": primary["overlay"],
@@ -1788,6 +1822,8 @@ def run_dream_maintenance(
     run_id: str | None = None,
     max_events: int | None = None,
     canonical_write_requested: bool = False,
+    parent_cycle_id: str = "",
+    writer_context: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     generated_at = utc_now_iso()
     resolved_run_id = sanitize_run_id(run_id or f"kb-dream-{utc_now_compact()}")
@@ -1795,6 +1831,11 @@ def run_dream_maintenance(
         "allowed": False,
         "performed": False,
         "global_writer_required": False,
+        "writer_context": dict(writer_context or {
+            "mode": "read-only",
+            "delegation_required": False,
+            "commit_window": "none",
+        }),
         "noncanonical_outputs": [
             "immutable-simulation-artifacts",
             "typed-sleep-gap-handoffs",
@@ -1812,6 +1853,7 @@ def run_dream_maintenance(
             "reason": "dream-canonical-write-forbidden",
             "canonical_write_policy": canonical_write_policy,
             "artifact_paths": {},
+            "parent_cycle_id": str(parent_cycle_id or resolved_run_id),
         }
     run_dir = dream_run_dir(repo_root, resolved_run_id)
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -2244,6 +2286,10 @@ def run_dream_maintenance(
                 result_summary=str(experiment.get("observed_result") or outcome),
                 entry_ids=handoff_entry_ids,
                 requested_disposition=requested_disposition,
+                parent_cycle_id=str(parent_cycle_id or resolved_run_id),
+                authority_generation_id=str(authority_pin.get("generation_id") or ""),
+                logicguard_binding=dict(logicguard_simulation.get("binding") or {}),
+                writer_context=dict(canonical_write_policy.get("writer_context") or {}),
                 provenance={
                     "sandbox_path": str(experiment.get("sandbox_path") or ""),
                     "source_entry_id": str(opportunity.get("source_entry_id") or ""),
@@ -2309,6 +2355,7 @@ def run_dream_maintenance(
             "run_id": resolved_run_id,
             "generated_at": generated_at,
             "canonical_write_policy": canonical_write_policy,
+            "parent_cycle_id": str(parent_cycle_id or resolved_run_id),
             "status": "completed",
             "authority_pin": {
                 "generation_id": str(authority_pin.get("generation_id") or ""),

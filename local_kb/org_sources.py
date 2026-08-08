@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import hashlib
 import re
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 from local_kb.store import load_yaml_file
 
@@ -87,6 +88,193 @@ def default_org_mirror_path(repo_root: Path, organization_id: str) -> Path:
     if not safe_id:
         safe_id = "org"
     return repo_root / ".local" / "organization_sources" / safe_id
+
+
+def _git_branch(repo_path: Path) -> str:
+    result = _run_git(["branch", "--show-current"], cwd=repo_path)
+    return result.stdout.strip() if result.returncode == 0 else ""
+
+
+def prepare_organization_worktree(
+    repo_root: Path,
+    source_root: Path,
+    *,
+    organization_id: str,
+    run_id: str,
+    base_branch: str = "main",
+) -> dict[str, Any]:
+    """Prepare one effective organization source without touching a dirty mirror."""
+
+    repo_root = Path(repo_root).resolve()
+    source_root = Path(source_root).resolve()
+    record: dict[str, Any] = {
+        "mode": "direct",
+        "configured_path": str(source_root),
+        "worktree_path": str(source_root),
+        "worktree_root": "",
+        "base_branch": str(base_branch or "main"),
+        "source_head": current_git_commit(source_root),
+        "dirty_entries": [],
+        "dirty_scope": "repository",
+        "created": False,
+        "cleanup_required": False,
+    }
+    if not source_root.exists():
+        return {**record, "ok": False, "status": "missing-source", "errors": [f"organization source path does not exist: {source_root}"]}
+    if not (source_root / ".git").exists():
+        record["status"] = "non-git-source"
+        record["dirty_scope"] = "not-applicable"
+        return {**record, "ok": True}
+
+    status = _run_git(
+        ["status", "--porcelain=v1", "--untracked-files=all"], cwd=source_root
+    )
+    if status.returncode != 0:
+        return {
+            **record,
+            "ok": False,
+            "status": "source-status-failed",
+            "errors": [status.stderr.strip() or status.stdout.strip()],
+        }
+    dirty_entries = [line for line in status.stdout.splitlines() if line.strip()]
+    record["dirty_entries"] = dirty_entries
+    record["source_branch"] = _git_branch(source_root)
+    if not dirty_entries:
+        record["status"] = "clean-fast-path"
+        return {**record, "ok": True}
+
+    safe_org = re.sub(r"[^A-Za-z0-9_.-]+", "-", str(organization_id or "org")).strip("-") or "org"
+    safe_run = re.sub(r"[^A-Za-z0-9_.-]+", "-", str(run_id or "run")).strip("-") or "run"
+    worktree_root = (repo_root / ".local" / "organization_sources" / "worktrees").resolve()
+    record["worktree_root"] = str(worktree_root)
+    # Keep the disposable checkout path short.  Organization repositories can
+    # contain deeply nested LogicGuard bundle names, and the full native run
+    # id would push an otherwise valid checkout over Windows' legacy path
+    # limit.  The original run id remains in the receipt; this directory name
+    # is only a collision-resistant filesystem handle.
+    run_handle = hashlib.sha256(safe_run.encode("utf-8")).hexdigest()[:12]
+    record["worktree_handle"] = f"{safe_org[:24]}-{run_handle}"
+    worktree_path = (worktree_root / record["worktree_handle"]).resolve()
+    if worktree_path == source_root or source_root in worktree_path.parents:
+        return {
+            **record,
+            "ok": False,
+            "status": "unsafe-worktree-path",
+            "errors": ["isolated organization worktree must not be inside the configured mirror"],
+        }
+    if worktree_path.exists():
+        return {
+            **record,
+            "ok": False,
+            "status": "worktree-path-exists",
+            "errors": [f"isolated organization worktree path already exists: {worktree_path}"],
+        }
+
+    base_ref = f"refs/remotes/origin/{str(base_branch or 'main').strip() or 'main'}"
+    ref_check = _run_git(["rev-parse", "--verify", base_ref], cwd=source_root)
+    if ref_check.returncode != 0:
+        base_ref = f"refs/heads/{str(base_branch or 'main').strip() or 'main'}"
+        ref_check = _run_git(["rev-parse", "--verify", base_ref], cwd=source_root)
+    if ref_check.returncode != 0:
+        return {
+            **record,
+            "ok": False,
+            "status": "base-ref-unavailable",
+            "errors": [f"organization base ref unavailable: {base_branch}"],
+        }
+    base_commit = _run_git(["rev-parse", base_ref], cwd=source_root).stdout.strip()
+    worktree_path.parent.mkdir(parents=True, exist_ok=True)
+    add = _run_git(
+        [
+            "-c",
+            "core.longpaths=true",
+            "worktree",
+            "add",
+            "--detach",
+            str(worktree_path),
+            base_ref,
+        ],
+        cwd=source_root,
+    )
+    if add.returncode != 0:
+        return {
+            **record,
+            "ok": False,
+            "status": "worktree-create-failed",
+            "base_ref": base_ref,
+            "base_commit": base_commit,
+            "errors": [add.stderr.strip() or add.stdout.strip()],
+        }
+    clean = _run_git(
+        ["status", "--porcelain=v1", "--untracked-files=all"], cwd=worktree_path
+    )
+    if clean.returncode != 0 or clean.stdout.strip():
+        return {
+            **record,
+            "ok": False,
+            "status": "worktree-not-clean",
+            "base_ref": base_ref,
+            "base_commit": base_commit,
+            "worktree_path": str(worktree_path),
+            "mode": "isolated",
+            "created": True,
+            "cleanup_required": True,
+            "errors": [clean.stderr.strip() or clean.stdout.strip() or "isolated worktree has uncommitted changes"],
+        }
+    return {
+        **record,
+        "ok": True,
+        "status": "isolated",
+        "mode": "isolated",
+        "worktree_path": str(worktree_path),
+        "base_ref": base_ref,
+        "base_commit": base_commit,
+        "worktree_head": current_git_commit(worktree_path),
+        "created": True,
+        "cleanup_required": True,
+    }
+
+
+def cleanup_organization_worktree(
+    worktree: Mapping[str, Any] | dict[str, Any] | None,
+    *,
+    success: bool,
+) -> dict[str, Any]:
+    """Remove only our exact disposable worktree after a successful cycle."""
+
+    record = dict(worktree or {})
+    if str(record.get("mode") or "") != "isolated":
+        return {"attempted": False, "ok": True, "status": "not_applicable", "retained": False}
+    configured = Path(str(record.get("configured_path") or "")).resolve()
+    target = Path(str(record.get("worktree_path") or "")).resolve()
+    allowed_root = Path(
+        str(record.get("worktree_root") or (configured.parent / "worktrees"))
+    ).resolve()
+    if not target or target == configured or allowed_root not in target.parents:
+        return {"attempted": False, "ok": False, "status": "unsafe-cleanup-path", "retained": True}
+    if not success:
+        return {"attempted": False, "ok": True, "status": "retained-after-failure", "retained": True, "path": str(target)}
+    if not target.exists():
+        return {"attempted": True, "ok": True, "status": "already-removed", "retained": False, "path": str(target)}
+    status = _run_git(["status", "--porcelain=v1", "--untracked-files=all"], cwd=target)
+    if status.returncode != 0 or status.stdout.strip():
+        return {
+            "attempted": False,
+            "ok": False,
+            "status": "retained-dirty",
+            "retained": True,
+            "path": str(target),
+            "dirty_entries": [line for line in status.stdout.splitlines() if line.strip()],
+        }
+    removed = _run_git(["worktree", "remove", str(target)], cwd=configured)
+    return {
+        "attempted": True,
+        "ok": removed.returncode == 0 and not target.exists(),
+        "status": "removed" if removed.returncode == 0 and not target.exists() else "remove-failed",
+        "retained": target.exists(),
+        "path": str(target),
+        "errors": [] if removed.returncode == 0 else [removed.stderr.strip() or removed.stdout.strip()],
+    }
 
 
 def guess_organization_source_id(repo_url: str) -> str:

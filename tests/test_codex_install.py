@@ -83,6 +83,23 @@ class CodexInstallTests(unittest.TestCase):
         )
         self._automation_runtime.start()
         self.addCleanup(self._automation_runtime.stop)
+        self._explicit_automation_runtime = patch(
+            "local_kb.install.resolve_explicit_automation_runtime",
+            side_effect=lambda automation_id, codex_home=None: {
+                "automation_id": str(automation_id),
+                "model": "gpt-5.6-luna",
+                "reasoning_effort": "max",
+                "model_policy": "explicit",
+                "reasoning_effort_policy": "explicit",
+                "selection_policy": "explicit",
+                "provider": "luna",
+                "provider_revision": "test-luna-revision",
+                "models_cache_digest": "sha256:test-model-cache",
+                "runtime_config_digest": "sha256:test-runtime-config",
+            },
+        )
+        self._explicit_automation_runtime.start()
+        self.addCleanup(self._explicit_automation_runtime.stop)
         self._update_state_migration = patch(
             "local_kb.software_update.migrate_obsolete_update_state",
             return_value={

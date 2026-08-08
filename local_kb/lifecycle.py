@@ -1873,21 +1873,21 @@ def _run_incremental_sleep_locked(
     def batch_fields() -> dict[str, Any]:
         previous_remaining = int(plan.get("prior_remaining_count") or 0)
         closing_remaining = int(checkpoint.get("closing_remaining_count") or 0)
-        convergence_status = (
-            "backlog_reduced"
-            if closing_remaining < previous_remaining
-            else (
-                "backlog_growing"
-                if int(checkpoint.get("no_reduction_streak") or 0) >= 2
-                else "no_convergence"
-            )
-        )
+        newly_eligible = int(plan.get("newly_eligible_count") or 0)
+        if closing_remaining == 0:
+            convergence_status = "no_op" if previous_remaining == 0 and newly_eligible == 0 else "settled"
+        elif closing_remaining < previous_remaining:
+            convergence_status = "backlog_reduced"
+        elif newly_eligible > 0 or int(checkpoint.get("no_reduction_streak") or 0) >= 2:
+            convergence_status = "backlog_growing"
+        else:
+            convergence_status = "no_convergence"
         return {
             "batch_head": dict(current_batch["head"]),
             "batch_plan": dict(plan),
             "batch_checkpoint": dict(checkpoint),
             "previous_remaining": previous_remaining,
-            "newly_eligible": int(plan.get("newly_eligible_count") or 0),
+            "newly_eligible": newly_eligible,
             "opening_remaining": int(plan.get("opening_remaining_count") or 0),
             "target_batch_size": int(plan.get("target_item_count") or 0),
             "completed_this_attempt": attempt_completed,
@@ -3156,6 +3156,10 @@ def record_dream_handoff(
     entry_ids: list[str] | tuple[str, ...] = (),
     requested_disposition: str = "history_only",
     provenance: Mapping[str, Any] | None = None,
+    parent_cycle_id: str = "",
+    authority_generation_id: str = "",
+    logicguard_binding: Mapping[str, Any] | None = None,
+    writer_context: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     stable_key = content_fingerprint(
         [evidence_fingerprint, result_digest, requested_disposition]
@@ -3181,6 +3185,10 @@ def record_dream_handoff(
             "entry_ids": sorted({str(item) for item in entry_ids if str(item)}),
             "requested_disposition": str(requested_disposition),
             "provenance": dict(provenance or {}),
+            "parent_cycle_id": str(parent_cycle_id or run_id),
+            "authority_generation_id": str(authority_generation_id or ""),
+            "logicguard_binding": dict(logicguard_binding or {}),
+            "writer_context": dict(writer_context or {}),
         }
         _append_jsonl_durable(dream_handoffs_path(repo_root), payload)
         return {**payload, "created": True, "idempotent_reuse": False}

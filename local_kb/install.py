@@ -49,6 +49,18 @@ AUTOMATION_MODEL_POLICY = "strongest-available"
 AUTOMATION_REASONING_EFFORT_POLICY = "deepest"
 AUTOMATION_MODEL_ENV_VAR = "CODEX_KB_AUTOMATION_MODEL"
 AUTOMATION_REASONING_EFFORT_ENV_VAR = "CODEX_KB_AUTOMATION_REASONING_EFFORT"
+EXPLICIT_AUTOMATION_RUNTIME_SELECTIONS = {
+    "kb-sleep": {
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "max",
+        "selection_policy": "explicit",
+    },
+    "kb-org-maintenance": {
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "max",
+        "selection_policy": "explicit",
+    },
+}
 UPGRADE_ATTEMPT_SCHEMA = "khaos-brain.upgrade-attempt.v2"
 UPGRADE_ATTEMPT_EVENT_SCHEMA = "khaos-brain.upgrade-attempt-event.v2"
 UPGRADE_ATTEMPT_PROJECTION_SCHEMA = "khaos-brain.upgrade-attempt-projection.v2"
@@ -59,7 +71,16 @@ UPGRADE_ATTEMPT_AUTHORITY_SCHEMA = (
 UPGRADE_ATTEMPT_ROOT = Path(".khaos-brain-install") / "attempts"
 UPGRADE_ATTEMPT_HEAD_MAX_BYTES = 32 * 1024
 UPGRADE_ATTEMPT_CURRENT_MAX_BYTES = 256 * 1024
-REASONING_EFFORT_ORDER = ("none", "minimal", "low", "medium", "high", "xhigh")
+REASONING_EFFORT_ORDER = (
+    "none",
+    "minimal",
+    "low",
+    "medium",
+    "high",
+    "xhigh",
+    "max",
+    "ultra",
+)
 AUTOMATION_DAILY_BYDAY = "SU,MO,TU,WE,TH,FR,SA"
 RETIRED_MAINTENANCE_SKILL_IDS = ("kb-architect-pass",)
 RETIRED_AUTOMATION_IDS = (
@@ -210,6 +231,8 @@ SLEEP_AUTOMATION_PROMPT = (
     "completed_this_attempt, blocked_this_attempt, closing_remaining, net_reduction, and convergence_status under one "
     "counting rule. progress_saved or failure leaves the committed watermark and prior validated generation unchanged and "
     "records only Dream as not_run when the local cycle cannot reach a clean Sleep terminal; the independent organization task remains untouched. "
+    "Classify the terminal counts as no_op, settled, backlog_reduced, backlog_growing, or no_convergence using the canonical remainder rule; never treat an attempted but open batch as settled. "
+    "Record Dream admission, its read-only writer policy, exact parent-cycle and generation bindings, typed perturbation dispositions, and deterministic local-cycle postflight. "
     "A named blocked item with an executable reopen condition may produce completed_with_blocks after settled siblings "
     "publish; do not start Dream, and do not change the independent organization task. "
     "The wrapper owns same-run terminalization: do not invoke kb_lane_status.py, retry the child, request human file review, "
@@ -222,14 +245,15 @@ DREAM_AUTOMATION_PROMPT = (
     ".agents/skills/local-kb-retrieve/DREAM_PROMPT.md, then run only "
     "`python scripts/run_kb_automation.py --skill kb-dream-pass --json` only for an explicit diagnostic. The local-cycle owner invokes the "
     "native Dream entrypoint `.agents/skills/local-kb-retrieve/scripts/kb_dream.py` exactly once and validates this run's immutable native terminal receipt; do not "
-    "run the child entrypoint directly. First pin the exact LogicGuard generation, model revision, root ArgumentBlock, "
+    "run the child entrypoint directly. The local cycle supplies the exact parent cycle/phase identity and uses a read-only simulation writer policy with no canonical commit window. First pin the exact LogicGuard generation, model revision, root ArgumentBlock, "
     "and ModelMesh revision. Derive decision-relevant stable fingerprints and evaluate the full opportunity inventory, but persist at most 64 representative "
     "opportunity rows together with the exact inventory count, digest, and omitted count. Skip already closed unchanged evidence as "
     "no_delta_closed, execute only a small valuable route-deduplicated experiment set, and run separate applicable checks for evidence removal, "
     "assumption removal, rebuttal strengthening or counterexamples, boundary pressure, cross-edge removal, and neighbor-pin replacement. Emit typed idempotent Sleep handoffs "
     "for material model gaps with exact authority bindings. Dream may write only bounded Dream runtime/experiment artifacts "
     "and its handoff ledger; it must not directly write cards, models, meshes, candidates, confidence, predictive observations, "
-    "or central KB history, and it must prove the canonical generation unchanged. A no-op is a successful convergent result."
+    "or central KB history, and it must prove the canonical generation unchanged. Emit a typed performed or not_applicable disposition for every declared perturbation kind. "
+    "A no-op is a successful convergent result."
 )
 
 ORG_CONTRIBUTE_AUTOMATION_PROMPT = (
@@ -298,8 +322,9 @@ REPO_AUTOMATION_SPECS = (
         "skill_name": "kb-sleep-maintenance",
         "status": "ACTIVE",
         "rrule": "FREQ=WEEKLY;BYDAY=SU,MO,TU,WE,TH,FR,SA;BYHOUR=12;BYMINUTE=0",
-        "model_policy": AUTOMATION_MODEL_POLICY,
-        "reasoning_effort_policy": AUTOMATION_REASONING_EFFORT_POLICY,
+        "model_policy": "explicit",
+        "reasoning_effort_policy": "explicit",
+        "runtime_selection": EXPLICIT_AUTOMATION_RUNTIME_SELECTIONS["kb-sleep"],
         "execution_environment": "local",
     },
     {
@@ -310,8 +335,9 @@ REPO_AUTOMATION_SPECS = (
         "skill_name": "kb-organization-maintenance",
         "status": "ACTIVE",
         "jitter_window": ORG_MAINTENANCE_WINDOW,
-        "model_policy": AUTOMATION_MODEL_POLICY,
-        "reasoning_effort_policy": AUTOMATION_REASONING_EFFORT_POLICY,
+        "model_policy": "explicit",
+        "reasoning_effort_policy": "explicit",
+        "runtime_selection": EXPLICIT_AUTOMATION_RUNTIME_SELECTIONS["kb-org-maintenance"],
         "execution_environment": "local",
     },
 )
@@ -573,6 +599,78 @@ def resolve_automation_runtime(codex_home: Path | None = None) -> dict[str, str]
         "model_env_var": AUTOMATION_MODEL_ENV_VAR,
         "reasoning_effort_env_var": AUTOMATION_REASONING_EFFORT_ENV_VAR,
     }
+
+
+def _models_cache_digest(codex_home: Path | None = None) -> str:
+    path = models_cache_path(codex_home)
+    try:
+        return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError:
+        return ""
+
+
+def resolve_explicit_automation_runtime(
+    automation_id: str,
+    codex_home: Path | None = None,
+) -> dict[str, str]:
+    """Resolve one scheduled owner's pinned runtime without a downgrade path."""
+
+    selection = EXPLICIT_AUTOMATION_RUNTIME_SELECTIONS.get(str(automation_id))
+    if not isinstance(selection, dict):
+        raise RuntimeError(
+            f"No explicit automation runtime selection is registered for {automation_id}."
+        )
+    requested_model = str(selection.get("model") or "").strip()
+    requested_effort = str(selection.get("reasoning_effort") or "").strip()
+    models = _load_models_cache(codex_home)
+    selected_payload: dict[str, Any] | None = None
+    for model_payload in models:
+        if str(model_payload.get("slug") or "").strip() == requested_model:
+            selected_payload = model_payload
+            break
+    if selected_payload is None:
+        raise RuntimeError(
+            f"Explicit automation model is unavailable for {automation_id}: {requested_model}"
+        )
+    supported = _supported_reasoning_efforts(selected_payload)
+    if requested_effort not in supported:
+        raise RuntimeError(
+            f"Explicit automation reasoning effort is unsupported for {automation_id}: "
+            f"model={requested_model} effort={requested_effort} supported={supported}"
+        )
+    provider = str(
+        selected_payload.get("provider")
+        or selected_payload.get("provider_id")
+        or "codex-models-cache"
+    ).strip()
+    config = {
+        "automation_id": str(automation_id),
+        "model": requested_model,
+        "reasoning_effort": requested_effort,
+        "model_policy": "explicit",
+        "reasoning_effort_policy": "explicit",
+        "selection_policy": str(selection.get("selection_policy") or "explicit"),
+        "provider": provider,
+        "provider_revision": str(
+            selected_payload.get("revision")
+            or selected_payload.get("model_revision")
+            or ""
+        ),
+        "models_cache_digest": _models_cache_digest(codex_home),
+    }
+    config["runtime_config_digest"] = "sha256:" + hashlib.sha256(
+        json.dumps(config, ensure_ascii=True, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    return {str(key): str(value) for key, value in config.items()}
+
+
+def resolve_automation_runtime_for_spec(
+    spec: Mapping[str, Any], codex_home: Path | None = None
+) -> dict[str, str]:
+    automation_id = str(spec.get("id") or "").strip()
+    if automation_id in EXPLICIT_AUTOMATION_RUNTIME_SELECTIONS:
+        return resolve_explicit_automation_runtime(automation_id, codex_home)
+    return resolve_automation_runtime(codex_home)
 
 
 def _render_template(text: str, replacements: dict[str, str]) -> str:
@@ -842,7 +940,7 @@ def _automation_spec_payload(
     codex_home: Path | None = None,
     existing: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    runtime = resolve_automation_runtime(codex_home)
+    runtime = resolve_automation_runtime_for_spec(spec, codex_home)
     schedule_window = automation_time_window_label(spec)
     existing_payload = existing or {}
     existing_status = str(existing_payload.get("status", "") or "").upper()
@@ -874,6 +972,7 @@ def _automation_spec_payload(
         "schedule_window": schedule_window,
         "model": runtime["model"],
         "reasoning_effort": runtime["reasoning_effort"],
+        "runtime_selection": dict(runtime),
         "model_policy": spec.get("model_policy", runtime["model_policy"]),
         "reasoning_effort_policy": spec.get(
             "reasoning_effort_policy",
@@ -2782,6 +2881,7 @@ def _install_codex_integration_impl(
             "schedule_window": payload["schedule_window"],
             "model": payload["model"],
             "reasoning_effort": payload["reasoning_effort"],
+            "runtime_selection": dict(payload.get("runtime_selection") or {}),
             "model_policy": payload["model_policy"],
             "reasoning_effort_policy": payload["reasoning_effort_policy"],
             "execution_environment": payload["execution_environment"],

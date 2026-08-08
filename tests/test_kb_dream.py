@@ -144,6 +144,11 @@ class DreamMaintenanceTests(unittest.TestCase):
                         "immutable-simulation-artifacts",
                         "typed-sleep-gap-handoffs",
                     ],
+                    "writer_context": {
+                        "mode": "read-only",
+                        "delegation_required": False,
+                        "commit_window": "none",
+                    },
                 },
             )
             self.assertFalse(dream_run_dir(repo_root, "dream-write-rejected").exists())

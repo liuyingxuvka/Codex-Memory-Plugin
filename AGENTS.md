@@ -111,9 +111,7 @@ This managed block is a routing and maintenance contract. It is not runtime, tes
 
 ## FlowGuard Project Rules
 
-This project uses FlowGuard for non-trivial maintenance, feature work, bug
-fixes, refactors, tests, release work, project upgrades, and evidence-sensitive
-process changes.
+For non-trivial work, select the smallest current FlowGuard public owner; clear satellites are direct peers and unclear ordinary behavior/state work uses `flowguard`.
 
 <!-- flowguard-rule:project.repository -->
 
@@ -122,145 +120,87 @@ https://github.com/liuyingxuvka/FlowGuard
 
 <!-- flowguard-rule:skill_suite.agent_surface -->
 
-FlowGuard agent skill suite:
-- Primary agent surface: the current clean consumer projection under
-  `$CODEX_HOME/skills/`; default entry is
-  `$CODEX_HOME/skills/flowguard/SKILL.md`.
-- A project reads this block plus selected sibling guidance; it does not copy the FlowGuard suite into its local tree.
-- The Python package/CLI is executable check support, not the AI-agent skill installation surface.
+Primary agent surface: the current clean consumer projection at `$CODEX_HOME/skills/flowguard/SKILL.md`; this block does not copy the suite, and the Python package/CLI only runs checks.
 
 <!-- flowguard-rule:project.record_locations -->
 
-Project FlowGuard record:
-- Manifest: `.flowguard/project.toml`
-- Machine log: `.flowguard/adoption_log.jsonl`
-- Human log: `docs/flowguard_adoption_log.md`
+Project record: `.flowguard/project.toml`; machine log: `.flowguard/adoption_log.jsonl`; human log: `docs/flowguard_adoption_log.md`.
 
 <!-- flowguard-rule:project.rendered_versions -->
 
-Current adoption record:
-- FlowGuard check-engine version: `0.68.0`
-- FlowGuard schema version: `1.0`
+Current adoption record: FlowGuard check-engine version: `0.68.1`; FlowGuard schema version: `1.0`.
 
 <!-- flowguard-rule:project.preflight_version_gate -->
 
-Before non-trivial work, verify the real engine/schema/version and run
-`python -m flowguard project-audit --root .`. Compare it with `.flowguard/project.toml`.
-If installed is newer, run `project-upgrade` with artifact/model/test upgrade scanning
-and revalidate affected evidence; if installed is older, connect the current
-engine before claiming confidence.
+Before non-trivial work run `python -m flowguard project-audit --root .`; if the installed engine is newer, run full `project-upgrade` scanning and affected revalidation, and if older connect the current engine.
 
 <!-- flowguard-rule:runtime.latest_schema_first -->
 
-FlowGuard runtime guidance is latest-schema-first: old artifacts may be
-detected and upgraded at project/tool boundaries, but normal route logic should
-not keep long-lived old branches for obsolete fields, aliases, or wrappers.
+Use latest-schema-first direct replacement; obsolete fields, aliases, wrappers, and alternate success paths have no normal-runtime fallback.
 
 <!-- flowguard-rule:model_system.authority -->
 
-Only the content-addressed `observed_implementation` snapshot selected by
-the sole project head is current. Targets/experiments stay isolated; discovery
-or green candidate checks grant no authority. Missing/invalid authority or
-required coverage blocks broad confidence.
+Only the sole content-addressed `observed_implementation` head is current; targets, experiments, discovery, and green candidates do not own current behavior.
 
 <!-- flowguard-rule:model_system.revision_transaction -->
 
-Replace model authority only through one accepted `ModelRevisionSet` bound
-to the exact base, candidate, affected closure, changes, and current owner
-evidence. Persist records before the pointer. Rollback restores/compensates real
-effects and revalidates the old snapshot; irreversible effects use forward repair.
+Change model authority only through one accepted `ModelRevisionSet`; persist evidence before the pointer, and restore/compensate effects before rollback.
 
 <!-- flowguard-rule:lifecycle.default_replacement -->
 
-Default replacement means dispose the old path, old field, alias, wrapper, or
-alternate success path. Delete, block, migrate, delegate, repair, replace, or
-scope it out with a concrete reason; do not leave it as a second successful
-route.
+Dispose every replaced path, field, alias, wrapper, or alternate success through an explicit delete/block/migrate/delegate/repair/replace/scope disposition.
 
 <!-- flowguard-rule:behavior.commitment_ledger -->
 
-Broad behavior claims use BehaviorCommitmentLedger: independently inventory
-admitted external promises, give each source one modeled/delegated/scoped
-disposition, one plane/actor and one primary model owner, and send
-`path_sensitive=true` rows to Primary Path Authority. Helpers are not
-automatically commitments.
+Broad behavior claims require an independent BehaviorCommitmentLedger inventory, one plane and primary owner per admitted promise, and Primary Path Authority for path-sensitive rows.
 
 <!-- flowguard-rule:behavior.plane_partitioning -->
 
-Classify each commitment as `product_runtime`, `agent_operation`, or
-`development_process`. A lightweight existing-model/commitment lookup selects
-a bounded same-plane owner closure; typed related-plane context never transfers
-ownership. Model Miss creates a gap only when that plane has no matching promise.
+Commitments stay in `product_runtime`, `agent_operation`, or `development_process`; select a bounded same-plane owner closure and keep related planes as typed context only.
 
 <!-- flowguard-rule:behavior.commitment_ledger_modes -->
 
-Declare ledger mode before coverage work. Only `bootstrap_ledger` and
-`coverage_gap_backfill` use broad history discovery; add/change/remove/miss
-work stays on the affected commitment, owner, cases, and evidence closure.
+Declare ledger mode first; only bootstrap/backfill may discover broadly, while add/change/remove/miss stays on the affected commitment closure.
 
 <!-- flowguard-rule:lifecycle.field_mesh -->
 
-Field-bearing work uses FieldLifecycleMesh. High-level models keep
-behavior-bearing fields; leaf inventory accounts every field's owner,
-readers/writers, projection, lifecycle, evidence, and old-field disposition.
+Field-bearing work uses FieldLifecycleMesh and accounts owner, readers/writers, projection, lifecycle evidence, and old-field disposition.
 
 <!-- flowguard-rule:evidence.ui_and_payload -->
 
-UI runnable claims and file/work-package claims need current UI click-through
-or artifact-payload evidence gates before broad done/release confidence.
+UI runnable and file/work-package claims need current real-surface or payload evidence before broad confidence.
 
 <!-- flowguard-rule:behavior.primary_path_authority -->
 
-Path-sensitive commitments need one Primary Path Authority, visible primary
-failure, no automatic alternate success, and current exhaustion/test/risk evidence.
+Path-sensitive commitments need one Primary Path Authority, visible primary failure, no alternate automatic success, and current exhaustion/test/risk evidence.
 
 <!-- flowguard-rule:behavior.exact_intent_reuse -->
 
-One exact user purpose has one intent, active commitment, and primary path.
-Equivalent UI/API/CLI/adapter/wrapper surfaces delegate; they do not become
-independent success implementations.
+One exact purpose has one intent, commitment, and primary path; equivalent UI/API/CLI/adapter/wrapper surfaces delegate rather than own independent success.
 
 <!-- flowguard-rule:ui.product_language -->
 
-UI Flow Structure owns product-wide language and complete rendered-surface
-coverage. Full UI claims inventory every control, display, transition, overlay,
-recovery path, and blindspot with stable identity, evidence, and disposition.
+UI Flow Structure owns product language and complete rendered control/display/transition/overlay/recovery/blindspot coverage for full UI claims.
 
 <!-- flowguard-rule:ui.content_admission -->
 
-Classify UI content once as `user_visible`, `user_on_demand`, or `internal`.
-On-demand needs reveal/return; internal diagnostics and routing stay hidden.
+Classify UI content once as `user_visible`, `user_on_demand`, or `internal`; on-demand needs reveal/return and internal diagnostics stay hidden.
 
 <!-- flowguard-rule:process.development_process_flow -->
 
-Plans, staged/multi-skill work, sync, release, publish, and final process
-claims enter `flowguard-development-process-flow`. It owns order/freshness,
-preserves peer writes, delegates semantics, uses affected revalidation, and
-reserves one full gate for frozen source. Conditional strategy selection runs
-only for its declared triggers; progress is never completion evidence.
+Plans, staged/multi-skill work, sync, release, publish, and final process claims use `flowguard-development-process-flow`: preserve peers, delegate semantics, revalidate affected owners, and reserve one full gate for frozen source.
 
 <!-- flowguard-rule:process.work_context_read_only -->
 
-External specs/plans enter only through explicit project-bounded read-only
-WorkContexts. Providers keep ownership; FlowGuard preserves identities,
-fingerprints, and lanes, rejects fallback/write/execution authority, and admits
-behavior sources only through explicit mappings. Zero providers is valid.
+External specs/plans are optional project-bounded read-only WorkContexts; providers retain identity, lane, execution, validation, and lifecycle authority.
 
 <!-- flowguard-rule:process.post_change_scan -->
 
-After non-trivial work, let DevelopmentProcessFlow consume post-change scan signals:
-changed artifacts, skips, stale evidence, open obligations, and split/reduction
-pressure. Route each gap to its existing specialist owner.
+After non-trivial work, route changed, skipped, stale, open, split, or reduction signals to their existing specialist through DevelopmentProcessFlow.
 
 <!-- flowguard-rule:claim.no_fake_adoption -->
 
-Do not create a fake local FlowGuard replacement. Do not claim full FlowGuard
-completion from an AGENTS/manifest/log update alone; executable model checks,
-tests, replay, and closure evidence still need to be current for the claim.
-Before model build/change, freeze this instance's task-specific failures and
-boundary, then bind candidate plus native good/bad-per-failure/oracle/current
-evidence. Reusable types are not fixed-purpose; no mode/fallback exists; only
-FlowGuard-declared checks support completion claims.
+Never create a fake local FlowGuard. AGENTS/manifest/log changes are not proof: freeze task-specific failures and boundary, bind native good/bad-per-failure/oracle/current evidence, and let only declared checks support completion.
 
 <!-- END FLOWGUARD PROJECT RULES -->
 

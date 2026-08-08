@@ -1030,13 +1030,20 @@ def _sleep_batch_facts(payload: Mapping[str, Any]) -> dict[str, Any]:
         and net_reduction
         == top_counts["previous_remaining"] - top_counts["closing_remaining"]
         and convergence_status
-        in {"backlog_reduced", "no_convergence", "backlog_growing"}
+        in {"backlog_reduced", "settled", "no_op", "no_convergence", "backlog_growing"}
         and convergence_status
         == (
-            "backlog_reduced"
+            "no_op"
+            if top_counts["closing_remaining"] == 0
+            and top_counts["previous_remaining"] == 0
+            and top_counts["newly_eligible"] == 0
+            else "settled"
+            if top_counts["closing_remaining"] == 0
+            else "backlog_reduced"
             if top_counts["closing_remaining"] < top_counts["previous_remaining"]
             else "backlog_growing"
-            if checkpoint_counts["no_reduction_streak"] >= 2
+            if top_counts["newly_eligible"] > 0
+            or checkpoint_counts["no_reduction_streak"] >= 2
             else "no_convergence"
         )
     )
@@ -1167,6 +1174,16 @@ def _sleep_progress_saved_evidence(
                 "closing_remaining",
                 "net_reduction",
                 "convergence_status",
+                branch_id="progress-saved",
+            )
+        elif suffix == "terminal-convergence-classification":
+            evidence[item_id] = _evidence(
+                batch["canonical_counts_ok"],
+                "The progress_saved receipt uses the same canonical terminal convergence classification even though the frozen batch remains open.",
+                "convergence_status",
+                "previous_remaining",
+                "newly_eligible",
+                "closing_remaining",
                 branch_id="progress-saved",
             )
         elif suffix == "downstream-not-run":
@@ -1466,6 +1483,15 @@ def _sleep_evidence(payload: Mapping[str, Any], exit_code: int) -> dict[str, dic
             "batch_plan",
             "batch_checkpoint",
         ),
+        obligation_id(skill_id, "terminal-convergence-classification"): _evidence(
+            batch["canonical_counts_ok"],
+            "The native terminal classifies no_op, settled, backlog_reduced, backlog_growing, or no_convergence from the canonical remainder rule.",
+            "convergence_status",
+            "previous_remaining",
+            "newly_eligible",
+            "closing_remaining",
+            "batch_checkpoint",
+        ),
         obligation_id(skill_id, "downstream-not-run"): _evidence(
             (
                 _sleep_downstream_not_run(
@@ -1688,6 +1714,50 @@ def _dream_evidence(payload: Mapping[str, Any], exit_code: int) -> dict[str, dic
             "Dream pinned one immutable LogicGuard generation and every selected experiment carries an exact model/mesh simulation receipt.",
             "authority_pin",
             "experiments.logicguard_simulation",
+        ),
+        obligation_id(skill_id, "perturbation-disposition-coverage"): _evidence(
+            bool(
+                int(selected_count or 0) == 0
+                or all(
+                    set(
+                        str(_mapping(item).get("kind") or "")
+                        for item in _list(_mapping(row).get("perturbation_dispositions"))
+                    )
+                    == {
+                        "evidence-removal",
+                        "assumption-removal",
+                        "rebuttal-strengthening",
+                        "boundary-pressure",
+                        "cross-edge-removal",
+                        "neighbor-pin-replacement",
+                    }
+                    and all(
+                        str(
+                            _mapping(item).get("status")
+                            or _mapping(item).get("disposition")
+                            or ""
+                        )
+                        in {"performed", "not_applicable"}
+                        and (
+                            bool(
+                                _mapping(item).get("materialization_fingerprint")
+                                or _mapping(item).get("evidence_ref")
+                            )
+                            if str(
+                                _mapping(item).get("status")
+                                or _mapping(item).get("disposition")
+                                or ""
+                            )
+                            == "performed"
+                            else bool(_mapping(item).get("reason"))
+                        )
+                        for item in _list(_mapping(row).get("perturbation_dispositions"))
+                    )
+                    for row in simulation_rows
+                )
+            ),
+            "Every declared Dream perturbation kind has a typed performed or not_applicable disposition with the required evidence.",
+            "experiments.logicguard_simulation.perturbation_dispositions",
         ),
         obligation_id(skill_id, "no-delta-closure"): _evidence(
             valid_counts
@@ -2889,7 +2959,7 @@ def build_fixture_payload(
             "blocked_this_attempt": 0,
             "closing_remaining": 0,
             "net_reduction": 1,
-            "convergence_status": "backlog_reduced",
+            "convergence_status": "settled",
             "opening_actionable_backlog": 1,
             "newly_admitted": 1,
             "terminally_disposed": 1,
@@ -3028,6 +3098,51 @@ def build_fixture_payload(
                         "receipt_id": "fixture-simulation-receipt"
                     },
                 }
+            ],
+            "perturbation_dispositions": [
+                {
+                    "kind": "evidence-removal",
+                    "disposition": "not_applicable",
+                    "status": "not_applicable",
+                    "reason": "fixture-no-eligible-element",
+                    "evidence_ref": "",
+                },
+                {
+                    "kind": "assumption-removal",
+                    "disposition": "not_applicable",
+                    "status": "not_applicable",
+                    "reason": "fixture-no-eligible-element",
+                    "evidence_ref": "",
+                },
+                {
+                    "kind": "rebuttal-strengthening",
+                    "disposition": "not_applicable",
+                    "status": "not_applicable",
+                    "reason": "fixture-no-eligible-element",
+                    "evidence_ref": "",
+                },
+                {
+                    "kind": "boundary-pressure",
+                    "disposition": "performed",
+                    "status": "performed",
+                    "reason": "fixture-bounded-simulation",
+                    "evidence_ref": "fixture-materialization",
+                    "materialization_fingerprint": "fixture-materialization",
+                },
+                {
+                    "kind": "cross-edge-removal",
+                    "disposition": "not_applicable",
+                    "status": "not_applicable",
+                    "reason": "fixture-no-eligible-element",
+                    "evidence_ref": "",
+                },
+                {
+                    "kind": "neighbor-pin-replacement",
+                    "disposition": "not_applicable",
+                    "status": "not_applicable",
+                    "reason": "fixture-no-eligible-element",
+                    "evidence_ref": "",
+                },
             ],
         }
     elif skill_id == "kb-organization-contribute":

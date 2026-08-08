@@ -189,6 +189,7 @@
         "obligation:kb-dream-pass:bounded-selection",
         "obligation:kb-dream-pass:sandbox-experiment",
         "obligation:kb-dream-pass:exact-model-simulation",
+        "obligation:kb-dream-pass:perturbation-disposition-coverage",
         "obligation:kb-dream-pass:no-delta-closure",
         "obligation:kb-dream-pass:typed-handoff-once"
       ],
@@ -328,6 +329,7 @@
         "obligation:kb-dream-pass:bounded-selection",
         "obligation:kb-dream-pass:sandbox-experiment",
         "obligation:kb-dream-pass:exact-model-simulation",
+        "obligation:kb-dream-pass:perturbation-disposition-coverage",
         "obligation:kb-dream-pass:no-delta-closure",
         "obligation:kb-dream-pass:typed-handoff-once",
         "obligation:kb-dream-pass:no-direct-knowledge-write",
@@ -348,6 +350,7 @@
         "obligation:kb-dream-pass:bounded-selection",
         "obligation:kb-dream-pass:sandbox-experiment",
         "obligation:kb-dream-pass:exact-model-simulation",
+        "obligation:kb-dream-pass:perturbation-disposition-coverage",
         "obligation:kb-dream-pass:no-delta-closure",
         "obligation:kb-dream-pass:typed-handoff-once",
         "obligation:kb-dream-pass:no-direct-knowledge-write",

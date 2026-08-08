@@ -108,6 +108,44 @@ class ConsumerInstallAssuranceTests(unittest.TestCase):
         self.assertEqual(receipt["stdout_sha256"], "sha256:raw")
         self.assertLess(len(str(receipt)), 10_000)
 
+    def test_receipt_collision_compares_stable_semantics_not_runtime_timing(self) -> None:
+        base = assurance._receipt_from_execution(
+            "reasoning_runtime",
+            "sha256:identity",
+            ["python", "check.py"],
+            {"reasoning_source": "sha256:source"},
+            {
+                "ok": True,
+                "exit_code": 0,
+                "payload": {"ok": True, "entry_count": 3},
+                "stdout_sha256": "sha256:first",
+                "stdout_byte_count": 10,
+                "stdout_tail": "timing=1.0",
+                "stderr_tail": "",
+                "timed_out": False,
+                "cleanup_confirmed": True,
+                "cleanup_receipt": {},
+            },
+        )
+        repeat = dict(base)
+        repeat.update(
+            {
+                "stdout_sha256": "sha256:second",
+                "stdout_byte_count": 11,
+                "stdout_tail": "timing=2.0",
+            }
+        )
+        self.assertEqual(
+            assurance._receipt_semantic_view(base),
+            assurance._receipt_semantic_view(repeat),
+        )
+        changed = dict(repeat)
+        changed["payload"] = {"ok": True, "entry_count": 4}
+        self.assertNotEqual(
+            assurance._receipt_semantic_view(base),
+            assurance._receipt_semantic_view(changed),
+        )
+
     def test_exact_receipts_reuse_and_retrieval_change_is_affected_only(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
