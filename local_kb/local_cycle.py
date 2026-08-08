@@ -15,6 +15,7 @@ from typing import Any, Callable
 
 from local_kb.common import utc_now_iso
 from local_kb.dream import run_dream_maintenance
+from local_kb.feedback import build_observation, record_observation
 from local_kb.lifecycle import run_incremental_sleep
 from local_kb.maintenance_lanes import (
     CYCLE_RECEIPT_SCHEMA,
@@ -31,6 +32,7 @@ from local_kb.maintenance_lanes import (
     release_global_write_lease,
     source_component_digest,
     tree_content_identity,
+    read_lane_status,
     validate_cycle_receipt_v3,
     validate_global_write_delegation,
     write_cycle_receipt_v3,
@@ -90,6 +92,10 @@ def _local_source_digest() -> str:
             Path(__file__).with_name("lifecycle.py"),
             Path(__file__).with_name("dream.py"),
             Path(__file__).with_name("maintenance_lanes.py"),
+            Path(__file__).with_name("automation_contracts.py"),
+            Path(__file__).parents[1] / ".agents" / "skills" / "local-kb-retrieve" / "MAINTENANCE_PROMPT.md",
+            Path(__file__).parents[1] / ".agents" / "skills" / "local-kb-retrieve" / "DREAM_PROMPT.md",
+            Path(__file__).parents[1] / ".agents" / "skills" / "kb-dream-pass" / "SKILL.md",
         )
     )
 
@@ -99,10 +105,59 @@ def _local_child_plan_digest() -> str:
         {
             "workflow_revision": LOCAL_CYCLE_WORKFLOW_REVISION,
             "sequence": list(LOCAL_CYCLE_SEQUENCE),
-            "dream_gate": "sleep-completed-unblocked-only",
-            "writer_policy": "single-global-writer-delegated-to-sleep-only",
+            "dream_gate": "sleep-frozen-batch-settled-and-unblocked",
+            "dream_writer_policy": "read-only-simulation-no-canonical-commit-window",
+            "postflight": "cycle-owner-records-one-deterministic-postflight-observation",
         }
     )
+
+
+def _local_cycle_postflight(
+    repo_root: Path,
+    *,
+    run_id: str,
+    sleep_status: str,
+    dream_status: str,
+) -> dict[str, Any]:
+    event_id = f"sleep-dream-postflight:{run_id}"
+    observation = build_observation(
+        task_summary="Local Sleep then Dream maintenance cycle",
+        route_hint="system/knowledge-library/local-maintenance",
+        hit_quality="trusted",
+        outcome="completed" if dream_status == "completed" else dream_status,
+        comment="The local cycle recorded its terminal Sleep/Dream outcome after the immutable child evidence was written.",
+        suggested_action="none" if dream_status == "completed" else "update-card",
+        exposed_gap=dream_status != "completed",
+        scenario="A scheduled local Sleep-then-Dream cycle reaches a terminal child state.",
+        action_taken="Recorded one deterministic cycle postflight observation after Sleep and Dream phase evidence was available.",
+        observed_result=f"sleep={sleep_status} dream={dream_status}",
+        operational_use="Use the postflight receipt together with the immutable cycle receipt; it does not publish LogicGuard models or bypass Sleep authority.",
+        reuse_judgment="Reusable for terminal local maintenance cycles because the event id is bound to the cycle run.",
+        source_kind="kb-sleep-maintenance",
+        agent_name="kb-sleep-maintenance",
+        workspace_root=str(repo_root),
+        event_id=event_id,
+    )
+    try:
+        path = record_observation(repo_root, observation)
+    except Exception as exc:
+        return {
+            "ok": False,
+            "status": "failed",
+            "event_id": event_id,
+            "reason": f"postflight-record-failed:{type(exc).__name__}",
+            "error": str(exc),
+        }
+    return {
+        "ok": True,
+        "status": "completed",
+        "event_id": event_id,
+        "path": str(path),
+        "lane_status": {
+            lane: read_lane_status(repo_root, lane)
+            for lane in ("kb-sleep", "kb-dream")
+        },
+    }
 
 
 def _phase_record(
@@ -355,6 +410,8 @@ def _response_from_receipt(
     outputs = dict(receipt.get("outputs") or {})
     sleep = dict(outputs.get("sleep") or {})
     dream = dict(outputs.get("dream") or {})
+    dream_admission = dict(outputs.get("dream_admission") or {})
+    postflight = dict(outputs.get("postflight") or {})
     status = str(receipt.get("status") or "failed")
     return {
         **sleep,
@@ -371,6 +428,9 @@ def _response_from_receipt(
             "sequence": list(receipt.get("sequence") or []),
             "sleep": sleep,
             "dream": dream,
+            "dream_admission": dream_admission,
+            "postflight": postflight,
+            "lane_status": dict(outputs.get("lane_status") or {}),
             "phases": list(receipt.get("phases") or []),
             "cycle_receipt_path": str(cycle_path),
             "cycle_receipt_digest": str(receipt.get("payload_digest") or ""),
@@ -501,10 +561,44 @@ def run_local_maintenance_cycle(
 
         mode = "resume_sleep" if sleep.get("batch_resumed") else "fresh_cycle"
         dream_run_id = f"{resolved_run_id}-dream"
+        dream_admission = {
+            "evaluated": True,
+            "eligible": False,
+            "reason": "sleep-not-completed",
+            "frozen_batch_settled": bool(
+                (sleep.get("batch_checkpoint") or {}).get("settled", True)
+            ),
+            "safety_blockers": list(sleep.get("blockers") or []),
+            "writer_policy": "read-only-simulation-no-canonical-commit-window",
+        }
         if sleep_status == "completed":
+            dream_admission.update(
+                {
+                    "eligible": dream_admission["frozen_batch_settled"]
+                    and not dream_admission["safety_blockers"],
+                    "reason": (
+                        "sleep-frozen-batch-settled-and-unblocked"
+                        if dream_admission["frozen_batch_settled"]
+                        and not dream_admission["safety_blockers"]
+                        else "sleep-batch-or-safety-gate-blocked"
+                    ),
+                }
+            )
+        dream_status = "not_run"
+        if dream_admission["eligible"]:
             dream_started = utc_now_iso()
             dream_input_digest = canonical_digest(_local_state_snapshot(repo_root))
-            dream = run_dream_maintenance(repo_root, run_id=dream_run_id)
+            dream = run_dream_maintenance(
+                repo_root,
+                run_id=dream_run_id,
+                parent_cycle_id=resolved_run_id,
+                writer_context={
+                    "mode": "read-only",
+                    "delegation_required": False,
+                    "commit_window": "none",
+                    "reason": "Dream simulation cannot publish canonical knowledge",
+                },
+            )
             dream_lease = {
                 "mode": "read-only",
                 "global_writer": "not-required",
@@ -568,6 +662,28 @@ def run_local_maintenance_cycle(
             )
             cycle_status = sleep_status
 
+        postflight = {
+            "ok": True,
+            "status": "skipped",
+            "reason": "predecessor-not-terminal",
+        }
+        if sleep_status not in {"blocked", "failed"}:
+            postflight, postflight_events, postflight_lease = _execute_writer_phase(
+                repo_root,
+                cycle_run_id=resolved_run_id,
+                phase_id="postflight",
+                child_run_id=f"{resolved_run_id}-postflight",
+                runner=lambda _writer_delegation: _local_cycle_postflight(
+                    repo_root,
+                    run_id=resolved_run_id,
+                    sleep_status=sleep_status,
+                    dream_status=str(dream_status or "not_run"),
+                ),
+            )
+            lease_events.extend(postflight_events)
+            if postflight.get("ok") is not True and cycle_status == "completed":
+                cycle_status = "completed_with_blocks"
+
         result_snapshot = _local_state_snapshot(repo_root)
         receipt: dict[str, Any] = {
             "schema_version": CYCLE_RECEIPT_SCHEMA,
@@ -595,6 +711,12 @@ def run_local_maintenance_cycle(
                 "sleep_status": sleep_status,
                 "sleep": sleep,
                 "dream": dream,
+                "dream_admission": dream_admission,
+                "postflight": postflight,
+                "lane_status": {
+                    lane: read_lane_status(repo_root, lane)
+                    for lane in ("kb-sleep", "kb-dream")
+                },
             },
             "child_receipts_immutable": True,
             "created_at": created_at,

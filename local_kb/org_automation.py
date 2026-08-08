@@ -23,7 +23,14 @@ from local_kb.org_checks import check_organization_repository
 from local_kb.org_contribution import current_git_branch, prepare_organization_import_branch, push_organization_branch
 from local_kb.org_maintenance import build_organization_maintenance_report
 from local_kb.org_outbox import _organization_exchange_hashes, build_organization_outbox, organization_outbox_dir
-from local_kb.org_sources import _run_git, clone_or_fetch_organization_repo, utc_timestamp, validate_organization_repo
+from local_kb.org_sources import (
+    _run_git,
+    cleanup_organization_worktree,
+    clone_or_fetch_organization_repo,
+    prepare_organization_worktree,
+    utc_timestamp,
+    validate_organization_repo,
+)
 from local_kb.search import search_entries
 from local_kb.settings import (
     load_desktop_settings,
@@ -263,10 +270,18 @@ def _checkout_organization_base_branch(org_root: Path, *, base_branch: str = "ma
     current = current_git_branch(org_root)
     if current == base_branch:
         return {"attempted": False, "ok": True, "branch": current}
-    checkout = _run_git(["checkout", base_branch], cwd=org_root)
+    checkout_target = base_branch
+    if not current:
+        remote_ref = f"origin/{str(base_branch or 'main').strip() or 'main'}"
+        remote_check = _run_git(["rev-parse", "--verify", f"refs/remotes/{remote_ref}"], cwd=org_root)
+        checkout_target = remote_ref if remote_check.returncode == 0 else base_branch
+        checkout_args = ["checkout", "--detach", checkout_target]
+    else:
+        checkout_args = ["checkout", base_branch]
+    checkout = _run_git(checkout_args, cwd=org_root)
     if checkout.returncode != 0:
         return {"attempted": True, "ok": False, "branch": current, "errors": [checkout.stderr.strip() or checkout.stdout.strip()]}
-    return {"attempted": True, "ok": True, "branch": base_branch, "previous_branch": current}
+    return {"attempted": True, "ok": True, "branch": checkout_target, "previous_branch": current}
 
 
 def _sync_first_organization_source(
@@ -276,6 +291,7 @@ def _sync_first_organization_source(
     base_branch: str = "main",
     require_snapshot: bool = True,
     reuse_sync: dict[str, Any] | None = None,
+    run_id: str = "",
 ) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any], dict[str, Any]]:
     if isinstance(reuse_sync, dict) and reuse_sync.get("source"):
         return (
@@ -289,24 +305,66 @@ def _sync_first_organization_source(
         return {}, [], settings, {"attempted": False, "ok": False, "reason": "no validated organization source"}
 
     source = sources[0]
-    org_root = Path(str(source.get("path") or ""))
+    configured_root = Path(str(source.get("path") or ""))
     repo_url = str(source.get("repo_url") or "").strip()
-    sync_result: dict[str, Any] = {"attempted": False, "ok": True, "action": "none", "commit": str(source.get("source_commit") or "")}
-    base_checkout = _checkout_organization_base_branch(org_root, base_branch=base_branch)
-    if not base_checkout.get("ok"):
+    organization_id = str(source.get("organization_id") or source.get("id") or "org").strip()
+    worktree = prepare_organization_worktree(
+        repo_root,
+        configured_root,
+        organization_id=organization_id,
+        run_id=str(run_id or (reuse_sync.get("run_id") if isinstance(reuse_sync, dict) else "")) or f"org-{utc_timestamp()}",
+        base_branch=base_branch,
+    )
+    sync_result: dict[str, Any] = {
+        "attempted": False,
+        "ok": bool(worktree.get("ok")),
+        "action": "worktree-prepare",
+        "commit": str(worktree.get("worktree_head") or worktree.get("source_head") or source.get("source_commit") or ""),
+        "worktree": worktree,
+    }
+    if not worktree.get("ok"):
         sync_result.update(
             {
                 "attempted": True,
                 "ok": False,
-                "action": "checkout-base",
-                "errors": base_checkout.get("errors") or ["failed to checkout organization base branch"],
-                "base_checkout": base_checkout,
+                "action": "prepare-worktree",
+                "errors": worktree.get("errors") or ["failed to prepare organization worktree"],
             }
         )
         return source, sources, settings, sync_result
+    org_root = Path(str(worktree.get("worktree_path") or configured_root))
+    source = {**source, "path": str(org_root), "configured_path": str(configured_root)}
+    sources = [source, *sources[1:]]
+    base_checkout = {"attempted": False, "ok": True, "branch": str(worktree.get("base_ref") or base_branch)}
+    if worktree.get("mode") == "isolated":
+        fetch = _run_git(["fetch", "--prune"], cwd=org_root)
+        if fetch.returncode != 0:
+            sync_result.update({"attempted": True, "ok": False, "action": "fetch", "errors": [fetch.stderr.strip() or fetch.stdout.strip()]})
+            return source, sources, settings, sync_result
+        ref = f"origin/{str(base_branch or 'main').strip() or 'main'}"
+        checkout = _run_git(["checkout", "--detach", ref], cwd=org_root)
+        if checkout.returncode != 0:
+            sync_result.update({"attempted": True, "ok": False, "action": "checkout-base", "errors": [checkout.stderr.strip() or checkout.stdout.strip()]})
+            return source, sources, settings, sync_result
+        sync_result.update({"attempted": True, "ok": True, "action": "fetch-isolated", "commit": str(worktree.get("worktree_head") or "")})
+    else:
+        base_checkout = _checkout_organization_base_branch(org_root, base_branch=base_branch)
+        if not base_checkout.get("ok"):
+            sync_result.update(
+                {
+                    "attempted": True,
+                    "ok": False,
+                    "action": "checkout-base",
+                    "errors": base_checkout.get("errors") or ["failed to checkout organization base branch"],
+                    "base_checkout": base_checkout,
+                }
+            )
+            return source, sources, settings, sync_result
     if repo_url and ((org_root / ".git").exists() or not org_root.exists()):
-        sync_result = clone_or_fetch_organization_repo(repo_url, org_root)
-        sync_result["attempted"] = True
+        if worktree.get("mode") != "isolated":
+            fetched = clone_or_fetch_organization_repo(repo_url, org_root)
+            sync_result.update(fetched)
+            sync_result["attempted"] = True
     else:
         validation = validate_organization_repo(org_root)
         sync_result.update(
@@ -340,8 +398,13 @@ def _sync_first_organization_source(
         updated["organization"] = organization
         save_desktop_settings(repo_root, updated)
         settings = load_desktop_settings(repo_root)
-        sources = organization_sources_from_settings(settings)
-        source = sources[0] if sources else source
+        configured_sources = organization_sources_from_settings(settings)
+        source = {
+            **(configured_sources[0] if configured_sources else source),
+            "path": str(org_root),
+            "configured_path": str(configured_root),
+        }
+        sources = [source, *configured_sources[1:]] if configured_sources else [source]
         from local_kb.org_snapshot import stage_organization_snapshot
 
         snapshot = stage_organization_snapshot(
@@ -359,6 +422,9 @@ def _sync_first_organization_source(
             sync_result.setdefault("errors", []).extend(
                 str(item) for item in snapshot.get("errors") or ["organization snapshot activation failed"]
             )
+    sync_result["worktree"]["effective_path"] = str(org_root)
+    sync_result["worktree"]["effective_head"] = str(validation.get("commit") or sync_result.get("commit") or "")
+    sync_result["base_checkout"] = base_checkout
     return source, sources, settings, sync_result
 
 
@@ -653,6 +719,7 @@ def run_organization_contribution(
     writer_lease_id: str = "",
     writer_delegation_token: str = "",
     writer_phase_id: str = "",
+    cleanup_worktree: bool = True,
 ) -> dict[str, Any]:
     repo_root = Path(repo_root)
     resolved_run_id = str(run_id or f"org-contribute-{utc_timestamp()}")
@@ -703,8 +770,12 @@ def run_organization_contribution(
             settings,
             base_branch=base_branch,
             reuse_sync=sync_context,
+            run_id=resolved_run_id,
         )
         if not sync_result.get("ok"):
+            sync_result["worktree_cleanup"] = cleanup_organization_worktree(
+                sync_result.get("worktree"), success=False
+            )
             write_lane_status(repo_root, "kb-org-contribute", "failed", run_id=resolved_run_id, note="organization source sync failed")
             result = {
                 "ok": False,
@@ -890,6 +961,12 @@ def run_organization_contribution(
             "postflight_recorded": bool(postflight_path),
             "postflight_path": postflight_path,
         }
+        if cleanup_worktree:
+            result["sync"]["worktree_cleanup"] = cleanup_organization_worktree(
+                result.get("sync", {}).get("worktree"), success=bool(ok)
+            )
+            if result["sync"]["worktree_cleanup"].get("ok") is not True:
+                result["ok"] = False
         result["lane_lock"] = lane_lock
         result["lock_release"] = release_lane_lock(repo_root, "kb-org-contribute", run_id=str(lane_lock.get("run_id") or ""))
         lock_released = True
@@ -915,6 +992,7 @@ def run_organization_maintenance(
     writer_lease_id: str = "",
     writer_delegation_token: str = "",
     writer_phase_id: str = "",
+    cleanup_worktree: bool = True,
 ) -> dict[str, Any]:
     repo_root = Path(repo_root)
     resolved_run_id = str(run_id or f"org-maintenance-{utc_timestamp()}")
@@ -975,8 +1053,12 @@ def run_organization_maintenance(
             base_branch=base_branch,
             require_snapshot=False,
             reuse_sync=sync_context,
+            run_id=resolved_run_id,
         )
         if not sync_result.get("ok"):
+            sync_result["worktree_cleanup"] = cleanup_organization_worktree(
+                sync_result.get("worktree"), success=False
+            )
             write_lane_status(repo_root, "kb-org-maintenance", "failed", run_id=resolved_run_id, note="organization source sync failed")
             result = {
                 "ok": False,
@@ -1107,6 +1189,12 @@ def run_organization_maintenance(
             "postflight_recorded": bool(postflight_path),
             "postflight_path": postflight_path,
         }
+        if cleanup_worktree:
+            result["sync"]["worktree_cleanup"] = cleanup_organization_worktree(
+                result.get("sync", {}).get("worktree"), success=bool(final_ok)
+            )
+            if result["sync"]["worktree_cleanup"].get("ok") is not True:
+                result["ok"] = False
         result["lane_lock"] = lane_lock
         result["lock_release"] = release_lane_lock(repo_root, "kb-org-maintenance", run_id=str(lane_lock.get("run_id") or ""))
         lock_released = True

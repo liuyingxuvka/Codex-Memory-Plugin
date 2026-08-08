@@ -234,6 +234,7 @@
         "obligation:kb-sleep-maintenance:atomic-model-generation",
         "obligation:kb-sleep-maintenance:index-watermark-commit",
         "obligation:kb-sleep-maintenance:remaining-reconciliation",
+        "obligation:kb-sleep-maintenance:terminal-convergence-classification",
         "obligation:kb-sleep-maintenance:downstream-not-run",
         "obligation:kb-sleep-maintenance:failure-fail-closed",
         "obligation:kb-sleep-maintenance:timeout-tree-cleanup"
@@ -350,6 +351,7 @@
         "obligation:kb-sleep-maintenance:atomic-model-generation",
         "obligation:kb-sleep-maintenance:index-watermark-commit",
         "obligation:kb-sleep-maintenance:remaining-reconciliation",
+        "obligation:kb-sleep-maintenance:terminal-convergence-classification",
         "obligation:kb-sleep-maintenance:downstream-not-run",
         "obligation:kb-sleep-maintenance:failure-fail-closed",
         "obligation:kb-sleep-maintenance:timeout-tree-cleanup"
@@ -373,6 +375,7 @@
         "obligation:kb-sleep-maintenance:atomic-model-generation",
         "obligation:kb-sleep-maintenance:index-watermark-commit",
         "obligation:kb-sleep-maintenance:remaining-reconciliation",
+        "obligation:kb-sleep-maintenance:terminal-convergence-classification",
         "obligation:kb-sleep-maintenance:downstream-not-run",
         "obligation:kb-sleep-maintenance:failure-fail-closed",
         "obligation:kb-sleep-maintenance:timeout-tree-cleanup",

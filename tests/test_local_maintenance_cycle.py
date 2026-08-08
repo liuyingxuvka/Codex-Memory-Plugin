@@ -34,7 +34,32 @@ class LocalMaintenanceCycleTests(unittest.TestCase):
             self.assertEqual(cycle["mode"], "fresh_cycle")
             self.assertEqual(cycle["status"], "completed")
             self.assertEqual(cycle["dream"]["status"], "completed")
+            self.assertEqual(cycle["postflight"]["status"], "completed")
+            self.assertTrue(cycle["postflight"]["event_id"])
+            self.assertTrue(Path(cycle["postflight"]["path"]).is_file())
             self.assertEqual(result["final_run_state"], "completed")
+
+    def test_local_cycle_postflight_is_recorded(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            activate_current_kb_runtime(root)
+            result = run_local_maintenance_cycle(
+                root,
+                run_id="local-postflight",
+                max_observations=0,
+                soft_deadline_seconds=5,
+            )
+
+            postflight = result["local_cycle"]["postflight"]
+            self.assertEqual(postflight["status"], "completed")
+            self.assertEqual(postflight["event_id"], "sleep-dream-postflight:local-postflight")
+            self.assertTrue(
+                all(
+                    row.get("status") not in {"running", "acquired"}
+                    for row in postflight["lane_status"].values()
+                    if row
+                )
+            )
 
     def test_progress_saved_keeps_exact_status_and_does_not_run_dream(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

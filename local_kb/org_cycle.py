@@ -32,7 +32,7 @@ from local_kb.maintenance_lanes import (
 from local_kb.org_automation import run_organization_contribution, run_organization_maintenance
 from local_kb.org_contribution import current_git_branch
 from local_kb.org_snapshot import snapshot_pointer_path
-from local_kb.org_sources import _run_git
+from local_kb.org_sources import _run_git, cleanup_organization_worktree
 from local_kb.settings import load_desktop_settings, organization_sources_from_settings
 
 
@@ -480,6 +480,7 @@ def run_organization_cycle(
                 remote=remote,
                 base_branch=effective_base_branch,
                 record_postflight=False,
+                cleanup_worktree=False,
                 run_id=maintenance_run_id,
                 writer_lease_id=writer_lease_id,
                 writer_delegation_token=writer_delegation_token,
@@ -527,6 +528,7 @@ def run_organization_cycle(
                     remote=remote,
                     base_branch=effective_base_branch,
                     record_postflight=False,
+                    cleanup_worktree=False,
                     run_id=contribution_run_id,
                     sync_context={
                         "source": maintenance.get("source") or {},
@@ -642,6 +644,20 @@ def run_organization_cycle(
             )
             cycle_status = maintenance_status
 
+        effective_sync = (maintenance.get("sync") or {}) if isinstance(maintenance, dict) else {}
+        cleanup_success = bool(
+            maintenance_status == "completed"
+            and str((contribution or {}).get("status") or "") in {"completed", "not_applicable"}
+            and bool((contribution or {}).get("ok", True))
+        )
+        worktree_cleanup = cleanup_organization_worktree(
+            effective_sync.get("worktree"), success=cleanup_success
+        )
+        if isinstance(effective_sync, dict):
+            effective_sync["worktree_cleanup"] = worktree_cleanup
+        if isinstance(contribution, dict) and isinstance(contribution.get("sync"), dict):
+            contribution["sync"]["worktree_cleanup"] = worktree_cleanup
+
         snapshot = (
             (contribution.get("sync") or {}).get("snapshot")
             or (maintenance.get("sync") or {}).get("snapshot")
@@ -673,6 +689,7 @@ def run_organization_cycle(
                 "maintenance": maintenance,
                 "contribution": contribution,
                 "snapshot": snapshot,
+                "worktree_cleanup": worktree_cleanup,
                 "postflight_path": postflight_path,
             },
             "child_receipts_immutable": True,

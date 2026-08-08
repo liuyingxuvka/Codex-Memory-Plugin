@@ -262,6 +262,30 @@ def _bounded_payload_summary(payload: Mapping[str, Any]) -> dict[str, Any]:
     return summary
 
 
+def _receipt_semantic_view(receipt: Mapping[str, Any]) -> dict[str, Any]:
+    """Return the immutable decision surface of an owner receipt.
+
+    Owner commands are allowed to report timing and bounded raw diagnostics.
+    Those fields are intentionally not part of receipt identity: they vary
+    between otherwise identical executions.  The first raw receipt remains
+    immutable; only its stable decision/evidence fields are compared when an
+    execution reaches an already occupied identity path.
+    """
+
+    volatile = {
+        "stdout_sha256",
+        "stdout_byte_count",
+        "stdout_tail",
+        "stderr_tail",
+        "cleanup_receipt",
+    }
+    return {
+        str(key): value
+        for key, value in receipt.items()
+        if str(key) not in volatile
+    }
+
+
 def _consumer_source_component(repo_root: Path) -> dict[str, Any]:
     rows: dict[str, dict[str, Any]] = {}
     for spec in MAINTENANCE_SKILL_SPECS:
@@ -382,6 +406,11 @@ def build_component_snapshot(
             root / "local_kb" / "transactional_install.py",
             root / "scripts" / "run_kb_automation.py",
             root / "scripts" / "run_khaos_brain_manual_update.py",
+            # The FlowGuard convergence runner fingerprints this planner in
+            # its projection digest.  Keep that dependency in the same owner
+            # component so a planner change cannot reuse an old FlowGuard
+            # receipt under an unchanged identity.
+            root / "scripts" / "check_consumer_install_assurance.py",
         ),
     )
     reasoning_source = _path_inventory(
@@ -853,6 +882,13 @@ def build_report(
     stable_references: dict[str, Any] = {}
     failed_owner_ids: list[str] = []
     component_map_issues: list[str] = []
+    # A validation owner may observe a source change while it is running.  Do
+    # not publish its receipt against the pre-run identity in that case: keep
+    # the successful result in memory and let the next stability pass either
+    # reuse it (when its declared inputs stayed unchanged) or rerun the owner.
+    # This preserves immutable receipt semantics without making a concurrent
+    # KB writer look like an assurance-receipt collision.
+    pending_receipts: dict[tuple[str, str], dict[str, Any]] = {}
 
     for pass_index in range(1, MAX_STABILITY_PASSES + 1):
         before = build_component_snapshot(root, home)
@@ -888,10 +924,18 @@ def build_report(
                 owner_id=owner_id,
                 identity=identity,
             )
+            staged = pending_receipts.get((owner_id, identity))
             if loaded is not None:
                 receipt = dict(loaded["receipt"])
                 reference = dict(loaded["reference"])
                 execution = "reused"
+                pass_reused.append(owner_id)
+                if owner_id not in reused_owner_ids:
+                    reused_owner_ids.append(owner_id)
+            elif staged is not None:
+                receipt = dict(staged["receipt"])
+                reference = {}
+                execution = "staged"
                 pass_reused.append(owner_id)
                 if owner_id not in reused_owner_ids:
                     reused_owner_ids.append(owner_id)
@@ -911,17 +955,11 @@ def build_report(
                 )
                 receipt_path = _receipt_path(evidence, owner_id, identity)
                 if receipt.get("ok") is True:
-                    if receipt_path.exists():
-                        existing = json.loads(
-                            receipt_path.read_text(encoding="utf-8")
-                        )
-                        if existing != receipt:
-                            raise RuntimeError(
-                                f"immutable assurance receipt collision for {owner_id}"
-                            )
-                    else:
-                        _write_json_atomic(receipt_path, receipt)
-                    reference = _receipt_reference(receipt_path, evidence)
+                    reference = {}
+                    pending_receipts[(owner_id, identity)] = {
+                        "receipt": receipt,
+                        "path": receipt_path,
+                    }
                 else:
                     reference = {}
                 execution = "executed"
@@ -959,6 +997,42 @@ def build_report(
             for owner_id, component_ids in OWNER_COMPONENTS.items()
             if set(component_ids).intersection(changed_components)
         )
+
+        # Only carry a staged result across a changed-input pass when the
+        # owner's declared inputs did not change.  An owner whose input did
+        # change must execute under the next snapshot identity.
+        for owner_id in affected_after_change:
+            for key in [
+                key for key in pending_receipts if key[0] == owner_id
+            ]:
+                pending_receipts.pop(key, None)
+
+        if not changed_components:
+            # This is the first stable snapshot.  Commit staged receipts now,
+            # after all owner executions have observed the same source state.
+            for (owner_id, identity), staged in list(pending_receipts.items()):
+                receipt_path = Path(staged["path"])
+                receipt = dict(staged["receipt"])
+                if receipt_path.exists():
+                    existing = json.loads(
+                        receipt_path.read_text(encoding="utf-8")
+                    )
+                    if _receipt_semantic_view(existing) != _receipt_semantic_view(
+                        receipt
+                    ):
+                        raise RuntimeError(
+                            f"immutable assurance receipt collision for {owner_id}"
+                        )
+                    # Preserve the original immutable raw receipt.  Its
+                    # reference/hash remains the authoritative evidence.
+                    receipt = existing
+                else:
+                    _write_json_atomic(receipt_path, receipt)
+                reference = _receipt_reference(receipt_path, evidence)
+                next_references[owner_id] = reference
+                if owner_id in owner_rows:
+                    owner_rows[owner_id]["receipt"] = reference
+            pending_receipts.clear()
         passes.append(
             {
                 "pass": pass_index,

@@ -9,6 +9,7 @@ from local_kb.automation_contracts import AUTOMATION_COMPLETION_CONTRACTS
 from local_kb.install import (
     AUTOMATION_MODEL_ENV_VAR,
     AUTOMATION_REASONING_EFFORT_ENV_VAR,
+    resolve_explicit_automation_runtime,
     resolve_automation_runtime,
 )
 
@@ -109,3 +110,53 @@ def test_automation_contract_inventory_has_two_scheduled_owners_and_two_children
         AUTOMATION_COMPLETION_CONTRACTS["kb-organization-contribute"]["automation_id"]
         == ""
     )
+
+
+def test_scheduled_owners_use_explicit_luna_max_runtime_and_bind_provider_cache(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "models_cache.json").write_text(
+        json.dumps(
+            {
+                "models": [
+                    {
+                        "slug": "gpt-5.6-luna",
+                        "provider": "luna",
+                        "revision": "luna-rev-1",
+                        "supported_reasoning_levels": [{"effort": "max"}],
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    for automation_id in ("kb-sleep", "kb-org-maintenance"):
+        runtime = resolve_explicit_automation_runtime(automation_id, tmp_path)
+        assert runtime["model"] == "gpt-5.6-luna"
+        assert runtime["reasoning_effort"] == "max"
+        assert runtime["provider"] == "luna"
+        assert runtime["provider_revision"] == "luna-rev-1"
+        assert runtime["models_cache_digest"].startswith("sha256:")
+        assert runtime["runtime_config_digest"].startswith("sha256:")
+
+
+def test_explicit_scheduled_runtime_fails_closed_when_max_is_not_provider_supported(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "models_cache.json").write_text(
+        json.dumps(
+            {
+                "models": [
+                    {
+                        "slug": "gpt-5.6-luna",
+                        "supported_reasoning_levels": [{"effort": "xhigh"}],
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(RuntimeError, match="unsupported"):
+        resolve_explicit_automation_runtime("kb-sleep", tmp_path)

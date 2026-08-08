@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import tomllib
 from uuid import uuid4
 
 
@@ -33,6 +34,7 @@ from local_kb.automation_runtime import (  # noqa: E402
 )
 from local_kb.cli_output import print_json  # noqa: E402
 from local_kb.config import default_codex_home, resolve_repo_root  # noqa: E402
+from local_kb.install import resolve_explicit_automation_runtime  # noqa: E402
 from local_kb.process_control import run_with_timeout_cleanup  # noqa: E402
 
 
@@ -106,6 +108,91 @@ def _parse_payload(stdout: str) -> dict:
     return payload if isinstance(payload, dict) else {}
 
 
+def _installed_runtime(
+    skill_id: str,
+    *,
+    codex_home: Path,
+) -> dict[str, object]:
+    """Read the exact installed runtime projection for scheduled owners."""
+
+    automation_id = str(
+        AUTOMATION_COMPLETION_CONTRACTS.get(skill_id, {}).get("automation_id") or ""
+    ).strip()
+    if not automation_id:
+        return {"required": False, "ok": True, "status": "not_applicable"}
+    path = Path(codex_home) / "automations" / automation_id / "automation.toml"
+    try:
+        payload = tomllib.loads(path.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError) as exc:
+        return {
+            "required": True,
+            "ok": False,
+            "status": "unavailable",
+            "path": str(path),
+            "reason": f"installed-runtime-unreadable:{type(exc).__name__}",
+        }
+    model = str(payload.get("model") or "").strip()
+    effort = str(payload.get("reasoning_effort") or "").strip()
+    if not model or not effort:
+        return {
+            "required": True,
+            "ok": False,
+            "status": "invalid",
+            "path": str(path),
+            "reason": "installed-runtime-missing-model-or-reasoning-effort",
+        }
+    if automation_id in {"kb-sleep", "kb-org-maintenance"}:
+        try:
+            provider_runtime = resolve_explicit_automation_runtime(
+                automation_id,
+                codex_home,
+            )
+        except RuntimeError as exc:
+            return {
+                "required": True,
+                "ok": False,
+                "status": "invalid",
+                "path": str(path),
+                "reason": f"provider-runtime-unavailable:{exc}",
+            }
+        if (
+            model != provider_runtime.get("model")
+            or effort != provider_runtime.get("reasoning_effort")
+        ):
+            return {
+                "required": True,
+                "ok": False,
+                "status": "drifted",
+                "path": str(path),
+                "model": model,
+                "reasoning_effort": effort,
+                "expected_model": provider_runtime.get("model"),
+                "expected_reasoning_effort": provider_runtime.get("reasoning_effort"),
+                "reason": "installed-runtime-does-not-match-explicit-provider-selection",
+            }
+        return {
+            "required": True,
+            "ok": True,
+            "status": "current",
+            "path": str(path),
+            "model": model,
+            "reasoning_effort": effort,
+            "selection_policy": provider_runtime.get("selection_policy"),
+            "provider": provider_runtime.get("provider"),
+            "provider_revision": provider_runtime.get("provider_revision"),
+            "models_cache_digest": provider_runtime.get("models_cache_digest"),
+            "runtime_config_digest": provider_runtime.get("runtime_config_digest"),
+        }
+    return {
+        "required": True,
+        "ok": True,
+        "status": "current",
+        "path": str(path),
+        "model": model,
+        "reasoning_effort": effort,
+    }
+
+
 def run_automation(
     skill_id: str,
     *,
@@ -113,7 +200,6 @@ def run_automation(
     codex_home: Path,
     scheduler_or_trigger_id: str = "",
 ) -> dict:
-    del codex_home
     run_id = _run_id(skill_id)
     run_root = automation_run_root(repo_root, skill_id, run_id)
     command = native_command(skill_id, repo_root=repo_root, run_id=run_id)
@@ -121,26 +207,42 @@ def run_automation(
     owner_timeout = owner_timeout_seconds(skill_id)
     started_at = _utc_now()
     cleanup: dict[str, object] = {}
-    try:
-        completed = run_with_timeout_cleanup(
-            command,
-            cwd=repo_root,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            check=False,
-            timeout=native_timeout,
+    runtime = _installed_runtime(skill_id, codex_home=codex_home)
+    if runtime.get("required") and runtime.get("ok") is not True:
+        exit_code = 78
+        stdout = json.dumps(
+            {
+                "run_id": run_id,
+                "status": "failed",
+                "final_run_state": "failed",
+                "reason": "automation-runtime-selection-invalid",
+                "runtime": runtime,
+            },
+            ensure_ascii=False,
         )
-        exit_code = completed.returncode
-        stdout = completed.stdout
-        stderr = completed.stderr
-    except subprocess.TimeoutExpired as exc:
-        exit_code = 124
-        stdout = str(exc.stdout or "")
-        stderr = str(exc.stderr or "")
-        cleanup = dict(getattr(exc, "cleanup_receipt", {}) or {})
+        stderr = str(runtime.get("reason") or "automation-runtime-selection-invalid")
+    else:
+        try:
+            completed = run_with_timeout_cleanup(
+                command,
+                cwd=repo_root,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                check=False,
+                timeout=native_timeout,
+            )
+            exit_code = completed.returncode
+            stdout = completed.stdout
+            stderr = completed.stderr
+        except subprocess.TimeoutExpired as exc:
+            exit_code = 124
+            stdout = str(exc.stdout or "")
+            stderr = str(exc.stderr or "")
+            cleanup = dict(getattr(exc, "cleanup_receipt", {}) or {})
     payload = _parse_payload(stdout)
+    payload.setdefault("runtime", runtime)
     if skill_id == "kb-sleep-maintenance" and exit_code == 124:
         payload.update(
             {
@@ -201,6 +303,7 @@ def run_automation(
             or str(AUTOMATION_COMPLETION_CONTRACTS[skill_id]["automation_id"])
         ),
         "run_id": run_id,
+        "runtime": runtime,
         "native_receipt_path": str(receipt_path),
         "native_receipt_hash": receipt.get("receipt_hash"),
         "native_receipt_validation": validation,

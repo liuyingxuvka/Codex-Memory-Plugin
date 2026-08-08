@@ -19,12 +19,12 @@ The native Dream runner owns simulations, experiments, terminal validation, and 
 
 ## Required behavior
 
-1. When invoked by the local composite task, require its exact phase identity and delegated global-writer token for the small receipt/handoff commit; do not acquire a second scheduled-owner lane. An explicit diagnostic uses its own bounded run identity but still cannot become a scheduler or model publisher.
+1. When invoked by the local composite task, require its exact parent cycle/phase identity and writer context. The normal simulation path is explicitly read-only with no canonical commit window; only a delegated global-writer token may be used for the bounded receipt/handoff commit, and Dream must not acquire a second scheduled-owner lane. An explicit diagnostic uses its own bounded run identity but still cannot become a scheduler or model publisher.
 2. Pin the exact canonical generation, model revision, root node/ArgumentBlock, and ModelMesh revision before selection. Never substitute a floating head or readable-card projection when an exact binding is missing.
 3. Build each evidence fingerprint from the pinned LogicGuard identities, canonical route, hypothesis, source identifiers and content digests, and prior applicable outcome. Run id, time, AI model name, thread id, and prompt wording must not make unchanged evidence appear new.
 4. Load prior closure outcomes before broad work. If the fingerprint is already closed and no decision-relevant evidence changed, return or reuse `no_delta_closed` without another experiment, history entry, candidate, observation, or handoff.
 5. Evaluate the full exact opportunity inventory, but persist at most 64 representative opportunity rows plus the exact inventory count, digest, and omitted count. Then select only a small route-deduplicated set that clears the value and executability gates. A no-op is a valid convergent result.
-6. For each selected model, plan one bounded suite covering evidence-removal, assumption-removal, rebuttal-strengthening or counterexample, boundary-pressure, cross-edge-removal, and neighbor-pin-replacement. Execute every applicable path separately. Each simulation is an overlay over the pinned immutable model, not a proposed canonical revision.
+6. For each selected model, plan one bounded suite covering evidence-removal, assumption-removal, rebuttal-strengthening or counterexample, boundary-pressure, cross-edge-removal, and neighbor-pin-replacement. Execute every applicable path separately. Emit one typed `performed` or `not_applicable` disposition for every declared perturbation kind; performed paths must carry their materialization/result fingerprint and skipped paths must carry a concrete reason. Each simulation is an overlay over the pinned immutable model, not a proposed canonical revision.
 7. Record design, validation plan, safety tier, rollback plan, success/failure/inconclusive criteria, tested node and edge ids, expected invariant, and bounded sandbox path before execution.
 8. Write only Dream-owned bounded runtime receipts and experiment evidence under the Dream run root. Never persist the full expanded opportunity ocean or duplicate complete source-action histories in every opportunity row.
 9. For a material result, emit one typed idempotent Sleep handoff containing exact generation/model/mesh bindings, gap kind, affected node or edge ids, evidence fingerprint, result digest, provenance, and requested disposition.
@@ -34,7 +34,7 @@ The native Dream runner owns simulations, experiments, terminal validation, and 
 
 ## Closure report
 
-Return the run id, pinned generation/model/mesh identities, evaluated fingerprints, tested perturbation paths, evidence deltas, model gaps, suppressed duplicate and no-delta counts, selected experiments, safety and rollback data, canonical-generation-unchanged proof, validation classifications, emitted handoff ids, input digest, blockers, and final state. Repeated unchanged runs must converge without growing knowledge history.
+Return the run id, exact parent cycle/phase identity, pinned generation/model/mesh identities, writer policy, evaluated fingerprints, typed perturbation dispositions, evidence deltas, model gaps, suppressed duplicate and no-delta counts, selected experiments, safety and rollback data, canonical-generation-unchanged proof, validation classifications, emitted handoff ids, input digest, blockers, and final state. Repeated unchanged runs must converge without growing knowledge history. The local composite owner records its deterministic postflight after Sleep and Dream terminal evidence is available.
 
 ## Native completion boundary
 

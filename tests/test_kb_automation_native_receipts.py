@@ -54,6 +54,32 @@ def _refresh_sleep_batch_head(payload: dict[str, object]) -> None:
     }
 
 
+def _write_explicit_automation_runtime(codex_home: Path) -> None:
+    """Provide the current provider authority required by scheduled-owner tests."""
+
+    codex_home.mkdir(parents=True, exist_ok=True)
+    (codex_home / "models_cache.json").write_text(
+        json.dumps(
+            {
+                "models": [
+                    {
+                        "slug": "gpt-5.6-luna",
+                        "supported_reasoning_levels": [{"effort": "max"}],
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    for automation_id in ("kb-sleep", "kb-org-maintenance"):
+        path = codex_home / "automations" / automation_id / "automation.toml"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            'model = "gpt-5.6-luna"\nreasoning_effort = "max"\n',
+            encoding="utf-8",
+        )
+
+
 def test_sleep_downstream_gate_is_local_only() -> None:
     reason = "sleep-progress-saved"
     local_only = {
@@ -157,7 +183,7 @@ def _progress_saved_sleep_payload() -> dict[str, object]:
     payload["blocked_this_attempt"] = 0
     payload["closing_remaining"] = 1
     payload["net_reduction"] = 0
-    payload["convergence_status"] = "no_convergence"
+    payload["convergence_status"] = "backlog_growing"
     payload["batch_checkpoint"] = {
         **payload["batch_checkpoint"],
         "revision": 1,
@@ -282,6 +308,7 @@ def test_sleep_completed_with_blocks_gates_only_local_dream() -> None:
     payload["final_run_state"] = "completed_with_blocks"
     payload["completed_this_attempt"] = 1
     payload["blocked_this_attempt"] = 1
+    payload["convergence_status"] = "settled"
     payload["batch_checkpoint"] = {
         **payload["batch_checkpoint"],
         "state": "settled_with_blocks",
@@ -371,6 +398,7 @@ def test_sleep_wrapper_uses_cycle_budget_and_declares_the_complete_timeout_tree(
         return_value=completed,
     ) as owner:
         root = Path(tmp)
+        _write_explicit_automation_runtime(root / ".codex")
         result = run_automation(
             "kb-sleep-maintenance",
             repo_root=root,
@@ -407,6 +435,7 @@ def test_sleep_hard_timeout_records_local_dream_as_not_run() -> None:
         side_effect=timeout,
     ):
         root = Path(tmp)
+        _write_explicit_automation_runtime(root / ".codex")
         result = run_automation(
             "kb-sleep-maintenance",
             repo_root=root,

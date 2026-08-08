@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.8.2 - 2026-08-08
+
+- Pin both scheduled KB automations to explicit `gpt-5.6-luna` with `max` reasoning and expose runtime evidence in receipts.
+- Isolate dirty organization mirrors in short-path disposable worktrees, including Windows long-path checkout handling.
+- Align Sleep/Dream terminal convergence, read-only Dream admission, typed perturbations, and postflight evidence.
+- Make consumer assurance stable across concurrent source changes and nondeterministic timing output.
+
 ## v0.8.1 - 2026-08-01
 
 - Make the canonical search envelope always expose exact organization-source status, ordered local and foreign results, the combined retrieval receipt, and `no_card`; retire the optional receipt split and the foreground candidate writer so ordinary feedback remains history-only until Sleep publishes a current model generation.
