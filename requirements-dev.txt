@@ -1,3 +1,3 @@
 -r requirements.txt
-flowguard @ git+https://github.com/liuyingxuvka/FlowGuard.git@1758b0910e9a08927254230aa62db58104536600
+flowguard @ git+https://github.com/liuyingxuvka/FlowGuard.git@5d20c33daf12d413318735f51dcaf247e0dfb9a1
 pytest==9.0.2
