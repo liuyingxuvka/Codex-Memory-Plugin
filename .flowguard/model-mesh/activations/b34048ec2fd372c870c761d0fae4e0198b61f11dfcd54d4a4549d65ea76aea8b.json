@@ -1,0 +1,12 @@
+{
+  "candidate_snapshot_fingerprint": "sha256:cb41f3856ea92d5fe7fddf2da0d668cd75fe72452ab47adf344554471abd5274",
+  "expected_head_fingerprint": "sha256:20bdd9c06fd40a3e461a9253bf0033bef00aff3757e3363e4fed5e429b8d69bc",
+  "fingerprint": "sha256:b34048ec2fd372c870c761d0fae4e0198b61f11dfcd54d4a4549d65ea76aea8b",
+  "next_generation": 16,
+  "previous_snapshot_fingerprint": "sha256:86e95203a0e0a0444a68b5b61541d87f9b6cc9cd62bc0fc4a3d4d15c8345811c",
+  "receipt_id": "receipt:model-revision-activate:khaos-sleep-dream-terminal-contract-v0-8-3",
+  "revision_set_fingerprint": "sha256:9ce4fb6ed99169a65c05982e36d61eacca4b0326271413f9cc8f37ca93d5f2f7",
+  "schema": "flowguard.model_activation_receipt.v1",
+  "subject_revision": "source-inventory:20676be103c91a10fc80a8fc6ff9f40eda5161671ab7335267f8d16d2b85729b",
+  "system_id": "flowguard"
+}

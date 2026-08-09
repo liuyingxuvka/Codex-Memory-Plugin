@@ -8,12 +8,12 @@
 
 - [x] 2.1 Add parent cycle, delegated writer/phase, and top-level LogicGuard generation binding to Dream receipts and typed Sleep handoffs.
 - [x] 2.2 Define the finite perturbation registry and validate exact typed dispositions (`performed`, `not_applicable`, `blocked`) with reasons/oracles.
-- [ ] 2.3 Add legacy-input disposition and fail-closed validation for missing or mismatched generation/writer identities.
+- [x] 2.3 Add legacy-input disposition and fail-closed validation for missing or mismatched generation/writer identities.
 
 ## 3. Postflight and evidence freshness
 
 - [x] 3.1 Extend local cycle receipts with postflight path/status, current lane-status identity, and complete managed-contract source digest coverage.
-- [ ] 3.2 Add tests for backlog growth with zero closing work, blocked Dream admission, generation mismatch, missing writer token, perturbation-set mismatch, stale lane/postflight, and successful four-experiment Dream evidence.
+- [x] 3.2 Add tests for backlog growth with zero closing work, blocked Dream admission, generation mismatch, missing writer token, perturbation-set mismatch, stale lane/postflight, and successful four-experiment Dream evidence.
 
 ## 4. Acceptance
 

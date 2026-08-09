@@ -652,7 +652,9 @@ def _build_organization_backup_closure(ledger: object) -> dict[str, object]:
         defect_family_id=ORG_BACKUP_GENERALIZED_CASE_ID,
         current=True,
         result_status="passed",
-        metadata={"runtime_closure_evidence_id": ORG_BACKUP_RUNTIME_CLOSURE_ID},
+        metadata={
+            "runtime_closure_evidence_id": ORG_BACKUP_RUNTIME_CLOSURE_ID,
+        },
     )
     closure = review_flowguard_closure_contract(
         FlowGuardClosureContractPlan(
@@ -1557,7 +1559,9 @@ def build_report() -> dict[str, object]:
         defect_family_id=GENERALIZED_CASE_ID,
         current=True,
         result_status="passed",
-        metadata={"runtime_closure_evidence_id": RUNTIME_CLOSURE_ID},
+        metadata={
+            "runtime_closure_evidence_id": RUNTIME_CLOSURE_ID,
+        },
     )
     closure = review_flowguard_closure_contract(
         FlowGuardClosureContractPlan(

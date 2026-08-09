@@ -17,6 +17,7 @@ from local_kb.maintenance_lanes import (
     acquire_lane_lock,
     process_owner_is_alive,
     release_lane_lock,
+    write_lane_status,
 )
 from local_kb.store import history_events_path
 
@@ -41,6 +42,7 @@ RETRIEVAL_INTERACTION_SCHEMA = "khaos-brain.retrieval-interaction.v1"
 OUTCOME_RECEIPT_SCHEMA = "khaos-brain.outcome-receipt.v2"
 DREAM_HANDOFF_FILENAME = "dream_handoffs.jsonl"
 DREAM_HANDOFF_ACK_FILENAME = "dream_handoff_acks.jsonl"
+DREAM_HANDOFF_SCHEMA_VERSION = 2
 LIFECYCLE_WRITER_LOCK_SCHEMA = "khaos-brain.lifecycle-writer-lock.v1"
 LIFECYCLE_WRITER_LOCK_FILENAME = "owner.json"
 LIFECYCLE_WRITER_LOCK_TIMEOUT_SECONDS = 120.0
@@ -59,6 +61,153 @@ OBSERVATION_DISPOSITIONS = {
     "parked",
 }
 ACTIONABLE_OBSERVATION_STATES = {"", "new", "missing-admission"}
+
+
+_DREAM_BINDING_FIELDS = (
+    "logicguard_model_id",
+    "logicguard_revision_id",
+    "logicguard_mesh_id",
+    "logicguard_mesh_revision_id",
+    "logicguard_block_id",
+    "logicguard_node_id",
+)
+
+
+def inspect_dream_handoff_identity(
+    handoff: Mapping[str, Any],
+    *,
+    expected_generation_id: str = "",
+    expected_pointer_digest: str = "",
+) -> dict[str, Any]:
+    """Validate one Dream handoff or perform its explicit legacy upgrade.
+
+    Schema-1 handoffs are upgrade-only input.  They are normalized to the
+    current schema in memory before Sleep can acknowledge them; missing or
+    conflicting identity is a visible blocked disposition, never a fallback
+    read.  Current handoffs must carry the same generation, pointer, writer
+    policy, and complete LogicGuard binding as the pinned Dream run.
+    """
+
+    if not isinstance(handoff, Mapping):
+        return {
+            "ok": False,
+            "status": "blocked",
+            "issues": ["handoff-not-object"],
+            "normalized": {},
+            "legacy_input_disposition": {
+                "status": "blocked",
+                "source_schema_version": "",
+                "target_schema_version": DREAM_HANDOFF_SCHEMA_VERSION,
+                "reopen_condition": "Restore a current Dream handoff object.",
+            },
+        }
+
+    source_schema = handoff.get("schema_version")
+    is_legacy = source_schema == 1
+    if source_schema not in {1, DREAM_HANDOFF_SCHEMA_VERSION}:
+        return {
+            "ok": False,
+            "status": "blocked",
+            "issues": ["handoff-schema-not-current"],
+            "normalized": {},
+            "legacy_input_disposition": {
+                "status": "blocked",
+                "source_schema_version": source_schema,
+                "target_schema_version": DREAM_HANDOFF_SCHEMA_VERSION,
+                "reopen_condition": "Run the versioned handoff upgrader and emit current schema.",
+            },
+        }
+
+    normalized = dict(handoff)
+    issues: list[str] = []
+    generation_id = str(
+        normalized.get("generation_id")
+        or normalized.get("authority_generation_id")
+        or ""
+    ).strip()
+    pointer_digest = str(normalized.get("pointer_digest") or "").strip()
+    if is_legacy:
+        # The current pointer is the only safe source for the field removed
+        # from the retired handoff shape.  It is not a reader fallback: the
+        # normalized object is consumed only by this Sleep upgrade boundary.
+        pointer_digest = pointer_digest or str(expected_pointer_digest or "").strip()
+        normalized["schema_version"] = DREAM_HANDOFF_SCHEMA_VERSION
+        normalized["generation_id"] = generation_id
+        normalized["pointer_digest"] = pointer_digest
+        normalized["phase_id"] = "dream"
+        normalized["legacy_input_disposition"] = {
+            "status": "upgraded",
+            "source_schema_version": 1,
+            "target_schema_version": DREAM_HANDOFF_SCHEMA_VERSION,
+            "method": "sleep-direct-current-normalization",
+        }
+    else:
+        normalized.setdefault("phase_id", "dream")
+
+    if not generation_id:
+        issues.append("handoff-generation-missing")
+    if not pointer_digest:
+        issues.append("handoff-pointer-missing")
+    if expected_generation_id and generation_id != str(expected_generation_id):
+        issues.append("handoff-generation-mismatch")
+    if expected_pointer_digest and pointer_digest != str(expected_pointer_digest):
+        issues.append("handoff-pointer-mismatch")
+
+    binding = normalized.get("logicguard_binding")
+    if not isinstance(binding, Mapping):
+        issues.append("handoff-logicguard-binding-missing")
+        binding = {}
+    for field in _DREAM_BINDING_FIELDS:
+        if not str(binding.get(field) or "").strip():
+            issues.append(f"handoff-binding-{field}-missing")
+
+    writer = normalized.get("writer_context")
+    if not isinstance(writer, Mapping):
+        issues.append("handoff-writer-context-missing")
+        writer = {}
+    mode = str(writer.get("mode") or "").strip()
+    commit_window = str(writer.get("commit_window") or "").strip()
+    delegation_required = writer.get("delegation_required")
+    if not mode:
+        issues.append("handoff-writer-mode-missing")
+    if not commit_window:
+        issues.append("handoff-commit-window-missing")
+    if not isinstance(delegation_required, bool):
+        issues.append("handoff-delegation-policy-missing")
+    if delegation_required or commit_window != "none":
+        if not str(writer.get("phase_id") or normalized.get("phase_id") or ""):
+            issues.append("handoff-writer-phase-missing")
+        if not str(
+            writer.get("delegation_token_fingerprint")
+            or writer.get("delegation_token")
+            or ""
+        ).strip():
+            issues.append("handoff-writer-token-missing")
+    if mode == "read-only" and commit_window == "none" and delegation_required is False:
+        normalized["writer_context"] = {
+            **dict(writer),
+            "phase_id": str(writer.get("phase_id") or "dream"),
+            "identity_status": "not_required",
+        }
+
+    normalized["authority_generation_id"] = generation_id
+    normalized["generation_id"] = generation_id
+    normalized["pointer_digest"] = pointer_digest
+    normalized["schema_version"] = DREAM_HANDOFF_SCHEMA_VERSION
+    return {
+        "ok": not issues,
+        "status": "legacy-upgraded" if is_legacy and not issues else ("current" if not issues else "blocked"),
+        "issues": issues,
+        "normalized": normalized if not issues else {},
+        "legacy_input_disposition": normalized.get(
+            "legacy_input_disposition",
+            {
+                "status": "current",
+                "source_schema_version": DREAM_HANDOFF_SCHEMA_VERSION,
+                "target_schema_version": DREAM_HANDOFF_SCHEMA_VERSION,
+            },
+        ),
+    }
 CANDIDATE_STATES = {"candidate", "trusted", "merged", "rejected", "superseded", "parked"}
 TERMINAL_ENTRY_STATES = {"merged", "rejected", "superseded", "parked", "retired", "deprecated"}
 ACTIVE_ENTRY_STATES = {"trusted", "candidate"}
@@ -1357,6 +1506,17 @@ def _build_sleep_work_inventory(
     newly_eligible: list[str] = []
     work: dict[str, dict[str, Any]] = {}
     claimed_observations: set[str] = set()
+    from local_kb.logicguard_models import load_authority_generation
+
+    try:
+        authority = load_authority_generation(repo_root)
+    except Exception:
+        # A repository with no pending Dream handoff does not need a
+        # generation read.  If a handoff exists, the empty expectation makes
+        # the identity validator fail closed below instead of inventing one.
+        authority = {}
+    expected_generation_id = str(authority.get("generation_id") or "")
+    expected_pointer_digest = str(authority.get("pointer_digest") or "")
 
     for relative_path, payload in sorted((raw_candidate_upserts or {}).items()):
         item_id = (
@@ -1376,11 +1536,19 @@ def _build_sleep_work_inventory(
         if not handoff_id:
             continue
         item_id = f"handoff:{handoff_id}"
-        observation = _sleep_handoff_observation(handoff)
+        identity = inspect_dream_handoff_identity(
+            handoff,
+            expected_generation_id=expected_generation_id,
+            expected_pointer_digest=expected_pointer_digest,
+        )
+        normalized_handoff = dict(identity.get("normalized") or handoff)
+        observation = _sleep_handoff_observation(normalized_handoff)
         work[item_id] = {
-            "kind": "handoff",
+            "kind": "handoff" if identity.get("ok") else "handoff-identity-blocked",
             "observation": observation,
-            "handoff": dict(handoff),
+            "handoff": normalized_handoff,
+            "source_handoff": dict(handoff),
+            "identity": identity,
         }
         eligible.append(item_id)
         newly_eligible.append(item_id)
@@ -1755,6 +1923,43 @@ def _run_incremental_sleep_locked(
             attempt_completed += 1
             continue
 
+        if work_item.get("kind") == "handoff-identity-blocked":
+            identity = work_item.get("identity")
+            if not isinstance(identity, Mapping):
+                identity = {
+                    "status": "blocked",
+                    "issues": ["handoff-identity-unavailable"],
+                    "legacy_input_disposition": {
+                        "status": "blocked",
+                        "reopen_condition": "Restore a current Dream handoff identity.",
+                    },
+                }
+            issues = [str(item) for item in identity.get("issues") or [] if str(item)]
+            disposition = dict(identity.get("legacy_input_disposition") or {})
+            current_batch = record_sleep_batch_item_result(
+                repo_root,
+                batch_id=batch_id,
+                item_id=item_id,
+                status="blocked",
+                owner="kb-sleep-maintainer",
+                reopen_condition=(
+                    str(disposition.get("reopen_condition") or "")
+                    or "Normalize the Dream handoff to the current generation and writer identity."
+                ),
+                details={
+                    "error": "Dream handoff identity is not current",
+                    "identity_issues": issues,
+                    "legacy_input_disposition": disposition,
+                    "lifecycle_events": [],
+                    "model_upserts": {},
+                    "deferred_history_events": [],
+                    "handoff_acknowledgement": {},
+                    "counters": {},
+                },
+            )
+            attempt_blocked += 1
+            continue
+
         observation = work_item.get("observation", {})
         if not isinstance(observation, Mapping):
             raise ValueError(f"Frozen Sleep item {item_id!r} has no observation")
@@ -1848,6 +2053,12 @@ def _run_incremental_sleep_locked(
                     ),
                 }
                 if work_item.get("kind") == "handoff"
+                else {}
+            ),
+            "legacy_input_disposition": (
+                dict(work_item.get("identity", {}).get("legacy_input_disposition") or {})
+                if work_item.get("kind") == "handoff"
+                and isinstance(work_item.get("identity"), Mapping)
                 else {}
             ),
             "counters": {
@@ -2091,6 +2302,21 @@ def _run_incremental_sleep_locked(
         include_runtime_catalog=True,
     )
     runtime_catalog_entries = model_generation.pop("_runtime_catalog_entries", None)
+    model_receipt = (
+        model_generation.get("receipt", {})
+        if isinstance(model_generation.get("receipt"), Mapping)
+        else model_generation
+    )
+    sleep_generation_id = str(
+        model_receipt.get("generation_id")
+        or model_generation.get("generation_id")
+        or ""
+    )
+    sleep_pointer_digest = str(
+        model_receipt.get("authority_generation_digest")
+        or model_generation.get("authority_generation_digest")
+        or ""
+    )
     if not model_generation.get("ok"):
         blockers.append(
             "model generation: "
@@ -2152,6 +2378,7 @@ def _run_incremental_sleep_locked(
                 "index_receipt": rebuilt,
                 "index_validation": rebuilt_validation,
             }
+
         elif model_generation.get("status") == "no_delta" and not index_affecting_review:
             validation = validate_active_index(repo_root)
             if validation.get("ok"):
@@ -2198,6 +2425,17 @@ def _run_incremental_sleep_locked(
                 "final index publication: "
                 + str(index_refresh.get("error") or index_refresh.get("status"))
             )
+
+    legacy_input_dispositions = []
+    for result in (current_batch.get("results", {}) or {}).values():
+        if not isinstance(result, Mapping):
+            continue
+        details = result.get("details")
+        if not isinstance(details, Mapping):
+            continue
+        disposition = details.get("legacy_input_disposition")
+        if isinstance(disposition, Mapping) and disposition:
+            legacy_input_dispositions.append(dict(disposition))
 
     lifecycle_after = load_lifecycle_state(repo_root)
     output_watermark = input_watermark
@@ -2290,6 +2528,7 @@ def _run_incremental_sleep_locked(
         "handoff_acknowledgements": [
             item for item in handoff_acknowledgements if item
         ],
+        "legacy_input_dispositions": legacy_input_dispositions,
         "candidate_created": candidate_created,
         "candidate_reused": candidate_reused,
         "foreign_calibrated": foreign_calibrated,
@@ -2306,6 +2545,15 @@ def _run_incremental_sleep_locked(
         },
         "lifecycle_review": lifecycle_review,
         "model_generation": model_generation,
+        "generation_id": sleep_generation_id,
+        "pointer_digest": sleep_pointer_digest,
+        "writer_context": {
+            "phase_id": "sleep",
+            "mode": "writer-delegated",
+            "commit_window": "canonical-model-publication",
+            "delegation_required": True,
+            "identity_status": "validated-by-global-writer-lease",
+        },
         "post_review_index_refresh": index_refresh,
         "model_diagnostics": (
             model_generation.get("receipt", {}).get("model_diagnostics", {})
@@ -2524,6 +2772,13 @@ def _run_incremental_sleep_with_lane(
 
     receipt: dict[str, Any]
     try:
+        write_lane_status(
+            repo_root,
+            "kb-sleep",
+            "running",
+            run_id=clean_run_id,
+            note="Sleep owns the local maintenance lane.",
+        )
         receipt = _run_incremental_sleep_locked(
             repo_root,
             run_id=clean_run_id,
@@ -2541,7 +2796,7 @@ def _run_incremental_sleep_with_lane(
             _atomic_write_json(state_path, prior_sleep)
         elif state_path.exists():
             state_path.unlink()
-        return _sleep_retryable_receipt(
+        failed_receipt = _sleep_retryable_receipt(
             repo_root,
             run_id=clean_run_id,
             input_watermark=input_watermark,
@@ -2550,6 +2805,14 @@ def _run_incremental_sleep_with_lane(
             reason="sleep-native-exception",
             error=f"{type(exc).__name__}: {exc}",
         )
+        write_lane_status(
+            repo_root,
+            "kb-sleep",
+            "failed",
+            run_id=clean_run_id,
+            note=f"{type(exc).__name__}: {exc}",
+        )
+        return failed_receipt
 
     lock_release = release_lane_lock(
         repo_root,
@@ -2570,6 +2833,22 @@ def _run_incremental_sleep_with_lane(
             _atomic_write_json(state_path, prior_sleep)
         elif state_path.exists():
             state_path.unlink()
+    lane_status = str(receipt_body.get("final_run_state") or "failed")
+    if lane_status not in {
+        "completed",
+        "completed_with_blocks",
+        "progress_saved",
+        "blocked",
+        "failed",
+    }:
+        lane_status = "failed"
+    write_lane_status(
+        repo_root,
+        "kb-sleep",
+        lane_status,
+        run_id=clean_run_id,
+        note="Sleep terminal status recorded after immutable receipt finalization.",
+    )
     _atomic_write_json(receipt_path, receipt_body)
     return {**receipt_body, "receipt_path": str(receipt_path)}
 
@@ -3158,6 +3437,7 @@ def record_dream_handoff(
     provenance: Mapping[str, Any] | None = None,
     parent_cycle_id: str = "",
     authority_generation_id: str = "",
+    pointer_digest: str = "",
     logicguard_binding: Mapping[str, Any] | None = None,
     writer_context: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
@@ -3171,7 +3451,7 @@ def record_dream_handoff(
             if str(row.get("handoff_id") or "") == handoff_id:
                 return {**row, "created": False, "idempotent_reuse": True}
         payload = {
-            "schema_version": 1,
+            "schema_version": DREAM_HANDOFF_SCHEMA_VERSION,
             "handoff_id": handoff_id,
             "idempotency_key": stable_key,
             "created_at": utc_now_iso(),
@@ -3187,8 +3467,14 @@ def record_dream_handoff(
             "provenance": dict(provenance or {}),
             "parent_cycle_id": str(parent_cycle_id or run_id),
             "authority_generation_id": str(authority_generation_id or ""),
+            "generation_id": str(authority_generation_id or ""),
+            "pointer_digest": str(pointer_digest or ""),
+            "phase_id": "dream",
             "logicguard_binding": dict(logicguard_binding or {}),
-            "writer_context": dict(writer_context or {}),
+            "writer_context": {
+                **dict(writer_context or {}),
+                "phase_id": str((writer_context or {}).get("phase_id") or "dream"),
+            },
         }
         _append_jsonl_durable(dream_handoffs_path(repo_root), payload)
         return {**payload, "created": True, "idempotent_reuse": False}

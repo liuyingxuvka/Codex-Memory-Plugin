@@ -17,6 +17,7 @@ from local_kb.maintenance_lanes import (
     read_global_write_lease,
     read_lane_lock,
     read_lane_status,
+    recover_global_write_lease_after_cleanup,
     reconcile_stale_lane_statuses,
     release_cycle_lease,
     release_delegated_write_lease,
@@ -247,6 +248,66 @@ class MaintenanceLaneLockTests(unittest.TestCase):
                 repo_root,
                 lease_id=recovered["lease_id"],
                 lease_token=recovered["lease_token"],
+            )
+
+    def test_timeout_cleanup_recovers_only_the_matching_dead_global_writer(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            repo_root = Path(tmp_dir)
+            first = acquire_global_write_lease(
+                repo_root,
+                cycle_kind="local-maintenance-cycle",
+                run_id="timed-out-sleep",
+                scope="sleep",
+                wait=False,
+            )
+            self.assertTrue(first["acquired"])
+            with patch(
+                "local_kb.maintenance_lanes.process_owner_is_alive",
+                return_value=False,
+            ):
+                recovered = recover_global_write_lease_after_cleanup(
+                    repo_root,
+                    expected_root_owner_run_id="timed-out-sleep",
+                    cleanup_evidence={
+                        "cleanup_confirmed": True,
+                        "remaining_process_count": 0,
+                    },
+                )
+
+            self.assertTrue(recovered["ok"])
+            self.assertEqual(recovered["status"], "recovered")
+            self.assertEqual(read_global_write_lease(repo_root), {})
+
+    def test_timeout_cleanup_does_not_remove_another_owner_lease(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            repo_root = Path(tmp_dir)
+            first = acquire_global_write_lease(
+                repo_root,
+                cycle_kind="local-maintenance-cycle",
+                run_id="other-run",
+                scope="sleep",
+                wait=False,
+            )
+            self.assertTrue(first["acquired"])
+            with patch(
+                "local_kb.maintenance_lanes.process_owner_is_alive",
+                return_value=False,
+            ):
+                blocked = recover_global_write_lease_after_cleanup(
+                    repo_root,
+                    expected_root_owner_run_id="timed-out-sleep",
+                    cleanup_evidence={
+                        "cleanup_confirmed": True,
+                        "remaining_process_count": 0,
+                    },
+                )
+
+            self.assertFalse(blocked["ok"])
+            self.assertEqual(blocked["reason"], "global-writer-owner-mismatch")
+            release_global_write_lease(
+                repo_root,
+                lease_id=first["lease_id"],
+                lease_token=first["lease_token"],
             )
 
     def test_local_maintenance_lanes_share_one_waiting_lock(self) -> None:

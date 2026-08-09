@@ -7,6 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from local_kb.local_cycle import LOCAL_CYCLE_WORKFLOW_REVISION, run_local_maintenance_cycle
+from local_kb.logicguard_models import load_authority_generation
 from local_kb.maintenance_lanes import (
     CYCLE_RECEIPT_SCHEMA,
     cycle_receipt_payload_digest,
@@ -16,6 +17,21 @@ from tests.current_runtime_helpers import activate_current_kb_runtime
 
 
 class LocalMaintenanceCycleTests(unittest.TestCase):
+    @staticmethod
+    def _completed_sleep(root: Path, run_id: str) -> dict[str, object]:
+        activate_current_kb_runtime(root)
+        authority = load_authority_generation(root)
+        return {
+            "ok": True,
+            "run_id": run_id,
+            "final_run_state": "completed",
+            "batch_resumed": False,
+            "blockers": [],
+            "batch_checkpoint": {"settled": True},
+            "generation_id": str(authority.get("generation_id") or ""),
+            "pointer_digest": str(authority.get("pointer_digest") or ""),
+        }
+
     def test_sleep_and_dream_share_one_cycle_receipt(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -49,7 +65,6 @@ class LocalMaintenanceCycleTests(unittest.TestCase):
                 max_observations=0,
                 soft_deadline_seconds=5,
             )
-
             postflight = result["local_cycle"]["postflight"]
             self.assertEqual(postflight["status"], "completed")
             self.assertEqual(postflight["event_id"], "sleep-dream-postflight:local-postflight")
@@ -60,6 +75,38 @@ class LocalMaintenanceCycleTests(unittest.TestCase):
                     if row
                 )
             )
+
+    def test_cycle_validator_rejects_stale_postflight_and_lane_status(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            sleep = self._completed_sleep(root, "local-stale-status")
+            dream = {
+                "ok": True,
+                "run_id": "local-stale-status-dream",
+                "status": "completed",
+                "valuable_opportunity_count": 0,
+            }
+            with (
+                patch("local_kb.local_cycle.run_incremental_sleep", return_value=sleep),
+                patch("local_kb.local_cycle.run_dream_maintenance", return_value=dream),
+            ):
+                result = run_local_maintenance_cycle(root, run_id="local-stale-status")
+            receipt = json.loads(
+                Path(result["local_cycle"]["cycle_receipt_path"]).read_text(
+                    encoding="utf-8"
+                )
+            )
+            receipt["outputs"]["postflight"]["status"] = "running"
+            receipt["outputs"]["lane_status"]["kb-dream"] = {
+                "lane": "kb-dream",
+                "status": "stale",
+                "run_id": "local-stale-status-dream",
+            }
+            receipt["payload_digest"] = cycle_receipt_payload_digest(receipt)
+            validation = validate_cycle_receipt_v3(receipt)
+            self.assertFalse(validation["ok"])
+            self.assertIn("receipt-local-postflight-stale", validation["issues"])
+            self.assertIn("receipt-local-lane-status-stale:kb-dream", validation["issues"])
 
     def test_progress_saved_keeps_exact_status_and_does_not_run_dream(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -112,13 +159,7 @@ class LocalMaintenanceCycleTests(unittest.TestCase):
     def test_dream_failure_fails_only_the_local_cycle(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            sleep = {
-                "ok": True,
-                "run_id": "local-dream-fail",
-                "final_run_state": "completed",
-                "batch_resumed": False,
-                "blockers": [],
-            }
+            sleep = self._completed_sleep(root, "local-dream-fail")
             dream = {
                 "ok": False,
                 "run_id": "local-dream-fail-dream",
@@ -205,12 +246,7 @@ class LocalMaintenanceCycleTests(unittest.TestCase):
     def test_blocked_dream_blocks_completed_sleep_cycle(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            sleep = {
-                "ok": True,
-                "run_id": "local-dream-blocked",
-                "final_run_state": "completed",
-                "blockers": [],
-            }
+            sleep = self._completed_sleep(root, "local-dream-blocked")
             dream = {
                 "ok": False,
                 "run_id": "local-dream-blocked-dream",
@@ -232,13 +268,7 @@ class LocalMaintenanceCycleTests(unittest.TestCase):
     def test_cycle_receipt_v3_reuses_only_exact_current_result(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            sleep = {
-                "ok": True,
-                "run_id": "local-reuse",
-                "final_run_state": "completed",
-                "batch_resumed": False,
-                "blockers": [],
-            }
+            sleep = self._completed_sleep(root, "local-reuse")
             dream_result = {
                 "ok": True,
                 "run_id": "local-reuse-dream",

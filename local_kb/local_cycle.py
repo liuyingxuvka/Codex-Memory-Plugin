@@ -17,6 +17,7 @@ from local_kb.common import utc_now_iso
 from local_kb.dream import run_dream_maintenance
 from local_kb.feedback import build_observation, record_observation
 from local_kb.lifecycle import run_incremental_sleep
+from local_kb.logicguard_models import load_authority_generation
 from local_kb.maintenance_lanes import (
     CYCLE_RECEIPT_SCHEMA,
     acquire_cycle_lease,
@@ -560,26 +561,95 @@ def run_local_maintenance_cycle(
         )
 
         mode = "resume_sleep" if sleep.get("batch_resumed") else "fresh_cycle"
+        sleep_model_generation = sleep.get("model_generation", {})
+        if not isinstance(sleep_model_generation, dict):
+            sleep_model_generation = {}
+        sleep_model_receipt = sleep_model_generation.get("receipt", {})
+        if not isinstance(sleep_model_receipt, dict):
+            sleep_model_receipt = {}
+        sleep_generation_id = str(
+            sleep.get("generation_id")
+            or sleep_model_receipt.get("generation_id")
+            or sleep_model_generation.get("generation_id")
+            or ""
+        ).strip()
+        sleep_pointer_digest = str(
+            sleep.get("pointer_digest")
+            or sleep_model_receipt.get("authority_generation_digest")
+            or sleep_model_generation.get("authority_generation_digest")
+            or ""
+        ).strip()
+        generation_identity_issues: list[str] = []
+        sleep_checkpoint = sleep.get("batch_checkpoint")
+        if not isinstance(sleep_checkpoint, dict):
+            sleep_checkpoint = {}
+            if sleep_status == "completed":
+                generation_identity_issues.append("sleep-batch-checkpoint-missing")
+        if sleep_status == "completed":
+            if not sleep_generation_id:
+                generation_identity_issues.append("sleep-generation-id-missing")
+            if not sleep_pointer_digest:
+                generation_identity_issues.append("sleep-pointer-digest-missing")
+            try:
+                current_authority = load_authority_generation(repo_root)
+            except Exception as exc:
+                current_authority = {}
+                generation_identity_issues.append(
+                    f"sleep-current-authority-unavailable:{type(exc).__name__}"
+                )
+            current_generation_id = str(current_authority.get("generation_id") or "")
+            current_pointer_digest = str(current_authority.get("pointer_digest") or "")
+            if current_generation_id and sleep_generation_id and current_generation_id != sleep_generation_id:
+                generation_identity_issues.append("sleep-generation-id-mismatch")
+            if current_pointer_digest and sleep_pointer_digest and current_pointer_digest != sleep_pointer_digest:
+                generation_identity_issues.append("sleep-pointer-digest-mismatch")
+        dream_writer_context = {
+            "phase_id": "dream",
+            "mode": "read-only",
+            "delegation_required": False,
+            "commit_window": "none",
+            "reason": "Dream simulation cannot publish canonical knowledge",
+            "generation_id": sleep_generation_id,
+            "pointer_digest": sleep_pointer_digest,
+            "identity_status": "not_required",
+        }
         dream_run_id = f"{resolved_run_id}-dream"
         dream_admission = {
             "evaluated": True,
             "eligible": False,
             "reason": "sleep-not-completed",
-            "frozen_batch_settled": bool(
-                (sleep.get("batch_checkpoint") or {}).get("settled", True)
-            ),
+            "frozen_batch_settled": sleep_checkpoint.get("settled") is True,
             "safety_blockers": list(sleep.get("blockers") or []),
             "writer_policy": "read-only-simulation-no-canonical-commit-window",
+            "writer_context": dict(dream_writer_context),
+            "required_generation_id": sleep_generation_id,
+            "required_pointer_digest": sleep_pointer_digest,
+            "current_generation_id": str(current_authority.get("generation_id") or "")
+            if sleep_status == "completed"
+            else "",
+            "current_pointer_digest": str(current_authority.get("pointer_digest") or "")
+            if sleep_status == "completed"
+            else "",
+            "generation_identity_issues": generation_identity_issues,
+            "legacy_input_disposition": {
+                "status": "current",
+                "source_schema_version": 2,
+                "target_schema_version": 2,
+            },
         }
         if sleep_status == "completed":
             dream_admission.update(
                 {
                     "eligible": dream_admission["frozen_batch_settled"]
-                    and not dream_admission["safety_blockers"],
+                    and not dream_admission["safety_blockers"]
+                    and not generation_identity_issues,
                     "reason": (
                         "sleep-frozen-batch-settled-and-unblocked"
                         if dream_admission["frozen_batch_settled"]
                         and not dream_admission["safety_blockers"]
+                        and not generation_identity_issues
+                        else "sleep-generation-identity-invalid"
+                        if generation_identity_issues
                         else "sleep-batch-or-safety-gate-blocked"
                     ),
                 }
@@ -592,12 +662,7 @@ def run_local_maintenance_cycle(
                 repo_root,
                 run_id=dream_run_id,
                 parent_cycle_id=resolved_run_id,
-                writer_context={
-                    "mode": "read-only",
-                    "delegation_required": False,
-                    "commit_window": "none",
-                    "reason": "Dream simulation cannot publish canonical knowledge",
-                },
+                writer_context=dream_writer_context,
             )
             dream_lease = {
                 "mode": "read-only",
@@ -634,23 +699,36 @@ def run_local_maintenance_cycle(
             )
             cycle_status = dream_status
         else:
-            downstream_reason = {
-                "completed_with_blocks": "sleep-completed-with-blocks",
-                "progress_saved": "sleep-progress-saved",
-                "blocked": "predecessor-blocked",
-                "failed": "predecessor-failed",
-            }[sleep_status]
+            if sleep_status == "completed":
+                downstream_reason = str(
+                    dream_admission.get("reason") or "dream-admission-blocked"
+                )
+                downstream_status = "blocked"
+                cycle_status = "blocked"
+            else:
+                downstream_reason = {
+                    "completed_with_blocks": "sleep-completed-with-blocks",
+                    "progress_saved": "sleep-progress-saved",
+                    "blocked": "predecessor-blocked",
+                    "failed": "predecessor-failed",
+                }.get(sleep_status, "predecessor-not-terminal")
+                downstream_status = "not_run"
+                cycle_status = sleep_status
             dream = {
                 "ok": False,
-                "status": "not_run",
+                "status": downstream_status,
                 "run_id": dream_run_id,
                 "reason": downstream_reason,
+                "parent_cycle_id": resolved_run_id,
+                "generation_id": sleep_generation_id,
+                "pointer_digest": sleep_pointer_digest,
+                "writer_context": dict(dream_writer_context),
             }
             now = utc_now_iso()
             phases.append(
                 _phase_record(
                     phase_id="dream",
-                    status="not_run",
+                    status=downstream_status,
                     reason_code=downstream_reason,
                     run_id=dream_run_id,
                     started_at=now,
@@ -660,7 +738,8 @@ def run_local_maintenance_cycle(
                     cleanup_confirmed=True,
                 )
             )
-            cycle_status = sleep_status
+            if sleep_status != "completed":
+                cycle_status = sleep_status
 
         postflight = {
             "ok": True,

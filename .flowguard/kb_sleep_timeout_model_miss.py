@@ -193,7 +193,9 @@ def build_report() -> dict[str, object]:
         defect_family_id=GENERALIZED_CASE_ID,
         current=True,
         result_status="passed",
-        metadata={"model_proof_id": MODEL_PROOF_ID},
+        metadata={
+            "model_proof_id": MODEL_PROOF_ID,
+        },
     )
     closure = review_flowguard_closure_contract(
         FlowGuardClosureContractPlan(

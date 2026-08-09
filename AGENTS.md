@@ -128,7 +128,7 @@ Project record: `.flowguard/project.toml`; machine log: `.flowguard/adoption_log
 
 <!-- flowguard-rule:project.rendered_versions -->
 
-Current adoption record: FlowGuard check-engine version: `0.68.8`; FlowGuard schema version: `1.0`.
+Current adoption record: FlowGuard check-engine version: `0.68.9`; FlowGuard schema version: `1.0`.
 
 <!-- flowguard-rule:project.preflight_version_gate -->
 

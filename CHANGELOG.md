@@ -1,13 +1,15 @@
 # Changelog
 
-## v0.8.3 - 2026-08-08
+## v0.8.3 - 2026-08-09
 
 - Add explicit organization card, candidate, duplicate-hash, merge/split, Skill safety/version, apply, post-apply, and GitHub-readiness checkpoints with typed no-change decisions.
 - Repair organization maintenance against dirty Windows source mirrors by using disposable isolated worktrees, extended-length snapshot I/O, exact stale-registration cleanup, and contribution terminal-status derivation.
 - Add a source-only AI-behavior rehearsal with immutable identity-bound receipts and make aggregate release readiness consume the rehearsal without granting it wrapper, push, or remote-mutation authority.
 - Harden aggregate evidence reuse so a manifest-level `reused` projection can safely consume an immutable native `executed` receipt only when its compacted source digest verifies.
 - Refresh the repository-managed SkillGuard contracts and FlowGuard authority/adoption evidence for the Luna/max two-automation installation surface.
-- Pin CI's FlowGuard dependency to the public current `5d20c33` commit so model-maturation coverage APIs used by the release are reproducible on clean runners.
+- Pin CI's FlowGuard dependency to the public current release commit `fc0b3f7` so model-maturation coverage APIs used by the release are reproducible on clean runners.
+- Recover an abandoned global-writer lease only after an owned timeout proves the exact run's process tree is gone, preventing a timed-out Sleep owner from blocking the independent organization cycle.
+- Re-establish the current active-index generation after the interrupted authority transition so ordinary retrieval stays bound to the sole current LogicGuard generation.
 
 ## v0.8.2 - 2026-08-08
 
