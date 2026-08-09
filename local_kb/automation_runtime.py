@@ -155,6 +155,12 @@ def _write_native_payload_sidecar(
         if not isinstance(existing, Mapping) or content_hash(existing) != digest:
             raise ValueError(f"native-payload-sidecar-content-conflict:{sidecar}")
     else:
+        # The owner manifest creates the run directory before native work, but
+        # terminal cleanup/recovery may race with this final projection. Make
+        # the sidecar's own parent authoritative immediately before creating
+        # its temporary file so a compact receipt never fails merely because
+        # the run directory was transiently absent.
+        sidecar.parent.mkdir(parents=True, exist_ok=True)
         temporary = sidecar.with_name(f".{sidecar.name}.tmp-{uuid.uuid4().hex}")
         temporary.write_bytes(encoded)
         with temporary.open("r+b") as handle:
