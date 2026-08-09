@@ -21,6 +21,7 @@ from local_kb.lifecycle import (
     sleep_state_path,
     transition_entry,
 )
+from local_kb.logicguard_models import load_authority_generation
 from local_kb.maintenance_lanes import (
     acquire_global_write_lease,
     acquire_lane_lock,
@@ -40,7 +41,44 @@ def activate_standard(repo_root: Path) -> None:
     activate_current_kb_runtime(repo_root)
 
 
+def valid_dream_identity(repo_root: Path) -> dict[str, object]:
+    authority = load_authority_generation(repo_root)
+    binding = {
+        "authority_scope": "public",
+        "logicguard_model_id": "test-model",
+        "logicguard_revision_id": "test-revision",
+        "logicguard_mesh_id": "test-mesh",
+        "logicguard_mesh_revision_id": "test-mesh-revision",
+        "logicguard_block_id": "test-block",
+        "logicguard_node_id": "test-node",
+    }
+    return {
+        "authority_generation_id": str(authority.get("generation_id") or ""),
+        "pointer_digest": str(authority.get("pointer_digest") or ""),
+        "logicguard_binding": binding,
+        "writer_context": {
+            "phase_id": "dream",
+            "mode": "read-only",
+            "delegation_required": False,
+            "commit_window": "none",
+        },
+    }
+
+
 class KbSleepConvergenceTests(unittest.TestCase):
+    def test_zero_closing_backlog_is_settled_or_no_op_not_backlog_growth(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            repo_root = Path(tmp_dir)
+            activate_standard(repo_root)
+            receipt = run_incremental_sleep(
+                repo_root,
+                run_id="sleep-zero-closing",
+                max_observations=0,
+            )
+            self.assertEqual(receipt["closing_actionable_backlog"], 0)
+            self.assertIn(receipt["convergence_status"], {"no_op", "settled"})
+            self.assertFalse(receipt["backlog_growing"])
+
     def test_sleep_holds_and_releases_shared_lane_for_exact_run(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             repo_root = Path(tmp_dir)
@@ -295,6 +333,7 @@ class KbSleepConvergenceTests(unittest.TestCase):
                 classification="adjacent-support",
                 result_summary="Adjacent evidence supports bounded review.",
                 requested_disposition="candidate",
+                **valid_dream_identity(repo_root),
             )
             self.assertTrue(handoff["created"])
             first = run_incremental_sleep(repo_root, run_id="sleep-handoff")
@@ -319,6 +358,7 @@ class KbSleepConvergenceTests(unittest.TestCase):
                     classification="history-only",
                     result_summary="The result does not justify a reusable candidate.",
                     requested_disposition="history_only",
+                    **valid_dream_identity(repo_root),
                 )
 
             receipt = run_incremental_sleep(repo_root, run_id="sleep-handoff-batch")
@@ -345,6 +385,7 @@ class KbSleepConvergenceTests(unittest.TestCase):
                 classification="passed",
                 result_summary="The experiment passed, but publication is forced to fail.",
                 requested_disposition="candidate",
+                **valid_dream_identity(repo_root),
             )
             with patch(
                 "local_kb.model_maintenance.publish_sleep_model_generation",
@@ -382,6 +423,7 @@ class KbSleepConvergenceTests(unittest.TestCase):
                 classification="passed",
                 result_summary="The owner terminated before model publication completed.",
                 requested_disposition="candidate",
+                **valid_dream_identity(repo_root),
             )
             acknowledge_dream_handoff(
                 repo_root,

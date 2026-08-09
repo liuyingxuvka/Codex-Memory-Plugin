@@ -1583,6 +1583,43 @@ def _dream_evidence(payload: Mapping[str, Any], exit_code: int) -> dict[str, dic
     )
     completed = exit_code == 0 and status == "completed"
     authority_pin = _mapping(payload.get("authority_pin"))
+    planned_perturbation_kinds = {
+        "evidence-removal",
+        "assumption-removal",
+        "rebuttal-strengthening",
+        "boundary-pressure",
+        "cross-edge-removal",
+        "neighbor-pin-replacement",
+    }
+    parent_cycle_id = str(payload.get("parent_cycle_id") or "").strip()
+    generation_id = str(payload.get("generation_id") or "").strip()
+    pointer_digest = str(payload.get("pointer_digest") or "").strip()
+    writer_context = _mapping(payload.get("writer_context"))
+    writer_identity_ok = bool(
+        str(writer_context.get("mode") or "").strip()
+        and str(writer_context.get("phase_id") or "").strip() == "dream"
+        and str(writer_context.get("commit_window") or "").strip()
+        and isinstance(writer_context.get("delegation_required"), bool)
+        and (
+            str(writer_context.get("commit_window") or "").strip() == "none"
+            and writer_context.get("delegation_required") is False
+            or bool(
+                str(
+                    writer_context.get("delegation_token_fingerprint")
+                    or writer_context.get("delegation_token")
+                    or ""
+                ).strip()
+            )
+        )
+    )
+    top_level_identity_ok = bool(
+        parent_cycle_id
+        and generation_id
+        and pointer_digest
+        and str(authority_pin.get("generation_id") or "") == generation_id
+        and str(authority_pin.get("pointer_digest") or "") == pointer_digest
+        and writer_identity_ok
+    )
     simulation_rows = [
         _mapping(_mapping(item).get("logicguard_simulation"))
         for item in experiments
@@ -1605,14 +1642,7 @@ def _dream_evidence(payload: Mapping[str, Any], exit_code: int) -> dict[str, dic
                     or ""
                 )
                 and str(_mapping(row.get("simulation_receipt")).get("receipt_id") or "")
-                and {
-                    "evidence-removal",
-                    "assumption-removal",
-                    "rebuttal-strengthening",
-                    "boundary-pressure",
-                    "cross-edge-removal",
-                    "neighbor-pin-replacement",
-                }.issubset(
+                and planned_perturbation_kinds.issubset(
                     set(
                         str(item)
                         for item in _list(row.get("planned_perturbation_kinds"))
@@ -1706,6 +1736,8 @@ def _dream_evidence(payload: Mapping[str, Any], exit_code: int) -> dict[str, dic
         ),
         obligation_id(skill_id, "exact-model-simulation"): _evidence(
             bool(
+                top_level_identity_ok
+                and
                 str(authority_pin.get("generation_id") or "")
                 and str(authority_pin.get("pointer_digest") or "")
                 and authority_pin.get("unchanged_after_run") is True
@@ -1713,31 +1745,30 @@ def _dream_evidence(payload: Mapping[str, Any], exit_code: int) -> dict[str, dic
             ),
             "Dream pinned one immutable LogicGuard generation and every selected experiment carries an exact model/mesh simulation receipt.",
             "authority_pin",
+            "generation_id",
+            "pointer_digest",
+            "parent_cycle_id",
+            "writer_context",
             "experiments.logicguard_simulation",
         ),
         obligation_id(skill_id, "perturbation-disposition-coverage"): _evidence(
             bool(
                 int(selected_count or 0) == 0
                 or all(
-                    set(
+                    len(_list(_mapping(row).get("perturbation_dispositions")))
+                    == len(planned_perturbation_kinds)
+                    and set(
                         str(_mapping(item).get("kind") or "")
                         for item in _list(_mapping(row).get("perturbation_dispositions"))
                     )
-                    == {
-                        "evidence-removal",
-                        "assumption-removal",
-                        "rebuttal-strengthening",
-                        "boundary-pressure",
-                        "cross-edge-removal",
-                        "neighbor-pin-replacement",
-                    }
+                    == planned_perturbation_kinds
                     and all(
                         str(
                             _mapping(item).get("status")
                             or _mapping(item).get("disposition")
                             or ""
                         )
-                        in {"performed", "not_applicable"}
+                        in {"performed", "not_applicable", "blocked"}
                         and (
                             bool(
                                 _mapping(item).get("materialization_fingerprint")
@@ -1750,13 +1781,22 @@ def _dream_evidence(payload: Mapping[str, Any], exit_code: int) -> dict[str, dic
                             )
                             == "performed"
                             else bool(_mapping(item).get("reason"))
+                            and (
+                                str(
+                                    _mapping(item).get("status")
+                                    or _mapping(item).get("disposition")
+                                    or ""
+                                )
+                                != "blocked"
+                                or bool(_mapping(item).get("reopen_condition"))
+                            )
                         )
                         for item in _list(_mapping(row).get("perturbation_dispositions"))
                     )
                     for row in simulation_rows
                 )
             ),
-            "Every declared Dream perturbation kind has a typed performed or not_applicable disposition with the required evidence.",
+            "Every declared Dream perturbation kind has one typed performed, not_applicable, or blocked disposition with evidence and an executable reopen condition when blocked.",
             "experiments.logicguard_simulation.perturbation_dispositions",
         ),
         obligation_id(skill_id, "no-delta-closure"): _evidence(
@@ -1785,6 +1825,8 @@ def _dream_evidence(payload: Mapping[str, Any], exit_code: int) -> dict[str, dic
         ),
         obligation_id(skill_id, "canonical-generation-unchanged"): _evidence(
             bool(
+                top_level_identity_ok
+                and
                 authority_pin.get("unchanged_after_run") is True
                 and str(authority_pin.get("generation_id") or "")
                 and not _list(payload.get("history_event_ids"))

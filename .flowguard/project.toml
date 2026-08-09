@@ -1,8 +1,8 @@
 [flowguard]
 repository = "https://github.com/liuyingxuvka/FlowGuard"
-adopted_package_version = "0.68.8"
+adopted_package_version = "0.68.9"
 schema_version = "1.0"
-last_verified_at = "2026-08-08T19:16:46+00:00"
+last_verified_at = "2026-08-09T12:52:59+00:00"
 last_verified_by = "FlowGuard project-upgrade"
 agents_path = "AGENTS.md"
 
@@ -15,12 +15,12 @@ require_model_update_for_behavior_changes = true
 
 [model_authority]
 system_id = "flowguard"
-observed_snapshot_path = ".flowguard/model-mesh/snapshots/86e95203a0e0a0444a68b5b61541d87f9b6cc9cd62bc0fc4a3d4d15c8345811c.json"
-observed_snapshot_fingerprint = "sha256:86e95203a0e0a0444a68b5b61541d87f9b6cc9cd62bc0fc4a3d4d15c8345811c"
-subject_revision = "source-inventory:02662e857b9f8769551f1e0dc6b72924453c4bd71a681803785331a892ff4833"
+observed_snapshot_path = ".flowguard/model-mesh/snapshots/105d8f81f6ae30b4c5ef3c315af3f2777e2bd892a489b9f06b0e0a12e1ac468c.json"
+observed_snapshot_fingerprint = "sha256:105d8f81f6ae30b4c5ef3c315af3f2777e2bd892a489b9f06b0e0a12e1ac468c"
+subject_revision = "source-inventory:5c4faaea1beb4b79cb2817bffe2f6982f9140a59f192b7ae5d5f5977a50b43fa"
 coverage_status = "incomplete_within_declared_boundary"
-generation = 15
-accepted_revision_set_fingerprint = "sha256:9f8d6ac265cde3d17bc247cd0603180c7ce9587d42b822d2095d68ba8a939d2c"
-previous_snapshot_fingerprint = "sha256:7287a874f9400e457ae7f25339e98aee5ea3c8535111a1140cf5d75e252ac174"
-activation_receipt_fingerprint = "sha256:4e0f3361ab6960b4794ff8805e0d4142d842063c05a20c9d4d820bc1aef8cd9d"
-head_fingerprint = "sha256:20bdd9c06fd40a3e461a9253bf0033bef00aff3757e3363e4fed5e429b8d69bc"
+generation = 17
+accepted_revision_set_fingerprint = "sha256:9ce92c5e9c8ca028aa060378e5ac35269ed9237291f0d11e76fefceaefc3a265"
+previous_snapshot_fingerprint = "sha256:cb41f3856ea92d5fe7fddf2da0d668cd75fe72452ab47adf344554471abd5274"
+activation_receipt_fingerprint = "sha256:3ed627e677b054614c00487d7575af2859b78d4a26a5104c3479a729df1c1907"
+head_fingerprint = "sha256:60eb9256e60f95c1ff371f53735e23daf55fe1fac0ae809a2c6d12404a13f13a"

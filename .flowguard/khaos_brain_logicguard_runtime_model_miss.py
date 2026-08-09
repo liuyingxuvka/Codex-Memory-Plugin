@@ -514,10 +514,10 @@ def _build_foreground_replay_closure(ledger: object) -> dict[str, object]:
         observed_failure_evidence_id=REPLAY_OBSERVED_FAILURE_ID,
         same_class_proof_evidence_id=LOCAL_NO_REPLAY_TEST_ID,
         model_obligation_id=OBLIGATION_ID,
+        defect_family_id=REPLAY_GENERALIZED_CASE_ID,
         current=True,
         result_status="passed",
         metadata={
-            "defect_family_id": REPLAY_GENERALIZED_CASE_ID,
             "runtime_closure_evidence_id": REPLAY_RUNTIME_CLOSURE_ID,
             "additional_same_class_test_ids": [ORG_COMPACT_TEST_ID, STALE_COMPACT_TEST_ID],
         },
@@ -649,10 +649,10 @@ def _build_organization_backup_closure(ledger: object) -> dict[str, object]:
         observed_failure_evidence_id=ORG_BACKUP_OBSERVED_FAILURE_ID,
         same_class_proof_evidence_id=ORG_BACKUP_TEST_ID,
         model_obligation_id=ORG_BACKUP_OBLIGATION_ID,
+        defect_family_id=ORG_BACKUP_GENERALIZED_CASE_ID,
         current=True,
         result_status="passed",
         metadata={
-            "defect_family_id": ORG_BACKUP_GENERALIZED_CASE_ID,
             "runtime_closure_evidence_id": ORG_BACKUP_RUNTIME_CLOSURE_ID,
         },
     )
@@ -795,10 +795,10 @@ def _build_organization_batch_closure(ledger: object) -> dict[str, object]:
         observed_failure_evidence_id=ORG_BATCH_OBSERVED_FAILURE_ID,
         same_class_proof_evidence_id=ORG_BATCH_SELECTION_TEST_ID,
         model_obligation_id=ORG_BATCH_OBLIGATION_ID,
+        defect_family_id=ORG_BATCH_GENERALIZED_CASE_ID,
         current=True,
         result_status="passed",
         metadata={
-            "defect_family_id": ORG_BATCH_GENERALIZED_CASE_ID,
             "runtime_closure_evidence_id": ORG_BATCH_RUNTIME_CLOSURE_ID,
             "additional_same_class_test_ids": [ORG_BATCH_MATERIALIZATION_TEST_ID],
         },
@@ -968,10 +968,10 @@ def _build_organization_remote_gate_closure(ledger: object) -> dict[str, object]
         observed_failure_evidence_id=ORG_REMOTE_GATE_OBSERVED_FAILURE_ID,
         same_class_proof_evidence_id=ORG_REMOTE_GATE_PACKET_TEST_ID,
         model_obligation_id=ORG_REMOTE_GATE_OBLIGATION_ID,
+        defect_family_id=ORG_REMOTE_GATE_GENERALIZED_CASE_ID,
         current=True,
         result_status="passed",
         metadata={
-            "defect_family_id": ORG_REMOTE_GATE_GENERALIZED_CASE_ID,
             "runtime_closure_evidence_id": ORG_REMOTE_GATE_RUNTIME_CLOSURE_ID,
             "additional_same_class_test_ids": [
                 ORG_REMOTE_GATE_MISSING_BUNDLE_TEST_ID,
@@ -1116,10 +1116,10 @@ def _build_search_envelope_closure(ledger: object) -> dict[str, object]:
         observed_failure_evidence_id=SEARCH_ENVELOPE_OBSERVED_FAILURE_ID,
         same_class_proof_evidence_id=SEARCH_ENVELOPE_TEST_ID,
         model_obligation_id=OBLIGATION_ID,
+        defect_family_id=SEARCH_ENVELOPE_GENERALIZED_CASE_ID,
         current=True,
         result_status="passed",
         metadata={
-            "defect_family_id": SEARCH_ENVELOPE_GENERALIZED_CASE_ID,
             "runtime_closure_evidence_id": SEARCH_ENVELOPE_RUNTIME_CLOSURE_ID,
             "additional_same_class_test_ids": [SEARCH_ENVELOPE_RETIREMENT_TEST_ID],
         },
@@ -1263,10 +1263,10 @@ def _build_foreground_capture_closure(ledger: object) -> dict[str, object]:
         observed_failure_evidence_id=FOREGROUND_CAPTURE_OBSERVED_FAILURE_ID,
         same_class_proof_evidence_id=FOREGROUND_CAPTURE_RETIREMENT_TEST_ID,
         model_obligation_id=FOREGROUND_CAPTURE_OBLIGATION_ID,
+        defect_family_id=FOREGROUND_CAPTURE_GENERALIZED_CASE_ID,
         current=True,
         result_status="passed",
         metadata={
-            "defect_family_id": FOREGROUND_CAPTURE_GENERALIZED_CASE_ID,
             "runtime_closure_evidence_id": FOREGROUND_CAPTURE_RUNTIME_CLOSURE_ID,
             "additional_same_class_test_ids": [FOREGROUND_CAPTURE_HISTORY_TEST_ID],
         },
@@ -1412,10 +1412,10 @@ def _build_raw_candidate_repair_closure(ledger: object) -> dict[str, object]:
         observed_failure_evidence_id=RAW_REPAIR_OBSERVED_FAILURE_ID,
         same_class_proof_evidence_id=RAW_REPAIR_OPEN_BATCH_TEST_ID,
         model_obligation_id=RAW_REPAIR_OBLIGATION_ID,
+        defect_family_id=RAW_REPAIR_GENERALIZED_CASE_ID,
         current=True,
         result_status="passed",
         metadata={
-            "defect_family_id": RAW_REPAIR_GENERALIZED_CASE_ID,
             "runtime_closure_evidence_id": RAW_REPAIR_RUNTIME_CLOSURE_ID,
             "additional_same_class_test_ids": [
                 RAW_REPAIR_NEW_BATCH_TEST_ID,
@@ -1556,10 +1556,10 @@ def build_report() -> dict[str, object]:
         observed_failure_evidence_id=OBSERVED_FAILURE_ID,
         same_class_proof_evidence_id=SAME_CLASS_TEST_ID,
         model_obligation_id=OBLIGATION_ID,
+        defect_family_id=GENERALIZED_CASE_ID,
         current=True,
         result_status="passed",
         metadata={
-            "defect_family_id": GENERALIZED_CASE_ID,
             "runtime_closure_evidence_id": RUNTIME_CLOSURE_ID,
         },
     )

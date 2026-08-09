@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import copy
 import tempfile
 import unittest
 from pathlib import Path
@@ -9,6 +10,7 @@ from unittest.mock import patch
 import yaml
 
 from local_kb.active_index import active_index_corruption_path, active_index_path, mark_active_index_corruption
+from local_kb.automation_runtime import _dream_evidence
 from local_kb.dream import (
     DREAM_MAX_RECORDED_OPPORTUNITIES,
     _bounded_opportunity_projection,
@@ -148,6 +150,8 @@ class DreamMaintenanceTests(unittest.TestCase):
                         "mode": "read-only",
                         "delegation_required": False,
                         "commit_window": "none",
+                        "phase_id": "dream",
+                        "identity_status": "not_required",
                     },
                 },
             )
@@ -649,6 +653,58 @@ class DreamMaintenanceTests(unittest.TestCase):
             self.assertEqual(result["status"], "completed")
             self.assertEqual(result["selected_experiment_count"], 4)
             self.assertEqual(len({item["route_ref"] for item in result["experiments"]}), 4)
+            self.assertTrue(result["parent_cycle_id"])
+            self.assertTrue(result["generation_id"])
+            self.assertTrue(result["pointer_digest"])
+            self.assertEqual(result["writer_context"]["phase_id"], "dream")
+            for experiment in result["experiments"]:
+                simulation = experiment["logicguard_simulation"]
+                self.assertEqual(len(simulation["perturbation_dispositions"]), 6)
+                self.assertEqual(
+                    {row["kind"] for row in simulation["perturbation_dispositions"]},
+                    {
+                        "evidence-removal",
+                        "assumption-removal",
+                        "rebuttal-strengthening",
+                        "boundary-pressure",
+                        "cross-edge-removal",
+                        "neighbor-pin-replacement",
+                    },
+                )
+            evidence = _dream_evidence(result, 0)
+            self.assertTrue(
+                all(row.get("ok") is True for row in evidence.values()),
+                evidence,
+            )
+            mismatched = copy.deepcopy(result)
+            mismatched["generation_id"] = "generation-mismatch"
+            mismatch_evidence = _dream_evidence(mismatched, 0)
+            self.assertFalse(
+                mismatch_evidence["obligation:kb-dream-pass:exact-model-simulation"]["ok"]
+            )
+            missing_token = copy.deepcopy(result)
+            missing_token["writer_context"] = {
+                "phase_id": "dream",
+                "mode": "writer-delegated",
+                "delegation_required": True,
+                "commit_window": "canonical",
+            }
+            token_evidence = _dream_evidence(missing_token, 0)
+            self.assertFalse(
+                token_evidence["obligation:kb-dream-pass:exact-model-simulation"]["ok"]
+            )
+            disposition_mismatch = copy.deepcopy(result)
+            disposition_mismatch["experiments"][0]["logicguard_simulation"][
+                "perturbation_dispositions"
+            ] = disposition_mismatch["experiments"][0]["logicguard_simulation"][
+                "perturbation_dispositions"
+            ][:-1]
+            disposition_evidence = _dream_evidence(disposition_mismatch, 0)
+            self.assertFalse(
+                disposition_evidence[
+                    "obligation:kb-dream-pass:perturbation-disposition-coverage"
+                ]["ok"]
+            )
             execution_plan_path = repo_root / result["artifact_paths"]["execution_plan_path"]
             execution_plan_payload = json.loads(execution_plan_path.read_text(encoding="utf-8"))
             self.assertEqual(execution_plan_payload["policy"]["max_selected_experiments"], 4)

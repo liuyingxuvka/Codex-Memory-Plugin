@@ -190,10 +190,10 @@ def build_report() -> dict[str, object]:
         observed_failure_evidence_id=OBSERVED_FAILURE_ID,
         same_class_proof_evidence_id=SAME_CLASS_TEST_ID,
         model_obligation_id=OBLIGATION_ID,
+        defect_family_id=GENERALIZED_CASE_ID,
         current=True,
         result_status="passed",
         metadata={
-            "defect_family_id": GENERALIZED_CASE_ID,
             "model_proof_id": MODEL_PROOF_ID,
         },
     )

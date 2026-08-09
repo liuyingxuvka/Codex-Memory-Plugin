@@ -179,10 +179,10 @@ def build_report() -> dict[str, object]:
         observed_failure_evidence_id=OBSERVED_FAILURE_ID,
         same_class_proof_evidence_id=BOUNDED_ARTIFACT_TEST_ID,
         model_obligation_id=OBLIGATION_ID,
+        defect_family_id=GENERALIZED_CASE_ID,
         current=True,
         result_status="passed",
         metadata={
-            "defect_family_id": GENERALIZED_CASE_ID,
             "runtime_closure_evidence_id": RUNTIME_CLOSURE_ID,
             "additional_same_class_test_ids": [TIMEOUT_TREE_TEST_ID],
         },

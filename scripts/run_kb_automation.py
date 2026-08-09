@@ -35,6 +35,9 @@ from local_kb.automation_runtime import (  # noqa: E402
 from local_kb.cli_output import print_json  # noqa: E402
 from local_kb.config import default_codex_home, resolve_repo_root  # noqa: E402
 from local_kb.install import resolve_explicit_automation_runtime  # noqa: E402
+from local_kb.maintenance_lanes import (  # noqa: E402
+    recover_global_write_lease_after_cleanup,
+)
 from local_kb.process_control import run_with_timeout_cleanup  # noqa: E402
 
 
@@ -207,6 +210,7 @@ def run_automation(
     owner_timeout = owner_timeout_seconds(skill_id)
     started_at = _utc_now()
     cleanup: dict[str, object] = {}
+    global_writer_recovery: dict[str, object] = {}
     runtime = _installed_runtime(skill_id, codex_home=codex_home)
     if runtime.get("required") and runtime.get("ok") is not True:
         exit_code = 78
@@ -241,6 +245,11 @@ def run_automation(
             stdout = str(exc.stdout or "")
             stderr = str(exc.stderr or "")
             cleanup = dict(getattr(exc, "cleanup_receipt", {}) or {})
+            global_writer_recovery = recover_global_write_lease_after_cleanup(
+                repo_root,
+                expected_root_owner_run_id=run_id,
+                cleanup_evidence=cleanup,
+            )
     payload = _parse_payload(stdout)
     payload.setdefault("runtime", runtime)
     if skill_id == "kb-sleep-maintenance" and exit_code == 124:
@@ -258,6 +267,8 @@ def run_automation(
                 },
             }
         )
+    if exit_code == 124:
+        payload["global_writer_recovery"] = global_writer_recovery
     payload["_owner_timeout_policy"] = {
         "soft_deadline_seconds": (
             SLEEP_NATIVE_SOFT_DEADLINE_SECONDS
@@ -310,6 +321,7 @@ def run_automation(
         "native_exit_code": exit_code,
         "native_stderr_tail": stderr[-3000:],
         "timeout_cleanup": cleanup,
+        "global_writer_recovery": global_writer_recovery,
         "issues": [
             *list(receipt.get("evaluation_issues", [])),
             *list(validation.get("issues", [])),

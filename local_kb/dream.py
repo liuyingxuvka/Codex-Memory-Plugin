@@ -1841,6 +1841,17 @@ def run_dream_maintenance(
             "typed-sleep-gap-handoffs",
         ],
     }
+    writer_identity = {
+        **dict(canonical_write_policy["writer_context"]),
+        "phase_id": "dream",
+    }
+    if (
+        str(writer_identity.get("mode") or "") == "read-only"
+        and str(writer_identity.get("commit_window") or "") == "none"
+        and writer_identity.get("delegation_required") is False
+    ):
+        writer_identity["identity_status"] = "not_required"
+    canonical_write_policy["writer_context"] = dict(writer_identity)
     if canonical_write_requested:
         return {
             "schema_version": DREAM_SCHEMA_VERSION,
@@ -1854,6 +1865,9 @@ def run_dream_maintenance(
             "canonical_write_policy": canonical_write_policy,
             "artifact_paths": {},
             "parent_cycle_id": str(parent_cycle_id or resolved_run_id),
+            "generation_id": "",
+            "pointer_digest": "",
+            "writer_context": dict(writer_identity),
         }
     run_dir = dream_run_dir(repo_root, resolved_run_id)
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -1880,6 +1894,10 @@ def run_dream_maintenance(
                 "run_id": resolved_run_id,
                 "generated_at": generated_at,
                 "canonical_write_policy": canonical_write_policy,
+                "parent_cycle_id": str(parent_cycle_id or resolved_run_id),
+                "generation_id": "",
+                "pointer_digest": "",
+                "writer_context": dict(writer_identity),
                 "status": "skipped",
                 "reason": "maintenance-lane-active",
                 "terminal_gate": {
@@ -1903,6 +1921,10 @@ def run_dream_maintenance(
             return result
 
         authority_pin = load_authority_generation(repo_root)
+        generation_id = str(authority_pin.get("generation_id") or "").strip()
+        pointer_digest = str(authority_pin.get("pointer_digest") or "").strip()
+        if not generation_id or not pointer_digest:
+            raise RuntimeError("Dream authority generation identity is incomplete")
         preflight = _build_dream_preflight(repo_root, run_id=resolved_run_id, generated_at=generated_at)
         write_json_file(run_dir / PREFLIGHT_FILENAME, preflight)
         plan_payload["preflight_path"] = relative_repo_path(repo_root, run_dir / PREFLIGHT_FILENAME)
@@ -2287,9 +2309,10 @@ def run_dream_maintenance(
                 entry_ids=handoff_entry_ids,
                 requested_disposition=requested_disposition,
                 parent_cycle_id=str(parent_cycle_id or resolved_run_id),
-                authority_generation_id=str(authority_pin.get("generation_id") or ""),
+                authority_generation_id=generation_id,
+                pointer_digest=pointer_digest,
                 logicguard_binding=dict(logicguard_simulation.get("binding") or {}),
-                writer_context=dict(canonical_write_policy.get("writer_context") or {}),
+                writer_context=dict(writer_identity),
                 provenance={
                     "sandbox_path": str(experiment.get("sandbox_path") or ""),
                     "source_entry_id": str(opportunity.get("source_entry_id") or ""),
@@ -2356,6 +2379,9 @@ def run_dream_maintenance(
             "generated_at": generated_at,
             "canonical_write_policy": canonical_write_policy,
             "parent_cycle_id": str(parent_cycle_id or resolved_run_id),
+            "generation_id": generation_id,
+            "pointer_digest": pointer_digest,
+            "writer_context": dict(writer_identity),
             "status": "completed",
             "authority_pin": {
                 "generation_id": str(authority_pin.get("generation_id") or ""),
@@ -2415,6 +2441,23 @@ def run_dream_maintenance(
             "policy_version": DREAM_SCHEMA_VERSION,
             "input_digest": content_fingerprint(opportunity_fingerprints),
             "experiments": experiment_results,
+            "logicguard_bindings": [
+                dict(binding)
+                for _fingerprint, binding in sorted(
+                    {
+                        content_fingerprint(
+                            item.get("logicguard_simulation", {}).get("binding", {})
+                        ): item.get("logicguard_simulation", {}).get("binding", {})
+                        for item in experiment_results
+                        if isinstance(item.get("logicguard_simulation"), Mapping)
+                        and isinstance(
+                            item.get("logicguard_simulation", {}).get("binding"),
+                            Mapping,
+                        )
+                        and item.get("logicguard_simulation", {}).get("binding")
+                    }.items()
+                )
+            ],
             "artifact_paths": {
                 "run_dir": relative_repo_path(repo_root, run_dir),
                 "plan_path": relative_repo_path(repo_root, run_dir / PLAN_FILENAME),

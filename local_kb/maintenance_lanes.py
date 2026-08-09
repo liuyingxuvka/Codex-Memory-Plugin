@@ -230,6 +230,42 @@ def validate_cycle_receipt_v3(
             expected_cycle_status = sleep_status
         if not expected_cycle_status or cycle_status != expected_cycle_status:
             issues.append("receipt-local-status-matrix-invalid")
+        outputs = receipt.get("outputs")
+        if not isinstance(outputs, Mapping):
+            issues.append("receipt-local-outputs-missing")
+            outputs = {}
+        postflight = outputs.get("postflight")
+        if not isinstance(postflight, Mapping):
+            issues.append("receipt-local-postflight-missing")
+        elif cycle_status in {"completed", "completed_with_blocks", "progress_saved"}:
+            if str(postflight.get("status") or "") != "completed":
+                issues.append("receipt-local-postflight-stale")
+            if not str(postflight.get("event_id") or ""):
+                issues.append("receipt-local-postflight-event-missing")
+            if not str(postflight.get("path") or ""):
+                issues.append("receipt-local-postflight-path-missing")
+        lane_status = outputs.get("lane_status")
+        if not isinstance(lane_status, Mapping):
+            issues.append("receipt-local-lane-status-missing")
+        else:
+            phase_by_id = {
+                str(phase.get("phase_id") or ""): phase
+                for phase in phases
+                if isinstance(phase, Mapping)
+            }
+            for lane, phase_id in (("kb-sleep", "sleep"), ("kb-dream", "dream")):
+                row = lane_status.get(lane)
+                if not isinstance(row, Mapping):
+                    continue
+                lane_state = str(row.get("status") or "").lower()
+                phase = phase_by_id.get(phase_id, {})
+                phase_state = str(phase.get("status") or "")
+                if phase_state not in {"not_run", ""} and lane_state in {"running", "stale", "unknown"}:
+                    issues.append(f"receipt-local-lane-status-stale:{lane}")
+                phase_expected_run_id = str(phase.get("run_id") or "")
+                actual_run_id = str(row.get("run_id") or "")
+                if phase_expected_run_id and actual_run_id and phase_expected_run_id != actual_run_id:
+                    issues.append(f"receipt-local-lane-run-id-mismatch:{lane}")
     elif receipt_kind == "organization-maintenance-cycle" and list(sequence) == [
         "organization-maintenance",
         "organization-contribution",
@@ -958,6 +994,80 @@ def release_global_write_lease(
         "released": released,
         "status": "released" if released else "cleanup-unconfirmed",
         "lease_id": lease_id,
+    }
+
+
+def recover_global_write_lease_after_cleanup(
+    repo_root: Path,
+    *,
+    expected_root_owner_run_id: str,
+    cleanup_evidence: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Recover one abandoned global lease after an owned timeout cleanup.
+
+    A hard owner timeout can terminate the process before its ``finally`` block
+    releases the lease.  Recovery is deliberately narrower than normal lease
+    acquisition: it requires the wrapper's immutable process-tree cleanup
+    evidence, an exact root run-id match, and a dead or expired owner.  A
+    mismatched or still-live owner remains visible and is never removed here.
+    """
+
+    repo_root = Path(repo_root)
+    current = read_global_write_lease(repo_root)
+    if not current:
+        return {
+            "ok": True,
+            "status": "not_needed",
+            "reason": "global-writer-lease-missing",
+        }
+    remaining = cleanup_evidence.get("remaining_process_count")
+    cleanup_confirmed = bool(
+        cleanup_evidence.get("cleanup_confirmed") is True
+        and isinstance(remaining, int)
+        and not isinstance(remaining, bool)
+        and remaining == 0
+    )
+    if not cleanup_confirmed:
+        return {
+            "ok": False,
+            "status": "blocked",
+            "reason": "cleanup-confirmation-required",
+            "lease": redact_lease_secrets(current),
+        }
+    actual_run_id = str(current.get("root_owner_run_id") or "")
+    if actual_run_id != str(expected_root_owner_run_id or ""):
+        return {
+            "ok": False,
+            "status": "blocked",
+            "reason": "global-writer-owner-mismatch",
+            "expected_root_owner_run_id": str(expected_root_owner_run_id or ""),
+            "lease": redact_lease_secrets(current),
+        }
+    try:
+        owner_pid = int(current.get("owner_pid") or 0)
+    except (TypeError, ValueError):
+        owner_pid = 0
+    owner_dead = not process_owner_is_alive(owner_pid)
+    expired = _global_lease_expired(current)
+    if not owner_dead and not expired:
+        return {
+            "ok": False,
+            "status": "blocked",
+            "reason": "global-writer-active",
+            "lease": redact_lease_secrets(current),
+        }
+    lock_dir = lane_lock_dir(repo_root, GLOBAL_WRITE_LOCK_GROUP)
+    shutil.rmtree(lock_dir, ignore_errors=True)
+    recovered = not lock_dir.exists()
+    return {
+        "ok": recovered,
+        "status": "recovered" if recovered else "cleanup-unconfirmed",
+        "reason": "abandoned-global-writer-lease" if recovered else "lock-remains",
+        "lease_id": str(current.get("lease_id") or ""),
+        "root_owner_run_id": actual_run_id,
+        "owner_pid": owner_pid,
+        "owner_dead": owner_dead,
+        "expired": expired,
     }
 
 
