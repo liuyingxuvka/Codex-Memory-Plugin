@@ -171,7 +171,9 @@ def _write_immutable_json_sidecar(
     """Write one content-addressed JSON sidecar and return its compact ref."""
 
     digest = canonical_digest(payload)
-    filename = f"cycle-outputs-{digest.removeprefix('sha256:')}.json"
+    # Keep the full digest in the envelope while bounding the filename for
+    # long Windows maintenance-cycle roots.
+    filename = f"cycle-outputs-{digest.removeprefix('sha256:')[:32]}.json"
     sidecar = Path(path).parent / filename
     encoded = _serialized_json_bytes(payload)
     if sidecar.exists():

@@ -72,13 +72,18 @@ class LocalMaintenanceCycleTests(unittest.TestCase):
             outputs, issues = resolve_cycle_outputs(source, receipt_path=source_path)
             self.assertFalse(issues)
             outputs["large_diagnostic"] = "x" * 300_000
-            compact_path = root / ".local" / "maintenance-cycles" / "sidecar" / "cycle-receipt.json"
+            compact_path = (
+                root
+                / ("r" * 120)
+                / "cycle-receipt.json"
+            )
             write_cycle_receipt_v3(compact_path, {**source, "outputs": outputs})
             persisted = json.loads(compact_path.read_text(encoding="utf-8"))
 
             self.assertEqual(persisted["outputs"]["schema_version"], CYCLE_OUTPUT_SIDECAR_SCHEMA)
             sidecar = compact_path.parent / persisted["outputs"]["path"]
             self.assertTrue(sidecar.is_file())
+            self.assertLess(len(str(sidecar)), 260)
             self.assertTrue(validate_cycle_receipt_v3(persisted, receipt_path=compact_path)["ok"])
 
             sidecar.write_text("{}\n", encoding="utf-8")

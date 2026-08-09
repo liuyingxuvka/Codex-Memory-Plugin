@@ -105,11 +105,18 @@ def test_large_native_payload_uses_digest_bound_sidecar_and_rejects_tamper() -> 
         "local_kb.automation_runtime.NATIVE_PAYLOAD_INLINE_LIMIT_BYTES",
         1,
     ):
-        path = write_native_receipt(Path(tmp) / "native-receipt.json", receipt)
+        # Keep the synthetic run root long enough to exercise Windows
+        # MAX_PATH handling; the compact filename must keep the sidecar below
+        # the platform limit while retaining the full digest in its envelope.
+        path = write_native_receipt(
+            Path(tmp) / ("run-" + "x" * 100) / "native-receipt.json",
+            receipt,
+        )
         persisted = json.loads(path.read_text(encoding="utf-8"))
         assert persisted["native_payload"]["schema_version"] == NATIVE_PAYLOAD_SIDECAR_SCHEMA
         sidecar = path.parent / persisted["native_payload"]["path"]
         assert sidecar.is_file()
+        assert len(str(sidecar)) < 260
         assert validate_native_receipt(
             path,
             skill_id="kb-organization-contribute",

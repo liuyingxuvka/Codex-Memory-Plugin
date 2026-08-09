@@ -144,7 +144,9 @@ def _write_native_payload_sidecar(
     payload: Mapping[str, Any],
 ) -> dict[str, Any]:
     digest = content_hash(payload)
-    filename = f"native-payload-{digest.lower()}.json"
+    # Keep the full SHA-256 in the envelope, but use a bounded 128-bit
+    # filename prefix so long Windows run roots stay below MAX_PATH.
+    filename = f"native-payload-{digest.lower()[:32]}.json"
     sidecar = Path(path).parent / filename
     encoded = _serialized_native_json_bytes(payload)
     if sidecar.exists():
