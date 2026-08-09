@@ -2402,6 +2402,20 @@ def _run_incremental_sleep_locked(
             # full validation without rebuilding the immutable artifact a
             # second time.
             existing_index_receipt = model_generation.get("index_receipt", {})
+            if (
+                not isinstance(existing_index_receipt, Mapping)
+                or not str(existing_index_receipt.get("receipt_id") or "")
+            ):
+                # ``publish_model_generation`` keeps the immutable index
+                # receipt inside its native receipt.  Preserve that receipt
+                # identity in the Sleep terminal payload so the
+                # index/watermark obligation can bind the committed index to
+                # the same publication transaction.
+                nested_model_receipt = model_generation.get("receipt", {})
+                if isinstance(nested_model_receipt, Mapping):
+                    existing_index_receipt = nested_model_receipt.get(
+                        "index_receipt", {}
+                    )
             if not isinstance(existing_index_receipt, Mapping):
                 existing_index_receipt = {}
             current_validation = validate_active_index(repo_root)
