@@ -66,7 +66,7 @@ def test_ci_pins_final_flowguard_validation_commit() -> None:
     assert (
         "flowguard @ "
         "git+https://github.com/liuyingxuvka/FlowGuard.git"
-        "@1758b0910e9a08927254230aa62db58104536600"
+        "@5d20c33daf12d413318735f51dcaf247e0dfb9a1"
     ) in requirements
 
 
