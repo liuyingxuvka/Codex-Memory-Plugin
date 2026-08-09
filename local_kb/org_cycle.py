@@ -25,6 +25,7 @@ from local_kb.maintenance_lanes import (
     release_global_write_lease,
     source_component_digest,
     tree_content_identity,
+    resolve_cycle_outputs,
     validate_cycle_receipt_v3,
     validate_global_write_delegation,
     write_cycle_receipt_v3,
@@ -364,7 +365,9 @@ def _response_from_receipt(
     cycle_path: Path,
     idempotent_reuse: bool,
 ) -> dict[str, Any]:
-    outputs = dict(receipt.get("outputs") or {})
+    outputs, output_issues = resolve_cycle_outputs(receipt, receipt_path=cycle_path)
+    if output_issues:
+        raise ValueError("invalid cycle outputs: " + ";".join(output_issues))
     maintenance = dict(outputs.get("maintenance") or {})
     contribution = dict(outputs.get("contribution") or {})
     status = str(receipt.get("status") or "failed")
@@ -419,6 +422,7 @@ def run_organization_cycle(
             prior = {}
         validation = validate_cycle_receipt_v3(
             prior if isinstance(prior, dict) else {},
+            receipt_path=cycle_path,
             expected_kind=ORGANIZATION_CYCLE_KIND,
             expected_run_id=resolved_run_id,
             expected_owner=ORGANIZATION_CYCLE_OWNER,

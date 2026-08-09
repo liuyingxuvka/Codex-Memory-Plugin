@@ -34,6 +34,7 @@ from local_kb.maintenance_lanes import (
     source_component_digest,
     tree_content_identity,
     read_lane_status,
+    resolve_cycle_outputs,
     validate_cycle_receipt_v3,
     validate_global_write_delegation,
     write_cycle_receipt_v3,
@@ -408,7 +409,9 @@ def _response_from_receipt(
     cycle_path: Path,
     idempotent_reuse: bool,
 ) -> dict[str, Any]:
-    outputs = dict(receipt.get("outputs") or {})
+    outputs, output_issues = resolve_cycle_outputs(receipt, receipt_path=cycle_path)
+    if output_issues:
+        raise ValueError("invalid cycle outputs: " + ";".join(output_issues))
     sleep = dict(outputs.get("sleep") or {})
     dream = dict(outputs.get("dream") or {})
     dream_admission = dict(outputs.get("dream_admission") or {})
@@ -474,6 +477,7 @@ def run_local_maintenance_cycle(
             prior = {}
         validation = validate_cycle_receipt_v3(
             prior if isinstance(prior, dict) else {},
+            receipt_path=cycle_path,
             expected_kind=LOCAL_CYCLE_KIND,
             expected_run_id=resolved_run_id,
             expected_owner=LOCAL_CYCLE_OWNER,

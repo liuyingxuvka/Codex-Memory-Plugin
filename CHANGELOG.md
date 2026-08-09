@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.8.4 - 2026-08-09
+
+- Make the two scheduled KB owners interruption-safe: an outer timeout now records the exact owner manifest, Windows Job Object cleanup evidence, and a recoverable global-writer lease instead of leaving the next organization run blocked.
+- Keep Sleep publication pointer-last and reader-fenced, reserve time for finalization, and bind the final active-index receipt to the published watermark so a successful cycle cannot be rejected because its index evidence is nested.
+- Compact large native and cycle terminal receipts into immutable SHA-256 sidecars while validating the bounded envelope, sidecar path, byte count, and content digest; tampering remains fail-closed.
+- Add the FlowGuard project-authority gate to CI and refresh the current model revision evidence for the repaired maintenance topology.
+- Verify the installed `gpt-5.6-luna` / `max` automation pair and complete one source-consistent Sleep→Dream run followed immediately by one Organization maintenance run with all wrapper obligations passing.
+
 ## v0.8.3 - 2026-08-09
 
 - Add explicit organization card, candidate, duplicate-hash, merge/split, Skill safety/version, apply, post-apply, and GitHub-readiness checkpoints with typed no-change decisions.

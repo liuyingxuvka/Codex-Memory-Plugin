@@ -11,8 +11,10 @@ from __future__ import annotations
 from datetime import datetime, timezone
 import hashlib
 import json
+import os
 from pathlib import Path
 from typing import Any, Mapping
+import uuid
 
 from local_kb.automation_contracts import (
     AGGREGATE_ASSURANCE_TIMEOUT_SECONDS,
@@ -33,6 +35,8 @@ from local_kb.software_update import LEGAL_MANUAL_UPDATE_NOOP_REASONS
 
 RUNTIME_RECEIPT_SCHEMA = "khaos-brain.automation-native-receipt.v1"
 RUNTIME_WRAPPER_SCHEMA = "khaos-brain.automation-execution-result.v1"
+NATIVE_PAYLOAD_SIDECAR_SCHEMA = "khaos-brain.automation-native-payload-sidecar.v1"
+NATIVE_PAYLOAD_INLINE_LIMIT_BYTES = 256 * 1024
 SLEEP_BATCH_PLAN_SCHEMA = "khaos-brain.sleep-batch-plan.v1"
 SLEEP_BATCH_CHECKPOINT_SCHEMA = "khaos-brain.sleep-batch-checkpoint.v1"
 SLEEP_BATCH_HEAD_SCHEMA = "khaos-brain.sleep-batch-head.v1"
@@ -120,6 +124,86 @@ def _canonical_bytes(value: object) -> bytes:
 
 def content_hash(value: object) -> str:
     return hashlib.sha256(_canonical_bytes(value)).hexdigest().upper()
+
+
+def _serialized_native_json_bytes(value: object) -> bytes:
+    return (
+        json.dumps(
+            value,
+            ensure_ascii=False,
+            indent=2,
+            sort_keys=True,
+            default=str,
+        )
+        + "\n"
+    ).encode("utf-8")
+
+
+def _write_native_payload_sidecar(
+    path: Path,
+    payload: Mapping[str, Any],
+) -> dict[str, Any]:
+    digest = content_hash(payload)
+    filename = f"native-payload-{digest.lower()}.json"
+    sidecar = Path(path).parent / filename
+    encoded = _serialized_native_json_bytes(payload)
+    if sidecar.exists():
+        try:
+            existing = json.loads(sidecar.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise ValueError(f"native-payload-sidecar-unreadable:{sidecar}") from exc
+        if not isinstance(existing, Mapping) or content_hash(existing) != digest:
+            raise ValueError(f"native-payload-sidecar-content-conflict:{sidecar}")
+    else:
+        temporary = sidecar.with_name(f".{sidecar.name}.tmp-{uuid.uuid4().hex}")
+        temporary.write_bytes(encoded)
+        with temporary.open("r+b") as handle:
+            os.fsync(handle.fileno())
+        os.replace(temporary, sidecar)
+    return {
+        "schema_version": NATIVE_PAYLOAD_SIDECAR_SCHEMA,
+        "path": filename,
+        "content_hash": digest,
+        "bytes": len(encoded),
+    }
+
+
+def _resolve_native_payload(
+    receipt: Mapping[str, Any],
+    *,
+    receipt_path: Path | None = None,
+) -> tuple[dict[str, Any], list[str]]:
+    raw = receipt.get("native_payload")
+    if not isinstance(raw, Mapping):
+        return {}, ["native-payload-missing"]
+    if raw.get("schema_version") != NATIVE_PAYLOAD_SIDECAR_SCHEMA:
+        return dict(raw), []
+    if receipt_path is None:
+        return {}, ["native-payload-sidecar-path-unavailable"]
+    filename = str(raw.get("path") or "")
+    if not filename or Path(filename).name != filename:
+        return {}, ["native-payload-sidecar-path-invalid"]
+    sidecar = Path(receipt_path).parent / filename
+    if not sidecar.is_file():
+        return {}, ["native-payload-sidecar-missing"]
+    try:
+        payload = json.loads(sidecar.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return {}, [f"native-payload-sidecar-unreadable:{type(exc).__name__}"]
+    if not isinstance(payload, Mapping):
+        return {}, ["native-payload-sidecar-not-object"]
+    expected = str(raw.get("content_hash") or "")
+    actual = content_hash(payload)
+    issues: list[str] = []
+    if not expected or actual != expected:
+        issues.append("native-payload-sidecar-hash-mismatch")
+    try:
+        actual_bytes = sidecar.stat().st_size
+    except OSError:
+        actual_bytes = 0
+    if isinstance(raw.get("bytes"), int) and int(raw["bytes"]) != actual_bytes:
+        issues.append("native-payload-sidecar-size-mismatch")
+    return dict(payload), issues
 
 
 def _sleep_batch_digest(value: object) -> str:
@@ -266,6 +350,7 @@ def _real_artifact_issues(
                     )
                 validation = validate_cycle_receipt_v3(
                     cycle_payload,
+                    receipt_path=cycle_path,
                     expected_kind="local-maintenance-cycle",
                     expected_run_id=str(payload.get("run_id") or ""),
                     expected_owner="kb-sleep-maintenance",
@@ -332,6 +417,7 @@ def _real_artifact_issues(
                     )
                 validation = validate_cycle_receipt_v3(
                     cycle_payload,
+                    receipt_path=cycle_path,
                     expected_kind="organization-maintenance-cycle",
                     expected_run_id=str(payload.get("run_id") or ""),
                     expected_owner="kb-organization-maintenance",
@@ -2783,8 +2869,25 @@ def build_native_receipt(
 def write_native_receipt(path: Path, receipt: Mapping[str, Any]) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
+    payload = dict(receipt)
+    native_payload = payload.get("native_payload")
+    if (
+        isinstance(native_payload, Mapping)
+        and len(_serialized_native_json_bytes(native_payload))
+        > NATIVE_PAYLOAD_INLINE_LIMIT_BYTES
+    ):
+        payload["native_payload"] = _write_native_payload_sidecar(path, native_payload)
+    unsigned = dict(payload)
+    unsigned.pop("receipt_hash", None)
+    payload["receipt_hash"] = content_hash(unsigned)
+    # Callers retain the in-memory receipt for exact hash binding. Update it
+    # in place when it is a mutable dict so the persisted compact envelope and
+    # the wrapper's expected receipt identity cannot diverge.
+    if isinstance(receipt, dict):
+        receipt.clear()
+        receipt.update(payload)
     with path.open("x", encoding="utf-8") as handle:
-        json.dump(receipt, handle, ensure_ascii=False, indent=2, sort_keys=True)
+        json.dump(payload, handle, ensure_ascii=False, indent=2, sort_keys=True)
         handle.write("\n")
     return path
 
@@ -2838,7 +2941,8 @@ def validate_native_receipt(
             fixture=fixture,
         )
     )
-    payload = _mapping(receipt.get("native_payload"))
+    payload, payload_issues = _resolve_native_payload(receipt, receipt_path=path)
+    issues.extend(payload_issues)
     if str(receipt.get("native_payload_hash") or "") != content_hash(payload):
         issues.append("native-payload-hash-mismatch")
     evaluation = evaluate_native_payload(

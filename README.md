@@ -2,7 +2,7 @@
 
 <!-- README HERO START -->
 <p align="center">
-  <img src="./assets/readme-hero/hero.png" alt="Khaos Brain concept hero image" width="100%" />
+  <img src="./assets/khaos-brain-icon.png" alt="Khaos Brain public project icon" width="136" />
 </p>
 
 <p align="center">
@@ -10,14 +10,10 @@
 </p>
 <!-- README HERO END -->
 
-- Repository head (`main`) / 仓库主线（`main`）: `v0.8.3`
-- Latest released version / 最新已发布版本: `v0.8.3`
+- Repository head (`main`) / 仓库主线（`main`）: `v0.8.4`
+- Latest released version / 最新已发布版本: `v0.8.4`
 - Project name / 项目名称: `Khaos Brain`
 - English lead content comes first; the full Chinese section follows below. / 英文主内容在前，完整中文部分在后方。
-
-<p align="center">
-  <img src="assets/khaos-brain-icon.png" alt="Khaos Brain icon" width="136">
-</p>
 
 `Khaos Brain` is a local predictive experience layer for AI agents. Instead of saving vague memories, it turns each bounded experience into an executable LogicGuard argument model: a root predictive claim, its context and method, declared evidence and warrant, assumptions, rebuttals, limitations, confidence, provenance, and explicit gaps where support is still missing.
 
@@ -212,7 +208,7 @@ The exact migration phases, rollback behavior, pause-state preservation, and suc
 
 | 仓库主线 | 最新发布 | 项目 | 许可证 |
 | --- | --- | --- | --- |
-| `v0.8.3` | `v0.8.3` | `Khaos Brain` | MIT |
+| `v0.8.4` | `v0.8.4` | `Khaos Brain` | MIT |
 
 ## 它是什么
 

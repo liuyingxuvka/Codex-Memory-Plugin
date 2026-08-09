@@ -35,6 +35,11 @@ DEFAULT_GLOBAL_WRITE_WAIT_SECONDS = 120
 GLOBAL_WRITE_LOCK_GROUP = "global-maintenance-writer"
 GLOBAL_WRITE_LEASE_SCHEMA = "khaos-brain.global-write-lease.v1"
 CYCLE_RECEIPT_SCHEMA = "khaos-brain.maintenance-cycle-receipt.v3"
+CYCLE_OUTPUT_SIDECAR_SCHEMA = "khaos-brain.maintenance-cycle-outputs-sidecar.v1"
+# Full cycle outputs contain complete child responses and can be very large on
+# a real corpus. Keep terminal envelopes bounded and retain the exact payload
+# in one immutable, content-addressed sidecar.
+CYCLE_OUTPUT_INLINE_LIMIT_BYTES = 256 * 1024
 CYCLE_TERMINAL_STATUSES = frozenset(
     {
         "completed",
@@ -146,6 +151,90 @@ def cycle_receipt_payload_digest(receipt: Mapping[str, Any]) -> str:
     return canonical_digest(unsigned)
 
 
+def _serialized_json_bytes(value: object) -> bytes:
+    return (
+        json.dumps(
+            value,
+            ensure_ascii=False,
+            indent=2,
+            sort_keys=True,
+            default=str,
+        )
+        + "\n"
+    ).encode("utf-8")
+
+
+def _write_immutable_json_sidecar(
+    path: Path,
+    payload: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Write one content-addressed JSON sidecar and return its compact ref."""
+
+    digest = canonical_digest(payload)
+    filename = f"cycle-outputs-{digest.removeprefix('sha256:')}.json"
+    sidecar = Path(path).parent / filename
+    encoded = _serialized_json_bytes(payload)
+    if sidecar.exists():
+        try:
+            existing = json.loads(sidecar.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise ValueError(f"cycle-output-sidecar-unreadable:{sidecar}") from exc
+        if not isinstance(existing, Mapping) or canonical_digest(existing) != digest:
+            raise ValueError(f"cycle-output-sidecar-content-conflict:{sidecar}")
+    else:
+        temporary = sidecar.with_name(f".{sidecar.name}.tmp-{uuid.uuid4().hex}")
+        temporary.write_bytes(encoded)
+        with temporary.open("r+b") as handle:
+            os.fsync(handle.fileno())
+        os.replace(temporary, sidecar)
+    return {
+        "schema_version": CYCLE_OUTPUT_SIDECAR_SCHEMA,
+        "path": filename,
+        "content_digest": digest,
+        "bytes": len(encoded),
+    }
+
+
+def resolve_cycle_outputs(
+    receipt: Mapping[str, Any],
+    *,
+    receipt_path: Path | None = None,
+) -> tuple[dict[str, Any], list[str]]:
+    """Resolve inline or sidecar-backed cycle outputs with digest checks."""
+
+    raw = receipt.get("outputs")
+    if not isinstance(raw, Mapping):
+        return {}, ["receipt-cycle-outputs-missing"]
+    if raw.get("schema_version") != CYCLE_OUTPUT_SIDECAR_SCHEMA:
+        return dict(raw), []
+    if receipt_path is None:
+        return {}, ["receipt-cycle-outputs-sidecar-path-unavailable"]
+    filename = str(raw.get("path") or "")
+    if not filename or Path(filename).name != filename:
+        return {}, ["receipt-cycle-outputs-sidecar-path-invalid"]
+    sidecar = Path(receipt_path).parent / filename
+    if not sidecar.is_file():
+        return {}, ["receipt-cycle-outputs-sidecar-missing"]
+    try:
+        payload = json.loads(sidecar.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return {}, [f"receipt-cycle-outputs-sidecar-unreadable:{type(exc).__name__}"]
+    if not isinstance(payload, Mapping):
+        return {}, ["receipt-cycle-outputs-sidecar-not-object"]
+    expected = str(raw.get("content_digest") or "")
+    actual = canonical_digest(payload)
+    issues: list[str] = []
+    if not expected or actual != expected:
+        issues.append("receipt-cycle-outputs-sidecar-digest-mismatch")
+    try:
+        actual_bytes = sidecar.stat().st_size
+    except OSError:
+        actual_bytes = 0
+    if isinstance(raw.get("bytes"), int) and int(raw["bytes"]) != actual_bytes:
+        issues.append("receipt-cycle-outputs-sidecar-size-mismatch")
+    return dict(payload), issues
+
+
 def validate_cycle_receipt_v3(
     receipt: Mapping[str, Any],
     *,
@@ -159,6 +248,7 @@ def validate_cycle_receipt_v3(
     expected_toolchain_digest: str = "",
     expected_child_plan_digest: str = "",
     current_state_digest: str = "",
+    receipt_path: Path | None = None,
 ) -> dict[str, Any]:
     issues: list[str] = []
     if set(receipt) != set(CYCLE_RECEIPT_FIELDS):
@@ -211,6 +301,8 @@ def validate_cycle_receipt_v3(
     }
     receipt_kind = str(receipt.get("kind") or "")
     cycle_status = str(receipt.get("status") or "")
+    outputs, output_issues = resolve_cycle_outputs(receipt, receipt_path=receipt_path)
+    issues.extend(output_issues)
     if receipt_kind == "local-maintenance-cycle" and list(sequence) == ["sleep", "dream"]:
         sleep_status = phase_status.get("sleep", "")
         dream_status = phase_status.get("dream", "")
@@ -230,10 +322,6 @@ def validate_cycle_receipt_v3(
             expected_cycle_status = sleep_status
         if not expected_cycle_status or cycle_status != expected_cycle_status:
             issues.append("receipt-local-status-matrix-invalid")
-        outputs = receipt.get("outputs")
-        if not isinstance(outputs, Mapping):
-            issues.append("receipt-local-outputs-missing")
-            outputs = {}
         postflight = outputs.get("postflight")
         if not isinstance(postflight, Mapping):
             issues.append("receipt-local-postflight-missing")
@@ -327,11 +415,24 @@ def validate_cycle_receipt_v3(
 
 def write_cycle_receipt_v3(path: Path, receipt: Mapping[str, Any]) -> Path:
     path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
     payload = dict(receipt)
+    # Validate the complete producer payload before compacting it. The
+    # persisted envelope then carries only a digest-bound sidecar reference.
     payload["payload_digest"] = cycle_receipt_payload_digest(payload)
     validation = validate_cycle_receipt_v3(payload)
     if not validation["ok"]:
         raise ValueError("invalid cycle receipt: " + ";".join(validation["issues"]))
+    outputs = payload.get("outputs")
+    if (
+        isinstance(outputs, Mapping)
+        and len(_serialized_json_bytes(outputs)) > CYCLE_OUTPUT_INLINE_LIMIT_BYTES
+    ):
+        payload["outputs"] = _write_immutable_json_sidecar(path, outputs)
+    payload["payload_digest"] = cycle_receipt_payload_digest(payload)
+    validation = validate_cycle_receipt_v3(payload, receipt_path=path)
+    if not validation["ok"]:
+        raise ValueError("invalid compact cycle receipt: " + ";".join(validation["issues"]))
     serialized = json.dumps(
         payload,
         ensure_ascii=False,
@@ -339,7 +440,6 @@ def write_cycle_receipt_v3(path: Path, receipt: Mapping[str, Any]) -> Path:
         sort_keys=True,
         default=str,
     ) + "\n"
-    path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("x", encoding="utf-8") as handle:
         handle.write(serialized)
         handle.flush()

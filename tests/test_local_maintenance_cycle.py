@@ -10,8 +10,11 @@ from local_kb.local_cycle import LOCAL_CYCLE_WORKFLOW_REVISION, run_local_mainte
 from local_kb.logicguard_models import load_authority_generation
 from local_kb.maintenance_lanes import (
     CYCLE_RECEIPT_SCHEMA,
+    CYCLE_OUTPUT_SIDECAR_SCHEMA,
     cycle_receipt_payload_digest,
+    resolve_cycle_outputs,
     validate_cycle_receipt_v3,
+    write_cycle_receipt_v3,
 )
 from tests.current_runtime_helpers import activate_current_kb_runtime
 
@@ -53,6 +56,33 @@ class LocalMaintenanceCycleTests(unittest.TestCase):
             self.assertEqual(cycle["postflight"]["status"], "completed")
             self.assertTrue(cycle["postflight"]["event_id"])
             self.assertTrue(Path(cycle["postflight"]["path"]).is_file())
+
+    def test_large_cycle_outputs_use_digest_bound_sidecar_and_reject_tamper(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            activate_current_kb_runtime(root)
+            result = run_local_maintenance_cycle(
+                root,
+                run_id="local-cycle-sidecar-source",
+                max_observations=0,
+                soft_deadline_seconds=5,
+            )
+            source_path = Path(result["local_cycle"]["cycle_receipt_path"])
+            source = json.loads(source_path.read_text(encoding="utf-8"))
+            outputs, issues = resolve_cycle_outputs(source, receipt_path=source_path)
+            self.assertFalse(issues)
+            outputs["large_diagnostic"] = "x" * 300_000
+            compact_path = root / ".local" / "maintenance-cycles" / "sidecar" / "cycle-receipt.json"
+            write_cycle_receipt_v3(compact_path, {**source, "outputs": outputs})
+            persisted = json.loads(compact_path.read_text(encoding="utf-8"))
+
+            self.assertEqual(persisted["outputs"]["schema_version"], CYCLE_OUTPUT_SIDECAR_SCHEMA)
+            sidecar = compact_path.parent / persisted["outputs"]["path"]
+            self.assertTrue(sidecar.is_file())
+            self.assertTrue(validate_cycle_receipt_v3(persisted, receipt_path=compact_path)["ok"])
+
+            sidecar.write_text("{}\n", encoding="utf-8")
+            self.assertFalse(validate_cycle_receipt_v3(persisted, receipt_path=compact_path)["ok"])
             self.assertEqual(result["final_run_state"], "completed")
 
     def test_local_cycle_postflight_is_recorded(self) -> None:

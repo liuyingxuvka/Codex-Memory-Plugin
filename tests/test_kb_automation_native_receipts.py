@@ -19,6 +19,7 @@ from local_kb.automation_contracts import (
     obligation_id,
 )
 from local_kb.automation_runtime import (
+    NATIVE_PAYLOAD_SIDECAR_SCHEMA,
     _real_artifact_issues,
     _sleep_downstream_not_run,
     build_fixture_payload,
@@ -84,6 +85,46 @@ def _write_explicit_automation_runtime(codex_home: Path) -> None:
         )
 
 
+def test_large_native_payload_uses_digest_bound_sidecar_and_rejects_tamper() -> None:
+    payload = build_fixture_payload(
+        "kb-organization-contribute",
+        run_id="native-sidecar",
+    )
+    payload["large_diagnostic"] = "x" * 300_000
+    receipt = build_native_receipt(
+        "kb-organization-contribute",
+        run_id="native-sidecar",
+        command=["fixture", "positive", "kb-organization-contribute"],
+        native_payload=payload,
+        exit_code=0,
+        started_at="2026-08-09T00:00:00+00:00",
+        finished_at="2026-08-09T00:01:00+00:00",
+        fixture="positive",
+    )
+    with tempfile.TemporaryDirectory() as tmp, patch(
+        "local_kb.automation_runtime.NATIVE_PAYLOAD_INLINE_LIMIT_BYTES",
+        1,
+    ):
+        path = write_native_receipt(Path(tmp) / "native-receipt.json", receipt)
+        persisted = json.loads(path.read_text(encoding="utf-8"))
+        assert persisted["native_payload"]["schema_version"] == NATIVE_PAYLOAD_SIDECAR_SCHEMA
+        sidecar = path.parent / persisted["native_payload"]["path"]
+        assert sidecar.is_file()
+        assert validate_native_receipt(
+            path,
+            skill_id="kb-organization-contribute",
+            expected_run_id="native-sidecar",
+            expected_receipt_hash=persisted["receipt_hash"],
+            allow_fixture=True,
+        )["ok"]
+        sidecar.write_text("{}\n", encoding="utf-8")
+        assert not validate_native_receipt(
+            path,
+            skill_id="kb-organization-contribute",
+            expected_run_id="native-sidecar",
+            expected_receipt_hash=persisted["receipt_hash"],
+            allow_fixture=True,
+        )["ok"]
 def test_sleep_downstream_gate_is_local_only() -> None:
     reason = "sleep-progress-saved"
     local_only = {
