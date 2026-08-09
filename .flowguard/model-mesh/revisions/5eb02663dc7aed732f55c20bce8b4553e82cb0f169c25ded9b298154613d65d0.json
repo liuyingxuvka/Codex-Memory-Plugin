@@ -1,0 +1,1414 @@
+{
+  "added_ids": [
+    "coverage:tests_evidence:check:model-regression:behavior_commitment_ledger",
+    "coverage:tests_evidence:check:model-regression:khaos_brain_logicguard_system"
+  ],
+  "affected_closure_fingerprint": "sha256:3884333e9677fbe4e659f5c7ad7e010e3fa480c7e17aaa50d02687ab9bdc976e",
+  "affected_closure_ids": [
+    "behavior_commitment:commitment:ai-manual-update-on-explicit-request",
+    "behavior_commitment:commitment:automatic-system-update-retired",
+    "behavior_commitment:commitment:automation-current-runtime-policy",
+    "behavior_commitment:commitment:automation-proof-bound-depth-terminal",
+    "behavior_commitment:commitment:installer-keeps-system-update-automation-absent",
+    "behavior_commitment:commitment:kb-retrieval-current-index",
+    "behavior_commitment:commitment:lifecycle-writer-exclusive-current-owner",
+    "behavior_commitment:commitment:manual-conversation-authorized-update",
+    "behavior_commitment:commitment:organization-current-layout",
+    "behavior_commitment:commitment:sleep-no-delta-single-owner",
+    "behavior_commitment:commitment:ui-readonly-upstream-status",
+    "behavior_commitment:commitment:upgrade-direct-canonicalization",
+    "coverage:tests_evidence:check:model-regression:behavior-commitment-ledger",
+    "coverage:tests_evidence:check:model-regression:behavior_commitment_ledger",
+    "coverage:tests_evidence:check:model-regression:khaos-brain-logicguard-system",
+    "coverage:tests_evidence:check:model-regression:khaos_brain_logicguard_system",
+    "coverage:universe",
+    "external_surface:surface:active-index-lifecycle-lock",
+    "external_surface:surface:automation-contract-generation",
+    "external_surface:surface:automation-depth-projection",
+    "external_surface:surface:automation-frozen-supervision-session",
+    "external_surface:surface:automation-installer",
+    "external_surface:surface:automation-native-evidence",
+    "external_surface:surface:automation-receipt-layering",
+    "external_surface:surface:automation-runtime-resolver",
+    "external_surface:surface:automation-terminal-builder",
+    "external_surface:surface:card-skill-guidance-canonicalization",
+    "external_surface:surface:consumer-skill-currentness",
+    "external_surface:surface:desktop-launcher-current-runtime",
+    "external_surface:surface:desktop-settings-canonicalization",
+    "external_surface:surface:dream-handoff-lifecycle-batch",
+    "external_surface:surface:dream-handoff-post-publication-ack",
+    "external_surface:surface:foreign-calibration-projection",
+    "external_surface:surface:global-maintenance-writer",
+    "external_surface:surface:lifecycle-replay-linear-index",
+    "external_surface:surface:lifecycle-writer-lock",
+    "external_surface:surface:lifecycle-writer-lock-spec",
+    "external_surface:surface:local-cycle-receipt-v3",
+    "external_surface:surface:maintenance-migration",
+    "external_surface:surface:manual-update-native",
+    "external_surface:surface:manual-update-native-receipt",
+    "external_surface:surface:manual-update-skill",
+    "external_surface:surface:organization-connect",
+    "external_surface:surface:organization-cycle-receipt-v3",
+    "external_surface:surface:organization-decision-identity",
+    "external_surface:surface:organization-github-check",
+    "external_surface:surface:organization-maintenance",
+    "external_surface:surface:organization-maintenance-materialization",
+    "external_surface:surface:organization-merge-split-packets",
+    "external_surface:surface:organization-migration-rollback",
+    "external_surface:surface:organization-outbox-dedupe",
+    "external_surface:surface:organization-runtime-reader",
+    "external_surface:surface:organization-snapshot",
+    "external_surface:surface:organization-snapshot-retrieval",
+    "external_surface:surface:organization-source-contract",
+    "external_surface:surface:organization-validation",
+    "external_surface:surface:parked-calibration-watermark",
+    "external_surface:surface:postflight-observation-intake",
+    "external_surface:surface:preflight-launcher-canonicalization",
+    "external_surface:surface:retrieval-api",
+    "external_surface:surface:retrieval-cli",
+    "external_surface:surface:retrieval-interactions",
+    "external_surface:surface:retrieval-spec",
+    "external_surface:surface:sleep-no-delta-owner",
+    "external_surface:surface:sleep-no-delta-spec",
+    "external_surface:surface:transactional-install-semantic-anti-downgrade",
+    "external_surface:surface:update-automation-retirement",
+    "external_surface:surface:update-retirement-openspec",
+    "external_surface:surface:update-state-canonicalization",
+    "external_surface:surface:update-state-pre-assurance-migration",
+    "external_surface:surface:update-status-desktop",
+    "external_surface:surface:update-status-inspector",
+    "external_surface:surface:upgrade-installer",
+    "model_instance:model:behavior_commitment_ledger",
+    "model_instance:model:khaos_brain_logicguard_system",
+    "model_relation:relation:model-realizes-purpose:behavior_commitment_ledger",
+    "model_relation:relation:model-realizes-purpose:khaos_brain_logicguard_system",
+    "model_relation:relation:surface-produces-for-commitment:surface:active-index-lifecycle-lock--commitment:lifecycle-writer-exclusive-current-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:automation-contract-generation--commitment:automation-proof-bound-depth-terminal",
+    "model_relation:relation:surface-produces-for-commitment:surface:automation-depth-projection--commitment:automation-proof-bound-depth-terminal",
+    "model_relation:relation:surface-produces-for-commitment:surface:automation-frozen-supervision-session--commitment:automation-proof-bound-depth-terminal",
+    "model_relation:relation:surface-produces-for-commitment:surface:automation-installer--commitment:automation-current-runtime-policy",
+    "model_relation:relation:surface-produces-for-commitment:surface:automation-native-evidence--commitment:automation-proof-bound-depth-terminal",
+    "model_relation:relation:surface-produces-for-commitment:surface:automation-receipt-layering--commitment:automation-proof-bound-depth-terminal",
+    "model_relation:relation:surface-produces-for-commitment:surface:automation-runtime-resolver--commitment:automation-current-runtime-policy",
+    "model_relation:relation:surface-produces-for-commitment:surface:automation-terminal-builder--commitment:automation-proof-bound-depth-terminal",
+    "model_relation:relation:surface-produces-for-commitment:surface:card-skill-guidance-canonicalization--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:surface-produces-for-commitment:surface:consumer-skill-currentness--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:surface-produces-for-commitment:surface:desktop-launcher-current-runtime--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:surface-produces-for-commitment:surface:desktop-settings-canonicalization--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:surface-produces-for-commitment:surface:dream-handoff-lifecycle-batch--commitment:sleep-no-delta-single-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:dream-handoff-post-publication-ack--commitment:sleep-no-delta-single-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:foreign-calibration-projection--commitment:kb-retrieval-current-index",
+    "model_relation:relation:surface-produces-for-commitment:surface:global-maintenance-writer--commitment:lifecycle-writer-exclusive-current-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:lifecycle-replay-linear-index--commitment:sleep-no-delta-single-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:lifecycle-writer-lock--commitment:lifecycle-writer-exclusive-current-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:lifecycle-writer-lock-spec--commitment:lifecycle-writer-exclusive-current-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:local-cycle-receipt-v3--commitment:automation-proof-bound-depth-terminal",
+    "model_relation:relation:surface-produces-for-commitment:surface:maintenance-migration--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:surface-produces-for-commitment:surface:manual-update-native--commitment:manual-conversation-authorized-update",
+    "model_relation:relation:surface-produces-for-commitment:surface:manual-update-native-receipt--commitment:manual-conversation-authorized-update",
+    "model_relation:relation:surface-produces-for-commitment:surface:manual-update-skill--commitment:ai-manual-update-on-explicit-request",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-connect--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-cycle-receipt-v3--commitment:automation-proof-bound-depth-terminal",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-decision-identity--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-github-check--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-maintenance--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-maintenance-materialization--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-merge-split-packets--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-migration-rollback--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-outbox-dedupe--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-runtime-reader--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-snapshot--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-snapshot-retrieval--commitment:kb-retrieval-current-index",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-source-contract--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-validation--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:parked-calibration-watermark--commitment:sleep-no-delta-single-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:postflight-observation-intake--commitment:sleep-no-delta-single-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:preflight-launcher-canonicalization--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:surface-produces-for-commitment:surface:retrieval-api--commitment:kb-retrieval-current-index",
+    "model_relation:relation:surface-produces-for-commitment:surface:retrieval-cli--commitment:kb-retrieval-current-index",
+    "model_relation:relation:surface-produces-for-commitment:surface:retrieval-interactions--commitment:kb-retrieval-current-index",
+    "model_relation:relation:surface-produces-for-commitment:surface:retrieval-spec--commitment:kb-retrieval-current-index",
+    "model_relation:relation:surface-produces-for-commitment:surface:sleep-no-delta-owner--commitment:sleep-no-delta-single-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:sleep-no-delta-spec--commitment:sleep-no-delta-single-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:transactional-install-semantic-anti-downgrade--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:surface-produces-for-commitment:surface:update-automation-retirement--commitment:installer-keeps-system-update-automation-absent",
+    "model_relation:relation:surface-produces-for-commitment:surface:update-retirement-openspec--commitment:installer-keeps-system-update-automation-absent",
+    "model_relation:relation:surface-produces-for-commitment:surface:update-state-canonicalization--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:surface-produces-for-commitment:surface:update-state-pre-assurance-migration--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:surface-produces-for-commitment:surface:update-status-desktop--commitment:ui-readonly-upstream-status",
+    "model_relation:relation:surface-produces-for-commitment:surface:update-status-inspector--commitment:ui-readonly-upstream-status",
+    "model_relation:relation:surface-produces-for-commitment:surface:upgrade-installer--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:system-contains:behavior_commitment_ledger",
+    "model_relation:relation:system-contains:khaos_brain_logicguard_system",
+    "parent_closure:purpose:behavior_commitment_ledger",
+    "parent_closure:purpose:khaos_brain_logicguard_system",
+    "parent_closure:system:flowguard:model-regression-manifest",
+    "root:model:behavior_commitment_ledger",
+    "system_property:subject_revision"
+  ],
+  "affected_edge_ids": [
+    "model_relation:relation:model-realizes-purpose:behavior_commitment_ledger",
+    "model_relation:relation:model-realizes-purpose:khaos_brain_logicguard_system",
+    "model_relation:relation:surface-produces-for-commitment:surface:active-index-lifecycle-lock--commitment:lifecycle-writer-exclusive-current-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:automation-contract-generation--commitment:automation-proof-bound-depth-terminal",
+    "model_relation:relation:surface-produces-for-commitment:surface:automation-depth-projection--commitment:automation-proof-bound-depth-terminal",
+    "model_relation:relation:surface-produces-for-commitment:surface:automation-frozen-supervision-session--commitment:automation-proof-bound-depth-terminal",
+    "model_relation:relation:surface-produces-for-commitment:surface:automation-installer--commitment:automation-current-runtime-policy",
+    "model_relation:relation:surface-produces-for-commitment:surface:automation-native-evidence--commitment:automation-proof-bound-depth-terminal",
+    "model_relation:relation:surface-produces-for-commitment:surface:automation-receipt-layering--commitment:automation-proof-bound-depth-terminal",
+    "model_relation:relation:surface-produces-for-commitment:surface:automation-runtime-resolver--commitment:automation-current-runtime-policy",
+    "model_relation:relation:surface-produces-for-commitment:surface:automation-terminal-builder--commitment:automation-proof-bound-depth-terminal",
+    "model_relation:relation:surface-produces-for-commitment:surface:card-skill-guidance-canonicalization--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:surface-produces-for-commitment:surface:consumer-skill-currentness--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:surface-produces-for-commitment:surface:desktop-launcher-current-runtime--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:surface-produces-for-commitment:surface:desktop-settings-canonicalization--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:surface-produces-for-commitment:surface:dream-handoff-lifecycle-batch--commitment:sleep-no-delta-single-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:dream-handoff-post-publication-ack--commitment:sleep-no-delta-single-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:foreign-calibration-projection--commitment:kb-retrieval-current-index",
+    "model_relation:relation:surface-produces-for-commitment:surface:global-maintenance-writer--commitment:lifecycle-writer-exclusive-current-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:lifecycle-replay-linear-index--commitment:sleep-no-delta-single-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:lifecycle-writer-lock--commitment:lifecycle-writer-exclusive-current-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:lifecycle-writer-lock-spec--commitment:lifecycle-writer-exclusive-current-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:local-cycle-receipt-v3--commitment:automation-proof-bound-depth-terminal",
+    "model_relation:relation:surface-produces-for-commitment:surface:maintenance-migration--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:surface-produces-for-commitment:surface:manual-update-native--commitment:manual-conversation-authorized-update",
+    "model_relation:relation:surface-produces-for-commitment:surface:manual-update-native-receipt--commitment:manual-conversation-authorized-update",
+    "model_relation:relation:surface-produces-for-commitment:surface:manual-update-skill--commitment:ai-manual-update-on-explicit-request",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-connect--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-cycle-receipt-v3--commitment:automation-proof-bound-depth-terminal",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-decision-identity--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-github-check--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-maintenance--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-maintenance-materialization--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-merge-split-packets--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-migration-rollback--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-outbox-dedupe--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-runtime-reader--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-snapshot--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-snapshot-retrieval--commitment:kb-retrieval-current-index",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-source-contract--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-validation--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:parked-calibration-watermark--commitment:sleep-no-delta-single-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:postflight-observation-intake--commitment:sleep-no-delta-single-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:preflight-launcher-canonicalization--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:surface-produces-for-commitment:surface:retrieval-api--commitment:kb-retrieval-current-index",
+    "model_relation:relation:surface-produces-for-commitment:surface:retrieval-cli--commitment:kb-retrieval-current-index",
+    "model_relation:relation:surface-produces-for-commitment:surface:retrieval-interactions--commitment:kb-retrieval-current-index",
+    "model_relation:relation:surface-produces-for-commitment:surface:retrieval-spec--commitment:kb-retrieval-current-index",
+    "model_relation:relation:surface-produces-for-commitment:surface:sleep-no-delta-owner--commitment:sleep-no-delta-single-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:sleep-no-delta-spec--commitment:sleep-no-delta-single-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:transactional-install-semantic-anti-downgrade--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:surface-produces-for-commitment:surface:update-automation-retirement--commitment:installer-keeps-system-update-automation-absent",
+    "model_relation:relation:surface-produces-for-commitment:surface:update-retirement-openspec--commitment:installer-keeps-system-update-automation-absent",
+    "model_relation:relation:surface-produces-for-commitment:surface:update-state-canonicalization--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:surface-produces-for-commitment:surface:update-state-pre-assurance-migration--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:surface-produces-for-commitment:surface:update-status-desktop--commitment:ui-readonly-upstream-status",
+    "model_relation:relation:surface-produces-for-commitment:surface:update-status-inspector--commitment:ui-readonly-upstream-status",
+    "model_relation:relation:surface-produces-for-commitment:surface:upgrade-installer--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:system-contains:behavior_commitment_ledger",
+    "model_relation:relation:system-contains:khaos_brain_logicguard_system"
+  ],
+  "affected_owner_bindings": [
+    {
+      "affected_id": "behavior_commitment:commitment:ai-manual-update-on-explicit-request",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "behavior_commitment:commitment:automatic-system-update-retired",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "behavior_commitment:commitment:automation-current-runtime-policy",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "behavior_commitment:commitment:automation-proof-bound-depth-terminal",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "behavior_commitment:commitment:installer-keeps-system-update-automation-absent",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "behavior_commitment:commitment:kb-retrieval-current-index",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "behavior_commitment:commitment:lifecycle-writer-exclusive-current-owner",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "behavior_commitment:commitment:manual-conversation-authorized-update",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "behavior_commitment:commitment:organization-current-layout",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "behavior_commitment:commitment:sleep-no-delta-single-owner",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "behavior_commitment:commitment:ui-readonly-upstream-status",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "behavior_commitment:commitment:upgrade-direct-canonicalization",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "coverage:tests_evidence:check:model-regression:behavior-commitment-ledger",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "coverage:tests_evidence:check:model-regression:behavior_commitment_ledger",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "coverage:tests_evidence:check:model-regression:khaos-brain-logicguard-system",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "coverage:tests_evidence:check:model-regression:khaos_brain_logicguard_system",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "coverage:universe",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "external_surface:surface:active-index-lifecycle-lock",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:automation-contract-generation",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:automation-depth-projection",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:automation-frozen-supervision-session",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:automation-installer",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:automation-native-evidence",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:automation-receipt-layering",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:automation-runtime-resolver",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:automation-terminal-builder",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:card-skill-guidance-canonicalization",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:consumer-skill-currentness",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:desktop-launcher-current-runtime",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:desktop-settings-canonicalization",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:dream-handoff-lifecycle-batch",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:dream-handoff-post-publication-ack",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:foreign-calibration-projection",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:global-maintenance-writer",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:lifecycle-replay-linear-index",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:lifecycle-writer-lock",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:lifecycle-writer-lock-spec",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:local-cycle-receipt-v3",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:maintenance-migration",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:manual-update-native",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:manual-update-native-receipt",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:manual-update-skill",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:organization-connect",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:organization-cycle-receipt-v3",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:organization-decision-identity",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:organization-github-check",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:organization-maintenance",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:organization-maintenance-materialization",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:organization-merge-split-packets",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:organization-migration-rollback",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:organization-outbox-dedupe",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:organization-runtime-reader",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:organization-snapshot",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:organization-snapshot-retrieval",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:organization-source-contract",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:organization-validation",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:parked-calibration-watermark",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:postflight-observation-intake",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:preflight-launcher-canonicalization",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:retrieval-api",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:retrieval-cli",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:retrieval-interactions",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:retrieval-spec",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:sleep-no-delta-owner",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:sleep-no-delta-spec",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:transactional-install-semantic-anti-downgrade",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:update-automation-retirement",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:update-retirement-openspec",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:update-state-canonicalization",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:update-state-pre-assurance-migration",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:update-status-desktop",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:update-status-inspector",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "external_surface:surface:upgrade-installer",
+      "owner_route": "behavior_commitment_ledger"
+    },
+    {
+      "affected_id": "model_instance:model:behavior_commitment_ledger",
+      "owner_route": "model_test_alignment"
+    },
+    {
+      "affected_id": "model_instance:model:khaos_brain_logicguard_system",
+      "owner_route": "model_test_alignment"
+    },
+    {
+      "affected_id": "model_relation:relation:model-realizes-purpose:behavior_commitment_ledger",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:model-realizes-purpose:khaos_brain_logicguard_system",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:active-index-lifecycle-lock--commitment:lifecycle-writer-exclusive-current-owner",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:automation-contract-generation--commitment:automation-proof-bound-depth-terminal",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:automation-depth-projection--commitment:automation-proof-bound-depth-terminal",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:automation-frozen-supervision-session--commitment:automation-proof-bound-depth-terminal",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:automation-installer--commitment:automation-current-runtime-policy",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:automation-native-evidence--commitment:automation-proof-bound-depth-terminal",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:automation-receipt-layering--commitment:automation-proof-bound-depth-terminal",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:automation-runtime-resolver--commitment:automation-current-runtime-policy",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:automation-terminal-builder--commitment:automation-proof-bound-depth-terminal",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:card-skill-guidance-canonicalization--commitment:upgrade-direct-canonicalization",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:consumer-skill-currentness--commitment:upgrade-direct-canonicalization",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:desktop-launcher-current-runtime--commitment:upgrade-direct-canonicalization",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:desktop-settings-canonicalization--commitment:upgrade-direct-canonicalization",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:dream-handoff-lifecycle-batch--commitment:sleep-no-delta-single-owner",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:dream-handoff-post-publication-ack--commitment:sleep-no-delta-single-owner",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:foreign-calibration-projection--commitment:kb-retrieval-current-index",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:global-maintenance-writer--commitment:lifecycle-writer-exclusive-current-owner",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:lifecycle-replay-linear-index--commitment:sleep-no-delta-single-owner",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:lifecycle-writer-lock--commitment:lifecycle-writer-exclusive-current-owner",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:lifecycle-writer-lock-spec--commitment:lifecycle-writer-exclusive-current-owner",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:local-cycle-receipt-v3--commitment:automation-proof-bound-depth-terminal",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:maintenance-migration--commitment:upgrade-direct-canonicalization",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:manual-update-native--commitment:manual-conversation-authorized-update",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:manual-update-native-receipt--commitment:manual-conversation-authorized-update",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:manual-update-skill--commitment:ai-manual-update-on-explicit-request",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:organization-connect--commitment:organization-current-layout",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:organization-cycle-receipt-v3--commitment:automation-proof-bound-depth-terminal",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:organization-decision-identity--commitment:organization-current-layout",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:organization-github-check--commitment:organization-current-layout",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:organization-maintenance--commitment:organization-current-layout",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:organization-maintenance-materialization--commitment:organization-current-layout",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:organization-merge-split-packets--commitment:organization-current-layout",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:organization-migration-rollback--commitment:organization-current-layout",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:organization-outbox-dedupe--commitment:organization-current-layout",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:organization-runtime-reader--commitment:organization-current-layout",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:organization-snapshot--commitment:organization-current-layout",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:organization-snapshot-retrieval--commitment:kb-retrieval-current-index",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:organization-source-contract--commitment:organization-current-layout",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:organization-validation--commitment:organization-current-layout",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:parked-calibration-watermark--commitment:sleep-no-delta-single-owner",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:postflight-observation-intake--commitment:sleep-no-delta-single-owner",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:preflight-launcher-canonicalization--commitment:upgrade-direct-canonicalization",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:retrieval-api--commitment:kb-retrieval-current-index",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:retrieval-cli--commitment:kb-retrieval-current-index",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:retrieval-interactions--commitment:kb-retrieval-current-index",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:retrieval-spec--commitment:kb-retrieval-current-index",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:sleep-no-delta-owner--commitment:sleep-no-delta-single-owner",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:sleep-no-delta-spec--commitment:sleep-no-delta-single-owner",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:transactional-install-semantic-anti-downgrade--commitment:upgrade-direct-canonicalization",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:update-automation-retirement--commitment:installer-keeps-system-update-automation-absent",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:update-retirement-openspec--commitment:installer-keeps-system-update-automation-absent",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:update-state-canonicalization--commitment:upgrade-direct-canonicalization",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:update-state-pre-assurance-migration--commitment:upgrade-direct-canonicalization",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:update-status-desktop--commitment:ui-readonly-upstream-status",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:update-status-inspector--commitment:ui-readonly-upstream-status",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:surface-produces-for-commitment:surface:upgrade-installer--commitment:upgrade-direct-canonicalization",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:system-contains:behavior_commitment_ledger",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:system-contains:khaos_brain_logicguard_system",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "parent_closure:purpose:behavior_commitment_ledger",
+      "owner_route": "model_test_alignment"
+    },
+    {
+      "affected_id": "parent_closure:purpose:khaos_brain_logicguard_system",
+      "owner_route": "model_test_alignment"
+    },
+    {
+      "affected_id": "parent_closure:system:flowguard:model-regression-manifest",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "root:model:behavior_commitment_ledger",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "system_property:subject_revision",
+      "owner_route": "model_mesh_maintenance"
+    }
+  ],
+  "base_snapshot_fingerprint": "sha256:2f50a51d6e8e7aedf803b47f78742bb8b6b16d11e3ae233a2b436f2df546e8ef",
+  "candidate_snapshot_fingerprint": "sha256:7287a874f9400e457ae7f25339e98aee5ea3c8535111a1140cf5d75e252ac174",
+  "changed_commitment_ids": [
+    "commitment:ai-manual-update-on-explicit-request",
+    "commitment:automatic-system-update-retired",
+    "commitment:automation-current-runtime-policy",
+    "commitment:automation-proof-bound-depth-terminal",
+    "commitment:installer-keeps-system-update-automation-absent",
+    "commitment:kb-retrieval-current-index",
+    "commitment:lifecycle-writer-exclusive-current-owner",
+    "commitment:manual-conversation-authorized-update",
+    "commitment:organization-current-layout",
+    "commitment:sleep-no-delta-single-owner",
+    "commitment:ui-readonly-upstream-status",
+    "commitment:upgrade-direct-canonicalization"
+  ],
+  "changed_contract_ids": [],
+  "changed_coverage_ids": [
+    "coverage:tests_evidence:check:model-regression:behavior-commitment-ledger",
+    "coverage:tests_evidence:check:model-regression:behavior_commitment_ledger",
+    "coverage:tests_evidence:check:model-regression:khaos-brain-logicguard-system",
+    "coverage:tests_evidence:check:model-regression:khaos_brain_logicguard_system",
+    "coverage:universe"
+  ],
+  "changed_field_ids": [],
+  "changed_gap_ids": [],
+  "changed_owner_artifact_ids": [
+    "behavior_commitment:commitment:ai-manual-update-on-explicit-request",
+    "behavior_commitment:commitment:automatic-system-update-retired",
+    "behavior_commitment:commitment:automation-current-runtime-policy",
+    "behavior_commitment:commitment:automation-proof-bound-depth-terminal",
+    "behavior_commitment:commitment:installer-keeps-system-update-automation-absent",
+    "behavior_commitment:commitment:kb-retrieval-current-index",
+    "behavior_commitment:commitment:lifecycle-writer-exclusive-current-owner",
+    "behavior_commitment:commitment:manual-conversation-authorized-update",
+    "behavior_commitment:commitment:organization-current-layout",
+    "behavior_commitment:commitment:sleep-no-delta-single-owner",
+    "behavior_commitment:commitment:ui-readonly-upstream-status",
+    "behavior_commitment:commitment:upgrade-direct-canonicalization",
+    "external_surface:surface:active-index-lifecycle-lock",
+    "external_surface:surface:automation-contract-generation",
+    "external_surface:surface:automation-depth-projection",
+    "external_surface:surface:automation-frozen-supervision-session",
+    "external_surface:surface:automation-installer",
+    "external_surface:surface:automation-native-evidence",
+    "external_surface:surface:automation-receipt-layering",
+    "external_surface:surface:automation-runtime-resolver",
+    "external_surface:surface:automation-terminal-builder",
+    "external_surface:surface:card-skill-guidance-canonicalization",
+    "external_surface:surface:consumer-skill-currentness",
+    "external_surface:surface:desktop-launcher-current-runtime",
+    "external_surface:surface:desktop-settings-canonicalization",
+    "external_surface:surface:dream-handoff-lifecycle-batch",
+    "external_surface:surface:dream-handoff-post-publication-ack",
+    "external_surface:surface:foreign-calibration-projection",
+    "external_surface:surface:global-maintenance-writer",
+    "external_surface:surface:lifecycle-replay-linear-index",
+    "external_surface:surface:lifecycle-writer-lock",
+    "external_surface:surface:lifecycle-writer-lock-spec",
+    "external_surface:surface:local-cycle-receipt-v3",
+    "external_surface:surface:maintenance-migration",
+    "external_surface:surface:manual-update-native",
+    "external_surface:surface:manual-update-native-receipt",
+    "external_surface:surface:manual-update-skill",
+    "external_surface:surface:organization-connect",
+    "external_surface:surface:organization-cycle-receipt-v3",
+    "external_surface:surface:organization-decision-identity",
+    "external_surface:surface:organization-github-check",
+    "external_surface:surface:organization-maintenance",
+    "external_surface:surface:organization-maintenance-materialization",
+    "external_surface:surface:organization-merge-split-packets",
+    "external_surface:surface:organization-migration-rollback",
+    "external_surface:surface:organization-outbox-dedupe",
+    "external_surface:surface:organization-runtime-reader",
+    "external_surface:surface:organization-snapshot",
+    "external_surface:surface:organization-snapshot-retrieval",
+    "external_surface:surface:organization-source-contract",
+    "external_surface:surface:organization-validation",
+    "external_surface:surface:parked-calibration-watermark",
+    "external_surface:surface:postflight-observation-intake",
+    "external_surface:surface:preflight-launcher-canonicalization",
+    "external_surface:surface:retrieval-api",
+    "external_surface:surface:retrieval-cli",
+    "external_surface:surface:retrieval-interactions",
+    "external_surface:surface:retrieval-spec",
+    "external_surface:surface:sleep-no-delta-owner",
+    "external_surface:surface:sleep-no-delta-spec",
+    "external_surface:surface:transactional-install-semantic-anti-downgrade",
+    "external_surface:surface:update-automation-retirement",
+    "external_surface:surface:update-retirement-openspec",
+    "external_surface:surface:update-state-canonicalization",
+    "external_surface:surface:update-state-pre-assurance-migration",
+    "external_surface:surface:update-status-desktop",
+    "external_surface:surface:update-status-inspector",
+    "external_surface:surface:upgrade-installer",
+    "parent_closure:purpose:behavior_commitment_ledger",
+    "parent_closure:purpose:khaos_brain_logicguard_system",
+    "parent_closure:system:flowguard:model-regression-manifest"
+  ],
+  "changed_relation_ids": [
+    "relation:model-realizes-purpose:behavior_commitment_ledger",
+    "relation:model-realizes-purpose:khaos_brain_logicguard_system",
+    "relation:surface-produces-for-commitment:surface:active-index-lifecycle-lock--commitment:lifecycle-writer-exclusive-current-owner",
+    "relation:surface-produces-for-commitment:surface:automation-contract-generation--commitment:automation-proof-bound-depth-terminal",
+    "relation:surface-produces-for-commitment:surface:automation-depth-projection--commitment:automation-proof-bound-depth-terminal",
+    "relation:surface-produces-for-commitment:surface:automation-frozen-supervision-session--commitment:automation-proof-bound-depth-terminal",
+    "relation:surface-produces-for-commitment:surface:automation-installer--commitment:automation-current-runtime-policy",
+    "relation:surface-produces-for-commitment:surface:automation-native-evidence--commitment:automation-proof-bound-depth-terminal",
+    "relation:surface-produces-for-commitment:surface:automation-receipt-layering--commitment:automation-proof-bound-depth-terminal",
+    "relation:surface-produces-for-commitment:surface:automation-runtime-resolver--commitment:automation-current-runtime-policy",
+    "relation:surface-produces-for-commitment:surface:automation-terminal-builder--commitment:automation-proof-bound-depth-terminal",
+    "relation:surface-produces-for-commitment:surface:card-skill-guidance-canonicalization--commitment:upgrade-direct-canonicalization",
+    "relation:surface-produces-for-commitment:surface:consumer-skill-currentness--commitment:upgrade-direct-canonicalization",
+    "relation:surface-produces-for-commitment:surface:desktop-launcher-current-runtime--commitment:upgrade-direct-canonicalization",
+    "relation:surface-produces-for-commitment:surface:desktop-settings-canonicalization--commitment:upgrade-direct-canonicalization",
+    "relation:surface-produces-for-commitment:surface:dream-handoff-lifecycle-batch--commitment:sleep-no-delta-single-owner",
+    "relation:surface-produces-for-commitment:surface:dream-handoff-post-publication-ack--commitment:sleep-no-delta-single-owner",
+    "relation:surface-produces-for-commitment:surface:foreign-calibration-projection--commitment:kb-retrieval-current-index",
+    "relation:surface-produces-for-commitment:surface:global-maintenance-writer--commitment:lifecycle-writer-exclusive-current-owner",
+    "relation:surface-produces-for-commitment:surface:lifecycle-replay-linear-index--commitment:sleep-no-delta-single-owner",
+    "relation:surface-produces-for-commitment:surface:lifecycle-writer-lock--commitment:lifecycle-writer-exclusive-current-owner",
+    "relation:surface-produces-for-commitment:surface:lifecycle-writer-lock-spec--commitment:lifecycle-writer-exclusive-current-owner",
+    "relation:surface-produces-for-commitment:surface:local-cycle-receipt-v3--commitment:automation-proof-bound-depth-terminal",
+    "relation:surface-produces-for-commitment:surface:maintenance-migration--commitment:upgrade-direct-canonicalization",
+    "relation:surface-produces-for-commitment:surface:manual-update-native--commitment:manual-conversation-authorized-update",
+    "relation:surface-produces-for-commitment:surface:manual-update-native-receipt--commitment:manual-conversation-authorized-update",
+    "relation:surface-produces-for-commitment:surface:manual-update-skill--commitment:ai-manual-update-on-explicit-request",
+    "relation:surface-produces-for-commitment:surface:organization-connect--commitment:organization-current-layout",
+    "relation:surface-produces-for-commitment:surface:organization-cycle-receipt-v3--commitment:automation-proof-bound-depth-terminal",
+    "relation:surface-produces-for-commitment:surface:organization-decision-identity--commitment:organization-current-layout",
+    "relation:surface-produces-for-commitment:surface:organization-github-check--commitment:organization-current-layout",
+    "relation:surface-produces-for-commitment:surface:organization-maintenance--commitment:organization-current-layout",
+    "relation:surface-produces-for-commitment:surface:organization-maintenance-materialization--commitment:organization-current-layout",
+    "relation:surface-produces-for-commitment:surface:organization-merge-split-packets--commitment:organization-current-layout",
+    "relation:surface-produces-for-commitment:surface:organization-migration-rollback--commitment:organization-current-layout",
+    "relation:surface-produces-for-commitment:surface:organization-outbox-dedupe--commitment:organization-current-layout",
+    "relation:surface-produces-for-commitment:surface:organization-runtime-reader--commitment:organization-current-layout",
+    "relation:surface-produces-for-commitment:surface:organization-snapshot--commitment:organization-current-layout",
+    "relation:surface-produces-for-commitment:surface:organization-snapshot-retrieval--commitment:kb-retrieval-current-index",
+    "relation:surface-produces-for-commitment:surface:organization-source-contract--commitment:organization-current-layout",
+    "relation:surface-produces-for-commitment:surface:organization-validation--commitment:organization-current-layout",
+    "relation:surface-produces-for-commitment:surface:parked-calibration-watermark--commitment:sleep-no-delta-single-owner",
+    "relation:surface-produces-for-commitment:surface:postflight-observation-intake--commitment:sleep-no-delta-single-owner",
+    "relation:surface-produces-for-commitment:surface:preflight-launcher-canonicalization--commitment:upgrade-direct-canonicalization",
+    "relation:surface-produces-for-commitment:surface:retrieval-api--commitment:kb-retrieval-current-index",
+    "relation:surface-produces-for-commitment:surface:retrieval-cli--commitment:kb-retrieval-current-index",
+    "relation:surface-produces-for-commitment:surface:retrieval-interactions--commitment:kb-retrieval-current-index",
+    "relation:surface-produces-for-commitment:surface:retrieval-spec--commitment:kb-retrieval-current-index",
+    "relation:surface-produces-for-commitment:surface:sleep-no-delta-owner--commitment:sleep-no-delta-single-owner",
+    "relation:surface-produces-for-commitment:surface:sleep-no-delta-spec--commitment:sleep-no-delta-single-owner",
+    "relation:surface-produces-for-commitment:surface:transactional-install-semantic-anti-downgrade--commitment:upgrade-direct-canonicalization",
+    "relation:surface-produces-for-commitment:surface:update-automation-retirement--commitment:installer-keeps-system-update-automation-absent",
+    "relation:surface-produces-for-commitment:surface:update-retirement-openspec--commitment:installer-keeps-system-update-automation-absent",
+    "relation:surface-produces-for-commitment:surface:update-state-canonicalization--commitment:upgrade-direct-canonicalization",
+    "relation:surface-produces-for-commitment:surface:update-state-pre-assurance-migration--commitment:upgrade-direct-canonicalization",
+    "relation:surface-produces-for-commitment:surface:update-status-desktop--commitment:ui-readonly-upstream-status",
+    "relation:surface-produces-for-commitment:surface:update-status-inspector--commitment:ui-readonly-upstream-status",
+    "relation:surface-produces-for-commitment:surface:upgrade-installer--commitment:upgrade-direct-canonicalization",
+    "relation:system-contains:behavior_commitment_ledger",
+    "relation:system-contains:khaos_brain_logicguard_system"
+  ],
+  "changed_root_ids": [
+    "root:model:behavior_commitment_ledger"
+  ],
+  "changed_side_effect_ids": [],
+  "changed_source_surface_ids": [
+    "surface:active-index-lifecycle-lock",
+    "surface:automation-contract-generation",
+    "surface:automation-depth-projection",
+    "surface:automation-frozen-supervision-session",
+    "surface:automation-installer",
+    "surface:automation-native-evidence",
+    "surface:automation-receipt-layering",
+    "surface:automation-runtime-resolver",
+    "surface:automation-terminal-builder",
+    "surface:card-skill-guidance-canonicalization",
+    "surface:consumer-skill-currentness",
+    "surface:desktop-launcher-current-runtime",
+    "surface:desktop-settings-canonicalization",
+    "surface:dream-handoff-lifecycle-batch",
+    "surface:dream-handoff-post-publication-ack",
+    "surface:foreign-calibration-projection",
+    "surface:global-maintenance-writer",
+    "surface:lifecycle-replay-linear-index",
+    "surface:lifecycle-writer-lock",
+    "surface:lifecycle-writer-lock-spec",
+    "surface:local-cycle-receipt-v3",
+    "surface:maintenance-migration",
+    "surface:manual-update-native",
+    "surface:manual-update-native-receipt",
+    "surface:manual-update-skill",
+    "surface:organization-connect",
+    "surface:organization-cycle-receipt-v3",
+    "surface:organization-decision-identity",
+    "surface:organization-github-check",
+    "surface:organization-maintenance",
+    "surface:organization-maintenance-materialization",
+    "surface:organization-merge-split-packets",
+    "surface:organization-migration-rollback",
+    "surface:organization-outbox-dedupe",
+    "surface:organization-runtime-reader",
+    "surface:organization-snapshot",
+    "surface:organization-snapshot-retrieval",
+    "surface:organization-source-contract",
+    "surface:organization-validation",
+    "surface:parked-calibration-watermark",
+    "surface:postflight-observation-intake",
+    "surface:preflight-launcher-canonicalization",
+    "surface:retrieval-api",
+    "surface:retrieval-cli",
+    "surface:retrieval-interactions",
+    "surface:retrieval-spec",
+    "surface:sleep-no-delta-owner",
+    "surface:sleep-no-delta-spec",
+    "surface:transactional-install-semantic-anti-downgrade",
+    "surface:update-automation-retirement",
+    "surface:update-retirement-openspec",
+    "surface:update-state-canonicalization",
+    "surface:update-state-pre-assurance-migration",
+    "surface:update-status-desktop",
+    "surface:update-status-inspector",
+    "surface:upgrade-installer"
+  ],
+  "changed_system_property_ids": [
+    "system_property:subject_revision"
+  ],
+  "changed_test_ids": [],
+  "completed_evidence_refs": [],
+  "current_effective_intent_view": {
+    "active_contributions": [
+      {
+        "conflicts_with_contribution_ids": [],
+        "contribution_id": "intent:behavior_commitment_ledger:current",
+        "decision_state": "accepted",
+        "declared_consumer_ids": [],
+        "desired_terminal_state_ids": [],
+        "effective_revision": "revision:khaos-logicguard-native-organization-remote-gate-20260801",
+        "fingerprint": "sha256:c5115620229b145059c0c93019acc26dd2a706a1b9f553bceb842727b0bad130",
+        "lifecycle_state": "active",
+        "logical_model_id": "model:behavior_commitment_ledger",
+        "native_owner_id": "",
+        "rationale": "Accept the current canonical design contribution for behavior_commitment_ledger; the checked-in model and its purpose closure are the sole owner source.",
+        "schema": "flowguard.model_intent_contribution.v1",
+        "source_fingerprint": "sha256:4c6a244e5f60b5b200884c5ad51a7d7d6899768a6e5df9ef016757a0b4cfe8f8",
+        "source_kind": "design",
+        "source_ref": ".flowguard/behavior_commitment_ledger/model.py",
+        "subject_lane": "normative_target",
+        "subject_role": "design",
+        "supersedes_contribution_ids": [],
+        "target_invariant_ids": [],
+        "target_obligation_ids": [
+          "model-obligation:behavior_commitment_ledger"
+        ],
+        "target_output_ids": [],
+        "target_relation_ids": [
+          "relation:model-realizes-purpose:behavior_commitment_ledger"
+        ],
+        "target_state_ids": [],
+        "target_transition_ids": [],
+        "unresolved_owner_id": "",
+        "work_context_fingerprint": "",
+        "work_context_id": ""
+      },
+      {
+        "conflicts_with_contribution_ids": [],
+        "contribution_id": "intent:khaos_brain_logicguard_system:current",
+        "decision_state": "accepted",
+        "declared_consumer_ids": [],
+        "desired_terminal_state_ids": [],
+        "effective_revision": "revision:khaos-logicguard-native-organization-remote-gate-20260801",
+        "fingerprint": "sha256:bb4423f63f586926e342dd7905998d53c34504e65a7c4a828c72e7d57759437f",
+        "lifecycle_state": "active",
+        "logical_model_id": "model:khaos_brain_logicguard_system",
+        "native_owner_id": "",
+        "rationale": "Accept the current canonical design contribution for khaos_brain_logicguard_system; the checked-in model and its purpose closure are the sole owner source.",
+        "schema": "flowguard.model_intent_contribution.v1",
+        "source_fingerprint": "sha256:bdca28e101410aac30699f2f878937fa9a68645b0415182f3fbd22de5bf93873",
+        "source_kind": "design",
+        "source_ref": ".flowguard/khaos_brain_logicguard_system/model.py",
+        "subject_lane": "normative_target",
+        "subject_role": "design",
+        "supersedes_contribution_ids": [],
+        "target_invariant_ids": [],
+        "target_obligation_ids": [
+          "model-obligation:khaos_brain_logicguard_system"
+        ],
+        "target_output_ids": [],
+        "target_relation_ids": [
+          "relation:model-realizes-purpose:khaos_brain_logicguard_system"
+        ],
+        "target_state_ids": [],
+        "target_transition_ids": [],
+        "unresolved_owner_id": "",
+        "work_context_fingerprint": "",
+        "work_context_id": ""
+      }
+    ],
+    "base_effective_intent_view_fingerprint": "",
+    "bootstrap_receipt": {
+      "ancestry_activation_receipt_fingerprints": [
+        "sha256:94c9065f74e0aaea83645fd2e7ca87fbba4a68f5226e26ee2fa16c5f33fe0758",
+        "sha256:1a5cd744c703fe99d3de2057c397803172471de52d3d1c9f266a8704dd1f2509",
+        "sha256:a778069be21687c5a1dfdccf650efb6c5748613aa45d44b6b2397c834ba149ad",
+        "sha256:eac9e4b40b0d6e4edc8b173ffaab218e9ef04069571249fa2ff31ccb489bf9ca",
+        "sha256:e0c6d7637e4ba3788fad7a05af4657278e47ce3fcdecacf8140b0f80b170e91f",
+        "sha256:ba54be8a8dc898e00462628bd1e2a780a24bdc01fcd152dd0017b625108d951f",
+        "sha256:c93ec91bc3dbc1fb5ca67b04251e3ac91ba17dd9d2a6e0008003f86482b09b7f",
+        "sha256:4301ac3d91be8bd31e431640806c408b835f640b47c4b30e75a40d81ccf6730d",
+        "sha256:33a7ed3f04fc20e7672c70c3153f73f243b317118730f9158e978552e9e5b3e8",
+        "sha256:4d8bcf0c988b85ad5c54e91f0ce2f94d645c2b4de08f424f10a0d7097638fd6e",
+        "sha256:4e97ef488d6349b1beb947432354f17b91c76298c298b504bc8d57eb794012a8",
+        "sha256:af1c5ee908f38456bf524431b27e385d707ae8bd12641b974649a1fc8bce2d09"
+      ],
+      "ancestry_intent_entries": [],
+      "ancestry_revision_set_fingerprints": [
+        "sha256:0c5f6a50516faed818da3edd531332736f591ee45d2343afa178fc4aa5f1ee89",
+        "sha256:c828b9ce961476cb7af4a6734c675a2beb90a43084da13cc7faa842656636262",
+        "sha256:6c73e5cfef5627139d394e602215e99a0879e548a36bac740c0b752bac350558",
+        "sha256:81d61b383f04af3599168c66e78715835c67352de4c2a7e057d342e2df4d535b",
+        "sha256:41fdb2dd563bd975170f756a2ecdf9eb85cf33b096e9aa0fb3339d6efe8f58d4",
+        "sha256:608203ce4d61986ccf78785d51c5e8aaace4a96e7774521d0cf21ab1fd51e172",
+        "sha256:b511981133c65391f340f82480a03dbb32e7b87f6287f0825ad0d41415ec8e4a",
+        "sha256:81a9764a329e4b2b1469b577d2cfe6eb7067387ca63f612aaa4eb98c4c13db3d",
+        "sha256:d1ac9982eb2f411cc0ed0bce25cdbbcb837acd12e94727dab98404d5987aea6f",
+        "sha256:acba723bec3ca853a7f5805107fe62216544b0790b660d973bb1d1ebfc315ff5",
+        "sha256:6c6fdd92f45a46ef386362692d14bca1cb85d824813bba8bedb989761885e3f4",
+        "sha256:3978cd948ab91aeffa340efa188e9a506c48057232722e3dc91a6f321b0b2690"
+      ],
+      "bootstrap_authority_fingerprint": "sha256:bb482d754c5c93c929ecc36577f3c8b7a504f8b69acd6b8a070c7057e91196f1",
+      "candidate_snapshot_fingerprint": "sha256:7287a874f9400e457ae7f25339e98aee5ea3c8535111a1140cf5d75e252ac174",
+      "claim_boundary": "This explicit migration binds only the current checked-in model owners and exact source files; it does not grant runtime authority until a separate v5 revision activation CAS succeeds.",
+      "current_design_contribution_fingerprints": [
+        {
+          "contribution_id": "intent:behavior_commitment_ledger:current",
+          "fingerprint": "sha256:c5115620229b145059c0c93019acc26dd2a706a1b9f553bceb842727b0bad130"
+        },
+        {
+          "contribution_id": "intent:khaos_brain_logicguard_system:current",
+          "fingerprint": "sha256:bb4423f63f586926e342dd7905998d53c34504e65a7c4a828c72e7d57759437f"
+        }
+      ],
+      "current_design_contribution_inventory_fingerprint": "sha256:57898abf4f7dc57f15ac6e322ef5bf214736ccb6327645df3233c272b3b8efc9",
+      "current_design_source_identity_fingerprints": [
+        {
+          "contribution_id": "intent:behavior_commitment_ledger:current",
+          "fingerprint": "sha256:f0898baaa41ccb26e6c8a2452b0fe746801374d6bd9f0b573af65597fee53c5f"
+        },
+        {
+          "contribution_id": "intent:khaos_brain_logicguard_system:current",
+          "fingerprint": "sha256:4914d3477ff4536dc875b06c486b9af5d7257e9c8ef7f42d4239aacc04953edd"
+        }
+      ],
+      "current_model_owner_ids": [
+        "model-obligation:behavior_commitment_ledger",
+        "model-obligation:khaos_brain_logicguard_system"
+      ],
+      "expected_head_fingerprint": "sha256:13cc0f6d8e688403b62759464782edc0f02b53332327c6065acabeaaa6fe9a7b",
+      "fingerprint": "sha256:a57e4b137f35114627eb1a3c7a9e62bfb54eb42bc2b7a2c894bdb557bddbe558",
+      "legacy_entry_dispositions": [],
+      "owner_binding_inventory_fingerprint": "sha256:f5ca81a6a56d705e4890cab0696526d3938d6c6cadc9227965c8f45dfcd9a20b",
+      "rationale": "Promote the exact current two-owner model design into the v5 effective intent view after auditing every v2 ancestry transition.",
+      "receipt_id": "receipt:model-intent-bootstrap:khaos-organization-rehearsal-20260808",
+      "schema": "flowguard.effective_intent_bootstrap_receipt.v1",
+      "source_current_revision_set_fingerprint": "sha256:0c5f6a50516faed818da3edd531332736f591ee45d2343afa178fc4aa5f1ee89",
+      "source_head_generation": 13,
+      "source_revision_schema": "flowguard.model_revision_set.v2",
+      "source_snapshot_fingerprint": "sha256:2f50a51d6e8e7aedf803b47f78742bb8b6b16d11e3ae233a2b436f2df546e8ef",
+      "status": "audited",
+      "system_id": "flowguard"
+    },
+    "candidate_snapshot_fingerprint": "sha256:7287a874f9400e457ae7f25339e98aee5ea3c8535111a1140cf5d75e252ac174",
+    "fingerprint": "sha256:c9e12635037b720c9ccdb5b57319fdd21899938b00a3ac5fbd781aae752c0ad0",
+    "model_owner_ids": [
+      "model-obligation:behavior_commitment_ledger",
+      "model-obligation:khaos_brain_logicguard_system"
+    ],
+    "owner_bindings": [
+      {
+        "contribution_ids": [
+          "intent:behavior_commitment_ledger:current"
+        ],
+        "fingerprint": "sha256:3ca585068c121c93b41be47ff0d2e7fcba6c07e5515a692877e9a763e4cca5a9",
+        "logical_model_id": "behavior_commitment_ledger",
+        "model_owner_id": "model-obligation:behavior_commitment_ledger",
+        "realization_relation_fingerprint": "sha256:f0b28be96ef3917cc576b791e0edd7329144547538211589d74825652141cf3e",
+        "realization_relation_id": "relation:model-realizes-purpose:behavior_commitment_ledger",
+        "schema": "flowguard.effective_intent_owner_binding.v1"
+      },
+      {
+        "contribution_ids": [
+          "intent:khaos_brain_logicguard_system:current"
+        ],
+        "fingerprint": "sha256:0a4afab7e7d74968f8af73559b717553b209ce115e7683ad0f360b21309fc05a",
+        "logical_model_id": "khaos_brain_logicguard_system",
+        "model_owner_id": "model-obligation:khaos_brain_logicguard_system",
+        "realization_relation_fingerprint": "sha256:51e55133a67cc92e11afb29477c4b383663cbf38da2465be0dca6753bbd14f8a",
+        "realization_relation_id": "relation:model-realizes-purpose:khaos_brain_logicguard_system",
+        "schema": "flowguard.effective_intent_owner_binding.v1"
+      }
+    ],
+    "schema": "flowguard.current_effective_intent_view.v1",
+    "subject_lane": "observed_implementation",
+    "system_id": "flowguard",
+    "transitions": [],
+    "verified_source_identities": [
+      {
+        "authority_kind": "project_file",
+        "contribution_id": "intent:behavior_commitment_ledger:current",
+        "fingerprint": "sha256:f0898baaa41ccb26e6c8a2452b0fe746801374d6bd9f0b573af65597fee53c5f",
+        "native_owner_id": "",
+        "resolved_project_ref": ".flowguard/behavior_commitment_ledger/model.py",
+        "schema": "flowguard.model_intent_source_identity.v1",
+        "source_fingerprint": "sha256:4c6a244e5f60b5b200884c5ad51a7d7d6899768a6e5df9ef016757a0b4cfe8f8",
+        "source_ref": ".flowguard/behavior_commitment_ledger/model.py",
+        "work_context_artifact_id": "",
+        "work_context_fingerprint": "",
+        "work_context_id": ""
+      },
+      {
+        "authority_kind": "project_file",
+        "contribution_id": "intent:khaos_brain_logicguard_system:current",
+        "fingerprint": "sha256:4914d3477ff4536dc875b06c486b9af5d7257e9c8ef7f42d4239aacc04953edd",
+        "native_owner_id": "",
+        "resolved_project_ref": ".flowguard/khaos_brain_logicguard_system/model.py",
+        "schema": "flowguard.model_intent_source_identity.v1",
+        "source_fingerprint": "sha256:bdca28e101410aac30699f2f878937fa9a68645b0415182f3fbd22de5bf93873",
+        "source_ref": ".flowguard/khaos_brain_logicguard_system/model.py",
+        "work_context_artifact_id": "",
+        "work_context_fingerprint": "",
+        "work_context_id": ""
+      }
+    ]
+  },
+  "decision_reason": "",
+  "expected_head_fingerprint": "sha256:13cc0f6d8e688403b62759464782edc0f02b53332327c6065acabeaaa6fe9a7b",
+  "fingerprint": "sha256:5eb02663dc7aed732f55c20bce8b4553e82cb0f169c25ded9b298154613d65d0",
+  "fingerprint_changed_ids": [
+    "behavior_commitment:commitment:ai-manual-update-on-explicit-request",
+    "behavior_commitment:commitment:automatic-system-update-retired",
+    "behavior_commitment:commitment:automation-current-runtime-policy",
+    "behavior_commitment:commitment:automation-proof-bound-depth-terminal",
+    "behavior_commitment:commitment:installer-keeps-system-update-automation-absent",
+    "behavior_commitment:commitment:kb-retrieval-current-index",
+    "behavior_commitment:commitment:lifecycle-writer-exclusive-current-owner",
+    "behavior_commitment:commitment:manual-conversation-authorized-update",
+    "behavior_commitment:commitment:organization-current-layout",
+    "behavior_commitment:commitment:sleep-no-delta-single-owner",
+    "behavior_commitment:commitment:ui-readonly-upstream-status",
+    "behavior_commitment:commitment:upgrade-direct-canonicalization",
+    "coverage:universe",
+    "external_surface:surface:active-index-lifecycle-lock",
+    "external_surface:surface:automation-contract-generation",
+    "external_surface:surface:automation-depth-projection",
+    "external_surface:surface:automation-frozen-supervision-session",
+    "external_surface:surface:automation-installer",
+    "external_surface:surface:automation-native-evidence",
+    "external_surface:surface:automation-receipt-layering",
+    "external_surface:surface:automation-runtime-resolver",
+    "external_surface:surface:automation-terminal-builder",
+    "external_surface:surface:card-skill-guidance-canonicalization",
+    "external_surface:surface:consumer-skill-currentness",
+    "external_surface:surface:desktop-launcher-current-runtime",
+    "external_surface:surface:desktop-settings-canonicalization",
+    "external_surface:surface:dream-handoff-lifecycle-batch",
+    "external_surface:surface:dream-handoff-post-publication-ack",
+    "external_surface:surface:foreign-calibration-projection",
+    "external_surface:surface:global-maintenance-writer",
+    "external_surface:surface:lifecycle-replay-linear-index",
+    "external_surface:surface:lifecycle-writer-lock",
+    "external_surface:surface:lifecycle-writer-lock-spec",
+    "external_surface:surface:local-cycle-receipt-v3",
+    "external_surface:surface:maintenance-migration",
+    "external_surface:surface:manual-update-native",
+    "external_surface:surface:manual-update-native-receipt",
+    "external_surface:surface:manual-update-skill",
+    "external_surface:surface:organization-connect",
+    "external_surface:surface:organization-cycle-receipt-v3",
+    "external_surface:surface:organization-decision-identity",
+    "external_surface:surface:organization-github-check",
+    "external_surface:surface:organization-maintenance",
+    "external_surface:surface:organization-maintenance-materialization",
+    "external_surface:surface:organization-merge-split-packets",
+    "external_surface:surface:organization-migration-rollback",
+    "external_surface:surface:organization-outbox-dedupe",
+    "external_surface:surface:organization-runtime-reader",
+    "external_surface:surface:organization-snapshot",
+    "external_surface:surface:organization-snapshot-retrieval",
+    "external_surface:surface:organization-source-contract",
+    "external_surface:surface:organization-validation",
+    "external_surface:surface:parked-calibration-watermark",
+    "external_surface:surface:postflight-observation-intake",
+    "external_surface:surface:preflight-launcher-canonicalization",
+    "external_surface:surface:retrieval-api",
+    "external_surface:surface:retrieval-cli",
+    "external_surface:surface:retrieval-interactions",
+    "external_surface:surface:retrieval-spec",
+    "external_surface:surface:sleep-no-delta-owner",
+    "external_surface:surface:sleep-no-delta-spec",
+    "external_surface:surface:transactional-install-semantic-anti-downgrade",
+    "external_surface:surface:update-automation-retirement",
+    "external_surface:surface:update-retirement-openspec",
+    "external_surface:surface:update-state-canonicalization",
+    "external_surface:surface:update-state-pre-assurance-migration",
+    "external_surface:surface:update-status-desktop",
+    "external_surface:surface:update-status-inspector",
+    "external_surface:surface:upgrade-installer",
+    "model_instance:model:behavior_commitment_ledger",
+    "model_instance:model:khaos_brain_logicguard_system",
+    "model_relation:relation:model-realizes-purpose:behavior_commitment_ledger",
+    "model_relation:relation:model-realizes-purpose:khaos_brain_logicguard_system",
+    "model_relation:relation:surface-produces-for-commitment:surface:active-index-lifecycle-lock--commitment:lifecycle-writer-exclusive-current-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:automation-contract-generation--commitment:automation-proof-bound-depth-terminal",
+    "model_relation:relation:surface-produces-for-commitment:surface:automation-depth-projection--commitment:automation-proof-bound-depth-terminal",
+    "model_relation:relation:surface-produces-for-commitment:surface:automation-frozen-supervision-session--commitment:automation-proof-bound-depth-terminal",
+    "model_relation:relation:surface-produces-for-commitment:surface:automation-installer--commitment:automation-current-runtime-policy",
+    "model_relation:relation:surface-produces-for-commitment:surface:automation-native-evidence--commitment:automation-proof-bound-depth-terminal",
+    "model_relation:relation:surface-produces-for-commitment:surface:automation-receipt-layering--commitment:automation-proof-bound-depth-terminal",
+    "model_relation:relation:surface-produces-for-commitment:surface:automation-runtime-resolver--commitment:automation-current-runtime-policy",
+    "model_relation:relation:surface-produces-for-commitment:surface:automation-terminal-builder--commitment:automation-proof-bound-depth-terminal",
+    "model_relation:relation:surface-produces-for-commitment:surface:card-skill-guidance-canonicalization--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:surface-produces-for-commitment:surface:consumer-skill-currentness--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:surface-produces-for-commitment:surface:desktop-launcher-current-runtime--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:surface-produces-for-commitment:surface:desktop-settings-canonicalization--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:surface-produces-for-commitment:surface:dream-handoff-lifecycle-batch--commitment:sleep-no-delta-single-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:dream-handoff-post-publication-ack--commitment:sleep-no-delta-single-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:foreign-calibration-projection--commitment:kb-retrieval-current-index",
+    "model_relation:relation:surface-produces-for-commitment:surface:global-maintenance-writer--commitment:lifecycle-writer-exclusive-current-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:lifecycle-replay-linear-index--commitment:sleep-no-delta-single-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:lifecycle-writer-lock--commitment:lifecycle-writer-exclusive-current-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:lifecycle-writer-lock-spec--commitment:lifecycle-writer-exclusive-current-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:local-cycle-receipt-v3--commitment:automation-proof-bound-depth-terminal",
+    "model_relation:relation:surface-produces-for-commitment:surface:maintenance-migration--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:surface-produces-for-commitment:surface:manual-update-native--commitment:manual-conversation-authorized-update",
+    "model_relation:relation:surface-produces-for-commitment:surface:manual-update-native-receipt--commitment:manual-conversation-authorized-update",
+    "model_relation:relation:surface-produces-for-commitment:surface:manual-update-skill--commitment:ai-manual-update-on-explicit-request",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-connect--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-cycle-receipt-v3--commitment:automation-proof-bound-depth-terminal",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-decision-identity--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-github-check--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-maintenance--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-maintenance-materialization--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-merge-split-packets--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-migration-rollback--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-outbox-dedupe--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-runtime-reader--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-snapshot--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-snapshot-retrieval--commitment:kb-retrieval-current-index",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-source-contract--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:organization-validation--commitment:organization-current-layout",
+    "model_relation:relation:surface-produces-for-commitment:surface:parked-calibration-watermark--commitment:sleep-no-delta-single-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:postflight-observation-intake--commitment:sleep-no-delta-single-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:preflight-launcher-canonicalization--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:surface-produces-for-commitment:surface:retrieval-api--commitment:kb-retrieval-current-index",
+    "model_relation:relation:surface-produces-for-commitment:surface:retrieval-cli--commitment:kb-retrieval-current-index",
+    "model_relation:relation:surface-produces-for-commitment:surface:retrieval-interactions--commitment:kb-retrieval-current-index",
+    "model_relation:relation:surface-produces-for-commitment:surface:retrieval-spec--commitment:kb-retrieval-current-index",
+    "model_relation:relation:surface-produces-for-commitment:surface:sleep-no-delta-owner--commitment:sleep-no-delta-single-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:sleep-no-delta-spec--commitment:sleep-no-delta-single-owner",
+    "model_relation:relation:surface-produces-for-commitment:surface:transactional-install-semantic-anti-downgrade--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:surface-produces-for-commitment:surface:update-automation-retirement--commitment:installer-keeps-system-update-automation-absent",
+    "model_relation:relation:surface-produces-for-commitment:surface:update-retirement-openspec--commitment:installer-keeps-system-update-automation-absent",
+    "model_relation:relation:surface-produces-for-commitment:surface:update-state-canonicalization--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:surface-produces-for-commitment:surface:update-state-pre-assurance-migration--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:surface-produces-for-commitment:surface:update-status-desktop--commitment:ui-readonly-upstream-status",
+    "model_relation:relation:surface-produces-for-commitment:surface:update-status-inspector--commitment:ui-readonly-upstream-status",
+    "model_relation:relation:surface-produces-for-commitment:surface:upgrade-installer--commitment:upgrade-direct-canonicalization",
+    "model_relation:relation:system-contains:behavior_commitment_ledger",
+    "model_relation:relation:system-contains:khaos_brain_logicguard_system",
+    "parent_closure:purpose:behavior_commitment_ledger",
+    "parent_closure:purpose:khaos_brain_logicguard_system",
+    "parent_closure:system:flowguard:model-regression-manifest",
+    "root:model:behavior_commitment_ledger"
+  ],
+  "implementation_bundle_fingerprint": "",
+  "intent_conflict_ids": [],
+  "intent_contribution_inventory_fingerprint": "sha256:0019c742273f74601efc61b5a643123b74c5d8a7a263b92f064a33d07d537c20",
+  "intent_contributions": [],
+  "intent_dispositions": [],
+  "intent_unresolved_ids": [],
+  "members": [
+    {
+      "base_instance_fingerprint": "sha256:e9ba6fdb880cbb9d3112e9009382b50d5cf96f6869429f6bd9f865b2a1e7deec",
+      "candidate_instance_fingerprint": "sha256:adf8c26498dc44d2ed2809f2d3d5a643f26d6228bf628003307f5a9ce39e292d",
+      "changed_element_ids": [
+        "model_instance:model:behavior_commitment_ledger"
+      ],
+      "member_id": "behavior_commitment_ledger",
+      "operation": "replace",
+      "schema": "flowguard.model_revision_member.v1"
+    },
+    {
+      "base_instance_fingerprint": "sha256:01287686b77ac3d50073093f72e450911b7a561248c0a1480d14cba17e5b8ffd",
+      "candidate_instance_fingerprint": "sha256:2bd84c0c92bf18b9592efa9187b2ed01c61e40363adb4167983da3fe5b4b8ec3",
+      "changed_element_ids": [
+        "model_instance:model:khaos_brain_logicguard_system"
+      ],
+      "member_id": "khaos_brain_logicguard_system",
+      "operation": "replace",
+      "schema": "flowguard.model_revision_member.v1"
+    }
+  ],
+  "no_declared_intent_evidence_fingerprints": [],
+  "no_declared_intent_rationale": "",
+  "no_declared_intent_rationale_id": "",
+  "originating_activation_receipt_fingerprint": "",
+  "originating_revision_set_fingerprint": "",
+  "path_quality_result_set_fingerprint": "sha256:1615f1b384287f22d22d4228b0e738c3832b71f30ea3b8a7bbab17fcda0e1715",
+  "path_quality_results": [],
+  "path_quality_subjects": [],
+  "prediction_replay_refs": [],
+  "removal_dispositions": [
+    {
+      "disposition": "replace",
+      "reason": "Replace the legacy hyphenated regression-evidence identity with the exact current manifest owner identity; no governed model behavior is removed.",
+      "removed_id": "coverage:tests_evidence:check:model-regression:behavior-commitment-ledger",
+      "replacement_id": "coverage:tests_evidence:check:model-regression:behavior_commitment_ledger",
+      "schema": "flowguard.revision_removal_disposition.v1"
+    },
+    {
+      "disposition": "replace",
+      "reason": "Replace the legacy hyphenated regression-evidence identity with the exact current manifest owner identity; no governed model behavior is removed.",
+      "removed_id": "coverage:tests_evidence:check:model-regression:khaos-brain-logicguard-system",
+      "replacement_id": "coverage:tests_evidence:check:model-regression:khaos_brain_logicguard_system",
+      "schema": "flowguard.revision_removal_disposition.v1"
+    }
+  ],
+  "removed_ids": [
+    "coverage:tests_evidence:check:model-regression:behavior-commitment-ledger",
+    "coverage:tests_evidence:check:model-regression:khaos-brain-logicguard-system"
+  ],
+  "required_evidence_refs": [],
+  "required_path_quality_model_ids": [
+    "behavior_commitment_ledger",
+    "khaos_brain_logicguard_system"
+  ],
+  "revision_set_id": "revision:khaos-logicguard-native-organization-intent-bootstrap-20260808",
+  "rollback_contract_fingerprint": "",
+  "schema": "flowguard.model_revision_set.v5",
+  "snapshot_diff_fingerprint": "sha256:5e00b5b3ceca7bda71ec00178ee83107fea334d0d6662542e8027f4cbb17cec6",
+  "status": "proposed",
+  "task_id": "task:khaos-organization-maintenance-rehearsal-v0-8-3"
+}

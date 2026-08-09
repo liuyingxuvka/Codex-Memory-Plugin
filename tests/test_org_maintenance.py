@@ -25,13 +25,34 @@ class OrganizationMaintenanceTests(unittest.TestCase):
     def test_report_uses_exact_catalog_identity_coverage_including_skills_route(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            self._source(root)
+            self._source(
+                root,
+                [("kb/main/system/skills/skill-card.yaml", base_card("skill-card", "Unique skill card", "A unique exchange card."))],
+            )
             report = build_organization_maintenance_report(root)
 
         self.assertTrue(report["cleanup"]["card_decision_checkpoint"]["complete"], report)
         decisions = report["cleanup"]["card_decision_checkpoint"]["decisions"]
-        self.assertEqual({item["entry_id"] for item in decisions}, {"skill-card", "candidate"})
-        self.assertEqual(report["main_active_count"], 2)
+        self.assertEqual({item["entry_id"] for item in decisions}, {"skill-card"})
+        self.assertEqual(report["main_active_count"], 1)
+        checkpoints = report["cleanup"]["checkpoints"]
+        self.assertEqual(
+            set(checkpoints),
+            {
+                "card_surface",
+                "candidate_intake",
+                "content_hash",
+                "merge",
+                "split",
+                "card_decisions",
+                "skill_safety",
+                "skill_bundle_version",
+                "decision_apply",
+                "post_apply",
+                "github_merge_readiness",
+            },
+        )
+        self.assertTrue(all(item["complete"] for item in checkpoints.values()), checkpoints)
 
     def test_report_keeps_imports_separate_from_download_surface(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -43,6 +64,8 @@ class OrganizationMaintenanceTests(unittest.TestCase):
         self.assertEqual(report["layout_policy"]["exchange_surface_path"], "kb/main")
         self.assertEqual(report["layout_policy"]["local_download_excluded_paths"], ["kb/imports"])
         self.assertEqual(report["imports_count"], 1)
+        self.assertTrue(report["cleanup"]["candidate_intake_checkpoint"]["complete"])
+        self.assertEqual(report["cleanup"]["candidate_intake_checkpoint"]["imports_count"], 1)
 
     def test_merge_candidates_have_terminal_packet_or_reopen_contract(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -55,6 +78,8 @@ class OrganizationMaintenanceTests(unittest.TestCase):
             actions = [item for item in report["cleanup"]["proposal"]["actions"] if item["action_type"] in {"merge-cards", "split-card"}]
 
         self.assertTrue(checkpoint["complete"], checkpoint)
+        self.assertTrue(report["cleanup"]["merge_checkpoint"]["complete"], report)
+        self.assertTrue(report["cleanup"]["split_checkpoint"]["complete"], report)
         self.assertTrue(actions)
         self.assertTrue(all(item.get("apply_packet", {}).get("packet_digest") for item in actions))
         self.assertTrue(all(item.get("review_status") in {"ready", "blocked_evidence", "keep_separate", "keep_single"} for item in actions))
@@ -74,6 +99,9 @@ class OrganizationMaintenanceTests(unittest.TestCase):
         self.assertTrue(exact["exact"], exact)
         self.assertEqual(set(exact["selected_action_ids"]), set(exact["applied_action_ids"]))
         self.assertTrue(report["cleanup"]["post_apply_validation"]["ok"])
+        self.assertTrue(report["cleanup"]["decision_apply_checkpoint"]["complete"])
+        self.assertTrue(report["cleanup"]["post_apply_checkpoint"]["complete"])
+        self.assertTrue(report["cleanup"]["post_apply_checkpoint"]["ok"])
 
     def test_review_selects_only_non_overlapping_merge_packets_per_generation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -100,6 +128,43 @@ class OrganizationMaintenanceTests(unittest.TestCase):
         self.assertTrue(all("next source generation" in row["reason"] for row in deferred), deferred)
         self.assertTrue(exact["exact"], exact)
         self.assertEqual(exact["selected_action_ids"], exact["applied_action_ids"])
+
+    def test_skill_bundle_checkpoint_exposes_latest_lineage_and_fork_block(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cards: list[tuple[str, dict]] = []
+            for entry_id, author, version, digest in (
+                ("older", "author-a", "2026-01-01T00:00:00Z", "a" * 64),
+                ("latest", "author-a", "2026-03-01T00:00:00Z", "c" * 64),
+                ("fork", "author-b", "2026-04-01T00:00:00Z", "b" * 64),
+            ):
+                card = base_card(entry_id, f"{entry_id} Skill card", "Keep the bundle lineage.", status="candidate")
+                card["organization_proposal"] = {
+                    "skill_dependencies": [
+                        {
+                            "id": "demo-skill",
+                            "sharing_mode": "card-bound-bundle",
+                            "bundle_id": "shared-lineage",
+                            "content_hash": f"sha256:{digest}",
+                            "version_time": version,
+                            "original_author": author,
+                            "readonly_when_imported": True,
+                            "update_policy": "original_author_only",
+                            "bundle_path": "skills/shared-lineage/demo-skill",
+                        }
+                    ]
+                }
+                cards.append((f"kb/main/candidates/{entry_id}.yaml", card))
+            self._source(root, cards)
+            report = build_organization_maintenance_report(root)
+            checkpoint = report["cleanup"]["skill_bundle_version_checkpoint"]
+
+        self.assertFalse(checkpoint["passed"], checkpoint)
+        self.assertTrue(checkpoint["forked_versions"], checkpoint)
+        self.assertEqual(checkpoint["forked_versions"][0]["original_author"], "author-b")
+        self.assertIn("skill-bundle-fork-required", [
+            action["action_type"] for action in report["cleanup"]["proposal"]["actions"]
+        ])
 
 
 if __name__ == "__main__":

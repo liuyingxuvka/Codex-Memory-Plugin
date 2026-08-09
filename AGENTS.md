@@ -120,7 +120,7 @@ https://github.com/liuyingxuvka/FlowGuard
 
 <!-- flowguard-rule:skill_suite.agent_surface -->
 
-Primary agent surface: the current clean consumer projection at `$CODEX_HOME/skills/flowguard/SKILL.md`; this block does not copy the suite, and the Python package/CLI only runs checks.
+FlowGuard agent skill suite: Primary agent surface: the current clean consumer projection at `$CODEX_HOME/skills/flowguard/SKILL.md`; the project does not copy the FlowGuard suite into its local tree, and the Python package/CLI is not the AI-agent skill installation surface.
 
 <!-- flowguard-rule:project.record_locations -->
 
@@ -128,7 +128,7 @@ Project record: `.flowguard/project.toml`; machine log: `.flowguard/adoption_log
 
 <!-- flowguard-rule:project.rendered_versions -->
 
-Current adoption record: FlowGuard check-engine version: `0.68.1`; FlowGuard schema version: `1.0`.
+Current adoption record: FlowGuard check-engine version: `0.68.8`; FlowGuard schema version: `1.0`.
 
 <!-- flowguard-rule:project.preflight_version_gate -->
 
@@ -144,11 +144,11 @@ Only the sole content-addressed `observed_implementation` head is current; targe
 
 <!-- flowguard-rule:model_system.revision_transaction -->
 
-Change model authority only through one accepted `ModelRevisionSet`; persist evidence before the pointer, and restore/compensate effects before rollback.
+Change model authority only through one accepted `ModelRevisionSet`; keep the revision-local delta distinct from its complete `CurrentEffectiveIntentView`, bind every current model owner exactly, persist evidence before the pointer, and restore/compensate effects before rollback.
 
 <!-- flowguard-rule:lifecycle.default_replacement -->
 
-Dispose every replaced path, field, alias, wrapper, or alternate success through an explicit delete/block/migrate/delegate/repair/replace/scope disposition.
+Default replacement means dispose the old path: every replaced field, alias, wrapper, or alternate success needs an explicit delete/block/migrate/delegate/repair/replace/scope disposition.
 
 <!-- flowguard-rule:behavior.commitment_ledger -->
 
@@ -168,11 +168,11 @@ Field-bearing work uses FieldLifecycleMesh and accounts owner, readers/writers, 
 
 <!-- flowguard-rule:evidence.ui_and_payload -->
 
-UI runnable and file/work-package claims need current real-surface or payload evidence before broad confidence.
+UI runnable claims and file/work-package claims need current real-surface or payload evidence before broad confidence.
 
 <!-- flowguard-rule:behavior.primary_path_authority -->
 
-Path-sensitive commitments need one Primary Path Authority, visible primary failure, no alternate automatic success, and current exhaustion/test/risk evidence.
+Commitments with `path_sensitive=true` need one Primary Path Authority, visible primary failure, no alternate automatic success, and current exhaustion/test/risk evidence.
 
 <!-- flowguard-rule:behavior.exact_intent_reuse -->
 
@@ -188,7 +188,7 @@ Classify UI content once as `user_visible`, `user_on_demand`, or `internal`; on-
 
 <!-- flowguard-rule:process.development_process_flow -->
 
-Plans, staged/multi-skill work, sync, release, publish, and final process claims use `flowguard-development-process-flow`: preserve peers, delegate semantics, revalidate affected owners, and reserve one full gate for frozen source.
+Plans, staged/multi-skill work, sync, release, publish, and final process claims use `flowguard-development-process-flow`: start with lightweight existing-model/commitment lookup, preserve peers, revalidate affected owners, and reserve one full gate for frozen source.
 
 <!-- flowguard-rule:process.work_context_read_only -->
 
@@ -196,11 +196,11 @@ External specs/plans are optional project-bounded read-only WorkContexts; provid
 
 <!-- flowguard-rule:process.post_change_scan -->
 
-After non-trivial work, route changed, skipped, stale, open, split, or reduction signals to their existing specialist through DevelopmentProcessFlow.
+DevelopmentProcessFlow consumes post-change scan signals—changed, skipped, stale, open, split, or reduction—and routes each to its existing specialist.
 
 <!-- flowguard-rule:claim.no_fake_adoption -->
 
-Never create a fake local FlowGuard. AGENTS/manifest/log changes are not proof: freeze task-specific failures and boundary, bind native good/bad-per-failure/oracle/current evidence, and let only declared checks support completion.
+Do not create a fake local FlowGuard replacement. AGENTS/manifest/log changes are not proof: freeze task-specific failures and boundary, bind native good/bad-per-failure/oracle/current evidence, and let only declared checks support completion.
 
 <!-- END FLOWGUARD PROJECT RULES -->
 

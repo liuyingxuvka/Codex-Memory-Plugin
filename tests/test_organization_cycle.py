@@ -34,6 +34,8 @@ class OrganizationCycleTests(unittest.TestCase):
         self.assertTrue(result["contribution"]["ok"])
         self.assertTrue(result["snapshot"]["ok"])
         self.assertTrue(result["postflight_recorded"])
+        self.assertTrue(result["maintenance"]["sync"]["worktree_cleanup"]["ok"])
+        self.assertFalse(result["maintenance"]["sync"]["worktree_cleanup"]["retained"])
 
     def test_not_applicable_maintenance_does_not_run_contribution(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

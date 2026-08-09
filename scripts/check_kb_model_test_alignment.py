@@ -116,6 +116,40 @@ def _terminal_full_regression(
                     "junit",
                     "proof_artifact_ref",
                 ):
+                    # An aggregate run may project an exact prior terminal
+                    # receipt.  The manifest entry records that the owner was
+                    # reused, while the immutable projected receipt preserves
+                    # the native execution state (`executed`).  Treat that
+                    # pair as valid only for an explicit reuse projection;
+                    # every other field still needs byte-level semantic
+                    # agreement.
+                    if (
+                        key == "execution"
+                        and full.get("execution") == "reused"
+                        and receipt_payload.get("execution") == "executed"
+                    ):
+                        compacted_from = receipt_payload.get("compacted_from")
+                        if not isinstance(compacted_from, dict):
+                            issues.append(
+                                "full_regression_reuse_projection_missing_compacted_from"
+                            )
+                        else:
+                            source_path = Path(
+                                str(compacted_from.get("receipt_path") or "")
+                            ).resolve()
+                            source_hash = str(compacted_from.get("receipt_sha256") or "")
+                            try:
+                                source_bytes = source_path.read_bytes()
+                            except OSError:
+                                issues.append(
+                                    "full_regression_reuse_projection_source_unreadable"
+                                )
+                            else:
+                                if hashlib.sha256(source_bytes).hexdigest() != source_hash:
+                                    issues.append(
+                                        "full_regression_reuse_projection_source_digest_mismatch"
+                                    )
+                        continue
                     if receipt_payload.get(key) != full.get(key):
                         issues.append(f"full_regression_receipt_manifest_mismatch:{key}")
     junit = full.get("junit")

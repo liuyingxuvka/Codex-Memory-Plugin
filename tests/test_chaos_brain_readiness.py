@@ -896,6 +896,16 @@ class ChaosBrainReadinessTests(unittest.TestCase):
                     "passed_node_ids": [],
                 },
             },
+        ), mock.patch.object(
+            readiness,
+            "_organization_rehearsal_check",
+            return_value={
+                "ok": True,
+                "receipt_id": "validation:organization_rehearsal:current",
+                "name": "organization_rehearsal",
+                "execution": "consumed",
+                "terminal_status": "passed",
+            },
         ):
             root = Path(temp_dir)
             report = readiness.build_report(

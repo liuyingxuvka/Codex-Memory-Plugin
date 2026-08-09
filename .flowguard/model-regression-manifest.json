@@ -41,10 +41,10 @@
     "tests/test_org_snapshot.py",
     "tests/test_org_maintenance.py",
     "tests/test_org_cleanup.py",
-    "tests/test_org_automation.py"
-    ,"tests/test_org_github_automation.py"
-    ,"tests/test_github_repo_config.py"
-    ,"tests/test_org_sources.py"
+    "tests/test_org_automation.py",
+    "tests/test_org_github_automation.py",
+    "tests/test_github_repo_config.py",
+    "tests/test_org_sources.py"
   ],
   "snapshot_only_input_globs": [
     ".flowguard/model-system/**/*.json",
@@ -88,12 +88,12 @@
           }
         ],
         "evidence_check_ids": [
-          "check:model-regression:behavior-commitment-ledger"
+          "check:model-regression:behavior_commitment_ledger"
         ],
         "model_sha256": "sha256:4c6a244e5f60b5b200884c5ad51a7d7d6899768a6e5df9ef016757a0b4cfe8f8",
         "runner_sha256": "sha256:d49445e49b4975db731f94e0bb650e4faeb8c588dc6b00004dac1859a02d6406",
         "declaration_fingerprint": "sha256:aa35f42bb0205ec514a0096d06e22d2270b7a14ad9c180e55aa365a4f9f06afe",
-        "closure_fingerprint": "sha256:ae1580a7d3e2e331db9b8d1ab91520357ff0faeb55e9727788561b780e344dca"
+        "closure_fingerprint": "sha256:c9054b6b342224850c5dc001367779f3b5e550e1018023489404396ddba627f2"
       },
       "runner": [
         "{python}",
@@ -101,7 +101,10 @@
       ],
       "shard_safe": true,
       "tier": "fast",
-      "timeout_seconds": 120
+      "timeout_seconds": 120,
+      "intent_source_inputs": [
+        ".flowguard/behavior_commitment_ledger/model.py"
+      ]
     },
     {
       "absence_reason": "",
@@ -299,12 +302,12 @@
           }
         ],
         "evidence_check_ids": [
-          "check:model-regression:khaos-brain-logicguard-system"
+          "check:model-regression:khaos_brain_logicguard_system"
         ],
         "model_sha256": "sha256:bdca28e101410aac30699f2f878937fa9a68645b0415182f3fbd22de5bf93873",
         "runner_sha256": "sha256:f0aacc1ce3a2eca3d5f9f05ae1c33b4b54d05966befef7ef319af3c453180b8a",
         "declaration_fingerprint": "sha256:5628f42116fd18c6ce718e6400179f45987a58103341b23974147446a01d7af6",
-        "closure_fingerprint": "sha256:58a4b8985d17926cfff997d6ed9f56a804e2144c942fd445c51cad2d9b381058"
+        "closure_fingerprint": "sha256:25d838e4beb5cd2bb4629201747a7d90ca2d7dd424cc8bff22888e5a36141214"
       },
       "runner": [
         "{python}",
@@ -312,8 +315,11 @@
       ],
       "shard_safe": true,
       "tier": "fast",
-      "timeout_seconds": 120
+      "timeout_seconds": 120,
+      "intent_source_inputs": [
+        ".flowguard/khaos_brain_logicguard_system/model.py"
+      ]
     }
   ],
-  "schema_version": "flowguard.model_regression_manifest.v3"
+  "schema_version": "flowguard.model_regression_manifest.v4"
 }

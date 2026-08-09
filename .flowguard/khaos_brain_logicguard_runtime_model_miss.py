@@ -28,12 +28,19 @@ from flowguard import (
     MODEL_MATURATION_RECEIPT_STATUS_PASS,
     MODEL_MATURATION_RESOLUTION_MODEL_EDIT,
     MODEL_MISS_BACKFEED_REUSE_EXISTING,
+    COVERAGE_DISPOSITION_SATISFIED,
+    COVERAGE_TIER_STANDARD,
+    CoverageDemandRow,
     FalseNegativeBackpropagationPlan,
     FalseNegativeCase,
     FlowGuardClosureContractPlan,
+    ModelMaturationCoverageContribution,
     ModelMaturationPlan,
     ModelMaturationSignal,
+    OwnerCoverageResolution,
+    ProofArtifactRef,
     SameClassMissClosure,
+    TaskCoverageDemand,
     UIModelMissRecord,
     backfeed_model_miss_to_behavior_ledger,
     load_behavior_commitment_ledger,
@@ -41,6 +48,12 @@ from flowguard import (
     review_flowguard_closure_contract,
     review_model_maturation_loop,
 )
+from flowguard.model_path_quality import (
+    PathQualityResult,
+    PathQualitySubject,
+    canonical_fingerprint,
+)
+from model_maturation_fixture import verify_typed_maturation_report
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -215,15 +228,122 @@ def _closed_maturation_report(
     evidence_fingerprint: str,
     signal_specs: tuple[tuple[str, str, str, str], ...],
 ) -> object:
+    """Build one current-schema maturation closure with typed owner evidence.
+
+    FlowGuard's current maturation contract deliberately rejects a caller's
+    bare ``resolved=True`` fixture.  Each model-miss closure therefore compiles
+    a small TaskCoverageDemand, binds one owner resolution and proof artifact
+    to that demand, and supplies an independent path-quality denominator.  The
+    fixture remains local to this review; it does not create runtime authority.
+    """
+
+    def _fingerprint(value: object) -> str:
+        return value if isinstance(value, str) and value.startswith("sha256:") else canonical_fingerprint(value)
+
+    task_id = f"task:{risk_id}:closure"
+    candidate_sha = _fingerprint(candidate_fingerprint)
+    evidence_sha = _fingerprint(evidence_fingerprint)
     coverage_ids = tuple(f"{risk_id}:coverage:{index}" for index in range(len(signal_specs)))
     probe_ids = tuple(f"{risk_id}:probe:{index}" for index in range(len(signal_specs)))
+    demand_id = f"{risk_id}:coverage-demand:v1"
+    proof_id = f"proof:{risk_id}:model-miss-review"
+    proof_fingerprint = _fingerprint({"proof_id": proof_id, "evidence": evidence_sha})
+    demand = TaskCoverageDemand(
+        demand_id=demand_id,
+        task_id=task_id,
+        task_fingerprint=_fingerprint({"task_id": task_id, "risk_id": risk_id}),
+        presentation_tier=COVERAGE_TIER_STANDARD,
+        rows=(
+            CoverageDemandRow(
+                demand_id=f"{demand_id}:row:model-miss-review",
+                rule_id=f"rule:{risk_id}:model-miss-review",
+                owner_route="model_miss_review",
+                coverage_ids=coverage_ids,
+                triggered=True,
+                disposition=COVERAGE_DISPOSITION_SATISFIED,
+                reason="The declared model-miss owner supplies current closure evidence.",
+                evidence_ids=(proof_id,),
+                evidence_fingerprints=(proof_fingerprint,),
+            ),
+        ),
+    )
+    resolution = OwnerCoverageResolution(
+        resolution_id=f"resolution:{risk_id}:model-miss-review",
+        task_id=task_id,
+        demand_id=demand.demand_id,
+        demand_fingerprint=demand.fingerprint,
+        owner_route="model_miss_review",
+        disposition=COVERAGE_DISPOSITION_SATISFIED,
+        obligation_ids=coverage_ids,
+        evidence_ids=(proof_id,),
+        evidence_fingerprints=(proof_fingerprint,),
+    )
+    proof = ProofArtifactRef(
+        artifact_id=proof_id,
+        producer_route="model_miss_review",
+        command="khaos_brain_logicguard_runtime_model_miss.py --json",
+        result_path=str(Path(__file__).resolve()),
+        result_status="passed",
+        exit_code=0,
+        started_at="2026-08-08T00:00:00+00:00",
+        finished_at="2026-08-08T00:00:01+00:00",
+        subject_id=resolution.resolution_id,
+        subject_fingerprint=resolution.resolution_fingerprint,
+        artifact_fingerprints={proof_id: proof_fingerprint},
+        covered_obligation_ids=coverage_ids,
+        current=True,
+        route_evidence_current=True,
+        progress_only=False,
+    )
+
+    currentness_id = f"path-quality-current:{risk_id}:{candidate_sha[7:23]}"
+    subject = PathQualitySubject(
+        model_id=OWNER_MODEL_ID,
+        boundary_id=f"model-miss:{risk_id}:path-quality",
+        model_fingerprint=candidate_sha,
+        normalized_facts_fingerprint=_fingerprint({"risk_id": risk_id, "facts": "current"}),
+        retained_element_inventory_fingerprint=_fingerprint({"risk_id": risk_id, "retained": "declared"}),
+        purpose_fingerprint=_fingerprint({"risk_id": risk_id, "purpose": "close-model-miss"}),
+        intent_fingerprint=_fingerprint({"risk_id": risk_id, "intent": "current-observed"}),
+        obligation_fingerprint=_fingerprint({"risk_id": risk_id, "obligations": list(coverage_ids)}),
+        provider_fingerprint=_fingerprint({"provider": "model_miss_review", "risk_id": risk_id}),
+        dependency_fingerprint=_fingerprint({"dependencies": [OWNER_MODEL_ID], "risk_id": risk_id}),
+        code_fingerprint=_fingerprint({"code": str(Path(__file__).resolve()), "risk_id": risk_id}),
+        test_fingerprint=_fingerprint({"tests": [spec[0] for spec in signal_specs], "risk_id": risk_id}),
+        oracle_fingerprint=_fingerprint({"oracle": "review_model_maturation_loop", "risk_id": risk_id}),
+        evidence_fingerprint=evidence_sha,
+        currentness_id=currentness_id,
+    )
+    path_quality_result = PathQualityResult(
+        result_id=f"path-quality-result:{risk_id}",
+        subject_fingerprint=subject.fingerprint,
+        mode="lightweight",
+        trigger_ids=(),
+        finding_ids=(),
+        candidate_ids=(),
+        rewrite_rule_ids=(),
+        conclusion="single_clear_path",
+        unresolved_ids=(),
+        selected_candidate_id="",
+        selected_candidate_lane="",
+        comparison_boundary_id="",
+        candidate_set_fingerprint="",
+        rewrite_set_fingerprint="",
+        necessity_witness_set_fingerprint=_fingerprint({"risk_id": risk_id, "witnesses": ()}),
+        detail_evidence_fingerprint=evidence_sha,
+        producer_id="model_miss_review",
+        currentness_id=currentness_id,
+        current=True,
+    )
+
     plan = ModelMaturationPlan(
         plan_id=plan_id,
-        task_id=f"task:{risk_id}:closure",
+        task_id=task_id,
         task_purpose="Close the observed model-miss class with exact current evidence.",
         model_id=OWNER_MODEL_ID,
         risk_id=risk_id,
-        coverage_universe_id=f"{risk_id}:coverage-universe:v1",
+        coverage_universe_id=demand.demand_id,
+        coverage_demand_fingerprint=demand.fingerprint,
         coverage_owner="flowguard-model-miss-review",
         coverage_source_refs=(
             f"model:{OWNER_MODEL_ID}",
@@ -231,9 +351,15 @@ def _closed_maturation_report(
         ),
         coverage_ids=coverage_ids,
         required_probe_ids=probe_ids,
-        base_model_fingerprint=f"base:{risk_id}",
-        candidate_model_fingerprint=candidate_fingerprint,
-        evidence_fingerprint=evidence_fingerprint,
+        base_model_fingerprint=_fingerprint({"base": risk_id}),
+        candidate_model_fingerprint=candidate_sha,
+        evidence_fingerprint=evidence_sha,
+        required_path_quality_model_ids=(OWNER_MODEL_ID,),
+        path_quality_subjects=(subject,),
+        path_quality_results=(path_quality_result,),
+        owner_resolution_ids=(resolution.resolution_id,),
+        owner_resolution_fingerprints=(resolution.resolution_fingerprint,),
+        owner_resolution_owner_ids=(resolution.owner_route,),
     )
     plan = replace(plan, coverage_universe_fingerprint=plan.expected_coverage_fingerprint())
     signals = tuple(
@@ -250,7 +376,7 @@ def _closed_maturation_report(
             resolution_class=MODEL_MATURATION_RESOLUTION_MODEL_EDIT,
             prediction=description,
             falsifier=f"The same-class probe {probe_ids[index]} fails against the candidate model.",
-            evidence_fingerprint=evidence_id,
+            evidence_fingerprint=_fingerprint({"evidence_id": evidence_id}),
             resolved=True,
             current=True,
             receipt_id=f"receipt:{risk_id}:{index}",
@@ -260,12 +386,30 @@ def _closed_maturation_report(
             receipt_probe_id=probe_ids[index],
             receipt_candidate_fingerprint=plan.candidate_model_fingerprint,
             receipt_coverage_fingerprint=plan.coverage_universe_fingerprint,
-            receipt_evidence_fingerprint=evidence_id,
+            receipt_evidence_fingerprint=_fingerprint({"evidence_id": evidence_id}),
             receipt_owner_route="model_miss_review",
         )
         for index, (signal_id, signal_type, evidence_id, description) in enumerate(signal_specs)
     )
-    return review_model_maturation_loop(replace(plan, signals=signals))
+    contribution = ModelMaturationCoverageContribution(
+        contribution_id=f"contribution:{risk_id}:model-miss-review",
+        owner_route="model_miss_review",
+        task_id=task_id,
+        coverage_source_refs=plan.coverage_source_refs,
+        coverage_ids=coverage_ids,
+        required_probe_ids=probe_ids,
+        signals=signals,
+        evidence_ref=proof,
+        owner_resolution=resolution,
+        candidate_model_fingerprint=plan.candidate_model_fingerprint,
+        subject_fingerprints={proof_id: proof_fingerprint},
+        status="pass",
+        current=True,
+    )
+    report = review_model_maturation_loop(
+        replace(plan, signals=signals, owner_resolution_contributions=(contribution,))
+    )
+    return verify_typed_maturation_report(report, source_file=__file__)
 
 
 def _build_foreground_replay_closure(ledger: object) -> dict[str, object]:
@@ -383,6 +527,7 @@ def _build_foreground_replay_closure(ledger: object) -> dict[str, object]:
             claim_id="claim:khaos-retrieval-foreground-replay-model-miss-closed",
             claim_scope="false_negative_closed",
             same_class_miss_closures=(same_class,),
+            model_maturation_evidence=(maturation.verified_maturation,),
             require_runtime_trace_mapping=False,
             require_artifact_freshness=False,
             require_model_quality_review=False,
@@ -514,6 +659,7 @@ def _build_organization_backup_closure(ledger: object) -> dict[str, object]:
             claim_id="claim:khaos-organization-windows-backup-model-miss-closed",
             claim_scope="false_negative_closed",
             same_class_miss_closures=(same_class,),
+            model_maturation_evidence=(maturation.verified_maturation,),
             require_runtime_trace_mapping=False,
             require_artifact_freshness=False,
             require_model_quality_review=False,
@@ -660,6 +806,7 @@ def _build_organization_batch_closure(ledger: object) -> dict[str, object]:
             claim_id="claim:khaos-organization-exact-batch-model-miss-closed",
             claim_scope="false_negative_closed",
             same_class_miss_closures=(same_class,),
+            model_maturation_evidence=(maturation.verified_maturation,),
             require_runtime_trace_mapping=False,
             require_artifact_freshness=False,
             require_model_quality_review=False,
@@ -836,6 +983,7 @@ def _build_organization_remote_gate_closure(ledger: object) -> dict[str, object]
             claim_id="claim:khaos-organization-remote-gate-model-miss-closed",
             claim_scope="false_negative_closed",
             same_class_miss_closures=(same_class,),
+            model_maturation_evidence=(maturation.verified_maturation,),
             require_runtime_trace_mapping=False,
             require_artifact_freshness=False,
             require_model_quality_review=False,
@@ -979,6 +1127,7 @@ def _build_search_envelope_closure(ledger: object) -> dict[str, object]:
             claim_id="claim:khaos-default-search-envelope-model-miss-closed",
             claim_scope="false_negative_closed",
             same_class_miss_closures=(same_class,),
+            model_maturation_evidence=(maturation.verified_maturation,),
             require_runtime_trace_mapping=False,
             require_artifact_freshness=False,
             require_model_quality_review=False,
@@ -1125,6 +1274,7 @@ def _build_foreground_capture_closure(ledger: object) -> dict[str, object]:
             claim_id="claim:khaos-foreground-candidate-write-model-miss-closed",
             claim_scope="false_negative_closed",
             same_class_miss_closures=(same_class,),
+            model_maturation_evidence=(maturation.verified_maturation,),
             require_runtime_trace_mapping=False,
             require_artifact_freshness=False,
             require_model_quality_review=False,
@@ -1276,6 +1426,7 @@ def _build_raw_candidate_repair_closure(ledger: object) -> dict[str, object]:
             claim_id="claim:khaos-sleep-raw-candidate-repair-model-miss-closed",
             claim_scope="false_negative_closed",
             same_class_miss_closures=(same_class,),
+            model_maturation_evidence=(maturation.verified_maturation,),
             require_runtime_trace_mapping=False,
             require_artifact_freshness=False,
             require_model_quality_review=False,
@@ -1413,6 +1564,7 @@ def build_report() -> dict[str, object]:
             claim_id="claim:khaos-logicguard-runtime-model-miss-closed",
             claim_scope="false_negative_closed",
             same_class_miss_closures=(same_class,),
+            model_maturation_evidence=(maturation.verified_maturation,),
             require_runtime_trace_mapping=False,
             require_artifact_freshness=False,
             require_model_quality_review=False,

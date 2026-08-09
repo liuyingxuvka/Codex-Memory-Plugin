@@ -13,6 +13,6 @@
 ## 3. Acceptance
 
 - [x] 3.1 Run organization automation contract and source-sync tests with a synthetic dirty asset edit.
-- [ ] 3.2 Run the top-level organization wrapper exactly once and validate its immutable receipt, snapshot, postflight, and Git state.
+- [x] 3.2 After all source, rehearsal, install, and FlowGuard gates are current, run the top-level organization wrapper exactly once and validate its immutable receipt, snapshot, postflight, cleanup/worktree registry, and Git state. Do not retry the old failed run or invoke the child entrypoint.
 
-> The single allowed wrapper run produced a terminal failure before organization preflight because Windows Git could not checkout one deeply nested bundle path (`Filename too long`). The short-handle plus `core.longpaths` repair is implemented and covered by source tests; 3.2 remains open until a future exact-once organization run can validate the repaired path.
+> The original wrapper run remains immutable as a failed preflight receipt (`Filename too long`). The repaired run used an isolated disposable worktree, completed all organization checkpoints, created and validated the snapshot, completed contribution/postflight, removed the worktree, and left the configured mirror's unrelated hero deletion untouched.

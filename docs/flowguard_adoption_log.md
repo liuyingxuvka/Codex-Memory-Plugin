@@ -2207,6 +2207,21 @@ un_khaos_brain_conformance.py` - conformance replay passed lane lock, organizati
 - python -m flowguard project-audit --root . --json
 - Rerun affected FlowGuard model checks and focused tests before broad confidence.
 
+## organization-maintenance-rehearsal-boundary - source-only evidence
+
+- The organization rehearsal is a separate native-adjacent evidence surface; it
+  never replaces the scheduled wrapper receipt or local LogicGuard authority.
+- The current rehearsal runner records the real configured source identity,
+  source manifest/catalog digest, worktree registry, local authority pointer,
+  repository tree identity, toolchain identity, eleven checkpoint identities,
+  snapshot/contribution/postflight state, cleanup state, and remote/wrapper
+  before/after observations.
+- Release readiness consumes the content-addressed rehearsal receipt and blocks
+  missing, stale, failed, `not_applicable`, or mismatched evidence.
+- The remaining FlowGuard current-authority migration is intentionally kept as a
+  separate prerequisite; no legacy v2/v3 artifact was hand-edited or used as a
+  runtime fallback.
+
 ## refresh-skillguard-author-control - Current author control and bounded evidence lifecycle
 
 - Project: Knowledge_20260419
@@ -2970,3 +2985,45 @@ This entry proves the current model/test/install/runtime recovery and automation
 
 ### Next Actions
 - Consume this frozen adoption record in the single final readiness owner and terminal evidence consumers.
+
+
+## flowguard-project-upgrade - FlowGuard project upgrade record update
+
+- Project: Knowledge_20260419
+- Trigger reason: target project requires current semantic adoption and version records
+- Status: blocked
+- Skill decision: used_flowguard
+- Started: 2026-08-08T19:16:47+00:00
+- Ended: 2026-08-08T19:16:47+00:00
+- Duration seconds: 0.000
+- Commands OK: False
+
+### Model Files
+- none recorded
+
+### Commands
+- OK (0.000s): `managed adoption rule-set preflight` - generated block contains every required stable rule
+- OK (0.000s): `package-authority/global-consumer validation` - pass
+- FAIL (0.000s): `post-write project adoption audit` - semantic and version parity after write
+
+### Findings
+- model_authority_invalid: The project model-authority pointer or snapshot is invalid.
+- artifact_upgrade_scan_scoped_out: Artifact/model/test upgrade scanning was scoped out by records-only mode.
+- adoption_record_written: FlowGuard project AGENTS block and manifest were written or refreshed.
+
+### Counterexamples
+- none recorded
+
+### Friction Points
+- none recorded
+
+### Skipped Steps
+- Project adoption does not replace executable model checks, tests, replay, or closure evidence.
+- Artifact/model/test upgrade scanning was scoped out by records-only mode.
+
+### Risk Evidence Summary
+- none recorded
+
+### Next Actions
+- python -m flowguard project-audit --root . --json
+- Rerun affected FlowGuard model checks and focused tests before broad confidence.

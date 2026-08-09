@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import json
+import os
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
 
 from local_kb.org_snapshot import (
+    _native_filesystem_path,
     load_current_organization_snapshot,
     snapshot_pointer_path,
     stage_organization_snapshot,
@@ -151,6 +154,25 @@ class OrganizationSnapshotTests(unittest.TestCase):
 
         self.assertFalse(second["ok"])
         self.assertEqual(second["status"], "immutable-generation-conflict")
+
+    @unittest.skipUnless(os.name == "nt", "Windows extended-length path behavior")
+    def test_snapshot_materializes_deep_card_paths_with_windows_extended_io(self) -> None:
+        tmp = Path(tempfile.mkdtemp())
+        try:
+            root = tmp
+            deep_path = "kb/main/" + ("nested/" * 19) + "long-card.yaml"
+            org = root / "org"
+            materialize_current_source(
+                org,
+                organization_id="sandbox",
+                cards=[(deep_path, base_card("long-card", "Long card", "Use the long card."))],
+            )
+            result = stage_organization_snapshot(root, org, "sandbox", source_commit="long-path")
+            generation_file = Path(result["generation_root"]) / deep_path
+            self.assertTrue(result["ok"], result)
+            self.assertTrue(_native_filesystem_path(generation_file).is_file())
+        finally:
+            shutil.rmtree(_native_filesystem_path(tmp), ignore_errors=False)
 
 
 if __name__ == "__main__":

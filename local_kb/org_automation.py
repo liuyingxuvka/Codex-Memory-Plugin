@@ -1162,10 +1162,18 @@ def run_organization_maintenance(
         final_ok = final_ok and snapshot_ok
         exact_apply = cleanup.get("exact_selected_apply") if isinstance(cleanup.get("exact_selected_apply"), dict) else {}
         skill_safety = cleanup.get("skill_safety_checkpoint") if isinstance(cleanup.get("skill_safety_checkpoint"), dict) else {}
+        skill_bundle_version = cleanup.get("skill_bundle_version_checkpoint") if isinstance(cleanup.get("skill_bundle_version_checkpoint"), dict) else {}
+        checkpoint_apply = cleanup.get("decision_apply_checkpoint") if isinstance(cleanup.get("decision_apply_checkpoint"), dict) else {}
+        checkpoint_post_apply = cleanup.get("post_apply_checkpoint") if isinstance(cleanup.get("post_apply_checkpoint"), dict) else {}
         final_ok = (
             final_ok
             and exact_apply.get("exact") is True
             and skill_safety.get("passed") is True
+            and skill_bundle_version.get("complete") is True
+            and skill_bundle_version.get("passed") is True
+            and checkpoint_apply.get("complete") is True
+            and checkpoint_post_apply.get("complete") is True
+            and checkpoint_post_apply.get("ok") is True
         )
         write_lane_status(repo_root, "kb-org-maintenance", "completed" if final_ok else "failed", run_id=resolved_run_id)
         result = {

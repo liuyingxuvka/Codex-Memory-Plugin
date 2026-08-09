@@ -1,8 +1,8 @@
 [flowguard]
 repository = "https://github.com/liuyingxuvka/FlowGuard"
-adopted_package_version = "0.68.1"
+adopted_package_version = "0.68.8"
 schema_version = "1.0"
-last_verified_at = "2026-08-01T08:39:38+00:00"
+last_verified_at = "2026-08-08T19:16:46+00:00"
 last_verified_by = "FlowGuard project-upgrade"
 agents_path = "AGENTS.md"
 
@@ -15,12 +15,12 @@ require_model_update_for_behavior_changes = true
 
 [model_authority]
 system_id = "flowguard"
-observed_snapshot_path = ".flowguard/model-mesh/snapshots/2f50a51d6e8e7aedf803b47f78742bb8b6b16d11e3ae233a2b436f2df546e8ef.json"
-observed_snapshot_fingerprint = "sha256:2f50a51d6e8e7aedf803b47f78742bb8b6b16d11e3ae233a2b436f2df546e8ef"
-subject_revision = "source-inventory:6a62d61e09457923105a6e7849f5f6d9b6fb0ba8a6b7ae52305bbab9eb77737d"
+observed_snapshot_path = ".flowguard/model-mesh/snapshots/86e95203a0e0a0444a68b5b61541d87f9b6cc9cd62bc0fc4a3d4d15c8345811c.json"
+observed_snapshot_fingerprint = "sha256:86e95203a0e0a0444a68b5b61541d87f9b6cc9cd62bc0fc4a3d4d15c8345811c"
+subject_revision = "source-inventory:02662e857b9f8769551f1e0dc6b72924453c4bd71a681803785331a892ff4833"
 coverage_status = "incomplete_within_declared_boundary"
-generation = 13
-accepted_revision_set_fingerprint = "sha256:0c5f6a50516faed818da3edd531332736f591ee45d2343afa178fc4aa5f1ee89"
-previous_snapshot_fingerprint = "sha256:9abed6f143dcfd1ea8bf4c7a6be776e35852cdc63c4c62b3cb5cd9e777370e84"
-activation_receipt_fingerprint = "sha256:94c9065f74e0aaea83645fd2e7ca87fbba4a68f5226e26ee2fa16c5f33fe0758"
-head_fingerprint = "sha256:13cc0f6d8e688403b62759464782edc0f02b53332327c6065acabeaaa6fe9a7b"
+generation = 15
+accepted_revision_set_fingerprint = "sha256:9f8d6ac265cde3d17bc247cd0603180c7ce9587d42b822d2095d68ba8a939d2c"
+previous_snapshot_fingerprint = "sha256:7287a874f9400e457ae7f25339e98aee5ea3c8535111a1140cf5d75e252ac174"
+activation_receipt_fingerprint = "sha256:4e0f3361ab6960b4794ff8805e0d4142d842063c05a20c9d4d820bc1aef8cd9d"
+head_fingerprint = "sha256:20bdd9c06fd40a3e461a9253bf0033bef00aff3757e3363e4fed5e429b8d69bc"

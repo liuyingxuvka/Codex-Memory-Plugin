@@ -277,6 +277,41 @@ class OrganizationSourceTests(unittest.TestCase):
                 "D README.md",
             )
 
+    def test_cleanup_prunes_only_exact_stale_worktree_registration(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "source"
+            self._write_valid_org_repo(source)
+            self.assertEqual(0, _run_git(["init"], cwd=source).returncode)
+            self.assertEqual(0, _run_git(["add", "."], cwd=source).returncode)
+            self.assertEqual(
+                0,
+                _run_git(
+                    ["-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-m", "seed"],
+                    cwd=source,
+                ).returncode,
+            )
+            worktree = root / "worktrees" / "owned-stale"
+            self.assertEqual(
+                0,
+                _run_git(["worktree", "add", "--detach", str(worktree), "HEAD"], cwd=source).returncode,
+            )
+            shutil.rmtree(worktree)
+
+            result = cleanup_organization_worktree(
+                {
+                    "mode": "isolated",
+                    "configured_path": str(source),
+                    "worktree_path": str(worktree),
+                    "worktree_root": str(root / "worktrees"),
+                },
+                success=True,
+            )
+
+        self.assertTrue(result["ok"], result)
+        self.assertEqual(result["status"], "stale-registration-pruned")
+        self.assertFalse(result["retained"])
+
     def test_paths_and_missing_manifest(self) -> None:
         self.assertEqual(default_org_mirror_path(Path("repo"), "acme/org kb").as_posix(), "repo/.local/organization_sources/acme-org-kb")
         self.assertEqual(guess_organization_source_id("https://github.com/acme/khaos-org-kb-sandbox.git"), "khaos-org-kb-sandbox")

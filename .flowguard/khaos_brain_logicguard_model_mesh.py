@@ -687,9 +687,8 @@ def broken_partition() -> HierarchyPartitionMap:
 
 
 def main() -> int:
-    expected_count = len(build_partition().child_models)
-    current = review_hierarchical_mesh(build_partition(), model_count=expected_count)
-    broken = review_hierarchical_mesh(broken_partition(), model_count=expected_count)
+    current = review_hierarchical_mesh(build_partition())
+    broken = review_hierarchical_mesh(broken_partition())
     payload = {
         "artifact_type": "khaos_brain_logicguard_native_flowguard_model_mesh",
         "current": current.to_dict(),

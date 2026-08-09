@@ -760,3 +760,24 @@ def test_maintenance_without_selected_actions_uses_only_applicable_readiness_sou
         "report.cleanup.github_merge_readiness",
         "maintenance_branch",
     ]
+
+
+def test_maintenance_skill_safety_obligation_requires_direct_version_checkpoint() -> None:
+    skill_id = "kb-organization-maintenance"
+    payload = build_fixture_payload(skill_id, run_id="maintenance-skill-version-direct")
+    current = evaluate_native_payload(skill_id, payload, exit_code=0)
+    assert current["ok"], current
+
+    payload["report"]["cleanup"].pop("skill_bundle_version_checkpoint")
+    missing = evaluate_native_payload(skill_id, payload, exit_code=0)
+    assert not missing["ok"]
+    assert not missing["evidence"][
+        obligation_id(skill_id, "skill-safety-version")
+    ]["ok"]
+
+    payload = build_fixture_payload(skill_id, run_id="maintenance-skill-version-fork")
+    payload["report"]["cleanup"]["skill_bundle_version_checkpoint"]["forked_versions"] = [
+        {"bundle_id": "fixture-bundle", "entry_id": "fork", "original_author": "other"}
+    ]
+    forked = evaluate_native_payload(skill_id, payload, exit_code=0)
+    assert not forked["ok"]

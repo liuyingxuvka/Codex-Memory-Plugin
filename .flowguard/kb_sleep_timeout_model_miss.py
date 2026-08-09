@@ -27,6 +27,8 @@ from flowguard import (
 
 from pathlib import Path
 
+from model_maturation_fixture import build_typed_maturation_report
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 LEDGER_PATH = REPO_ROOT / ".flowguard" / "behavior_commitment_ledger" / "ledger.json"
@@ -54,33 +56,6 @@ INDEX_AUTHORITY_TEST_ID = (
 
 
 def _closed_maturation_report() -> object:
-    coverage_ids = (
-        f"{MISS_ID}:coverage:state-boundary",
-        f"{MISS_ID}:coverage:same-class",
-    )
-    probe_ids = (
-        f"{MISS_ID}:probe:state-boundary",
-        f"{MISS_ID}:probe:same-class",
-    )
-    plan = ModelMaturationPlan(
-        plan_id="plan:kb-sleep-timeout:maturation",
-        task_id="task:kb-sleep-timeout:closure",
-        task_purpose="Close the bounded Sleep lifecycle/index timeout false-negative class.",
-        model_id=OWNER_MODEL_ID,
-        risk_id=MISS_ID,
-        coverage_universe_id=f"{MISS_ID}:coverage-universe:v1",
-        coverage_owner="flowguard-model-miss-review",
-        coverage_source_refs=(
-            f"model:{OWNER_MODEL_ID}",
-            "ledger:commitment:sleep-no-delta-single-owner",
-        ),
-        coverage_ids=coverage_ids,
-        required_probe_ids=probe_ids,
-        base_model_fingerprint="base:sleep-timeout-before-bounded-lifecycle",
-        candidate_model_fingerprint="candidate:sleep-bounded-lifecycle-index-recovery:v1",
-        evidence_fingerprint=MODEL_PROOF_ID,
-    )
-    plan = replace(plan, coverage_universe_fingerprint=plan.expected_coverage_fingerprint())
     specs = (
         (
             "signal:sleep-timeout-state-boundary",
@@ -95,36 +70,21 @@ def _closed_maturation_report() -> object:
             "Create, park, reopen, promote, downgrade, calibration, and observation transitions share bounded batch evidence.",
         ),
     )
-    signals = tuple(
-        ModelMaturationSignal(
-            signal_id=signal_id,
-            signal_type=signal_type,
-            source_route="model_miss_review",
-            model_id=OWNER_MODEL_ID,
-            risk_id=MISS_ID,
-            evidence_id=evidence_id,
-            description=description,
-            coverage_id=coverage_ids[index],
-            probe_id=probe_ids[index],
-            resolution_class=MODEL_MATURATION_RESOLUTION_MODEL_EDIT,
-            prediction=description,
-            falsifier=f"The same-class probe {probe_ids[index]} fails against the candidate model.",
-            evidence_fingerprint=evidence_id,
-            resolved=True,
-            current=True,
-            receipt_id=f"receipt:{MISS_ID}:{index}",
-            receipt_fingerprint=f"receipt-fingerprint:{MISS_ID}:{index}",
-            receipt_status=MODEL_MATURATION_RECEIPT_STATUS_PASS,
-            receipt_task_id=plan.task_id,
-            receipt_probe_id=probe_ids[index],
-            receipt_candidate_fingerprint=plan.candidate_model_fingerprint,
-            receipt_coverage_fingerprint=plan.coverage_universe_fingerprint,
-            receipt_evidence_fingerprint=evidence_id,
-            receipt_owner_route="model_miss_review",
-        )
-        for index, (signal_id, signal_type, evidence_id, description) in enumerate(specs)
+    return build_typed_maturation_report(
+        plan_id="plan:kb-sleep-timeout:maturation",
+        task_id="task:kb-sleep-timeout:closure",
+        task_purpose="Close the bounded Sleep lifecycle/index timeout false-negative class.",
+        owner_model_id=OWNER_MODEL_ID,
+        risk_id=MISS_ID,
+        coverage_source_refs=(
+            f"model:{OWNER_MODEL_ID}",
+            "ledger:commitment:sleep-no-delta-single-owner",
+        ),
+        candidate_fingerprint="candidate:sleep-bounded-lifecycle-index-recovery:v1",
+        evidence_fingerprint=MODEL_PROOF_ID,
+        signal_specs=specs,
+        source_file=__file__,
     )
-    return review_model_maturation_loop(replace(plan, signals=signals))
 
 
 def build_report() -> dict[str, object]:
@@ -240,6 +200,7 @@ def build_report() -> dict[str, object]:
             claim_id="claim:kb-sleep-timeout-model-miss-closed",
             claim_scope="false_negative_closed",
             same_class_miss_closures=(same_class,),
+            model_maturation_evidence=(maturation.verified_maturation,),
             require_runtime_trace_mapping=False,
             require_artifact_freshness=False,
             require_model_quality_review=False,

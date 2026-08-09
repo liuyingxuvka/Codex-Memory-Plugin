@@ -33,6 +33,27 @@ SNAPSHOT_BUILDER = {
 }
 
 
+def _native_filesystem_path(path: Path) -> Path:
+    """Return an I/O-safe path without changing the logical receipt path.
+
+    Organization cards retain their repository-relative source paths in the
+    manifest.  During snapshot staging those paths are appended to another
+    root, which can cross the Win32 MAX_PATH boundary even when the source
+    checkout itself is valid.  Use the Windows extended-length namespace only
+    for filesystem operations; manifest identities and user-facing paths stay
+    ordinary paths.
+    """
+
+    if os.name != "nt":
+        return Path(path)
+    raw = str(Path(path).resolve())
+    if raw.startswith("\\\\?\\"):
+        return Path(raw)
+    if raw.startswith("\\\\"):
+        return Path("\\\\?\\UNC\\" + raw.lstrip("\\"))
+    return Path("\\\\?\\" + raw)
+
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
@@ -228,8 +249,10 @@ def stage_organization_snapshot(
     staging = root / "staging" / uuid4().hex
     manifest: dict[str, Any]
     try:
-        if not generation_root.exists():
-            staging.mkdir(parents=True, exist_ok=False)
+        native_generation_root = _native_filesystem_path(generation_root)
+        native_staging = _native_filesystem_path(staging)
+        if not native_generation_root.exists():
+            native_staging.mkdir(parents=True, exist_ok=False)
             for row in rows:
                 entry_id = str(row["entry_id"])
                 token = _safe_segment(entry_id, "card")
@@ -251,16 +274,20 @@ def stage_organization_snapshot(
                     "bundle_path": str(row["bundle_path"]),
                 }
                 for field, destination in destination_paths.items():
-                    source = org_root / source_fields[field]
-                    target = staging / destination
+                    source = _native_filesystem_path(org_root / source_fields[field])
+                    target = _native_filesystem_path(staging / destination)
                     target.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copy2(source, target)
-                materialized = staging / source_path
+                materialized = _native_filesystem_path(staging / source_path)
                 materialized.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(org_root / source_path, materialized)
+                shutil.copy2(_native_filesystem_path(org_root / source_path), materialized)
                 manifest_rows.append({**row, "path": source_path, **destination_paths, "sha256": row["source_sha256"]})
             if (org_root / "skills").exists():
-                shutil.copytree(org_root / "skills", staging / "skills", dirs_exist_ok=True)
+                shutil.copytree(
+                    _native_filesystem_path(org_root / "skills"),
+                    _native_filesystem_path(staging / "skills"),
+                    dirs_exist_ok=True,
+                )
             manifest = {
                 "schema_version": SNAPSHOT_SCHEMA_VERSION,
                 **identity,
@@ -275,17 +302,17 @@ def stage_organization_snapshot(
                 "created_at": _now(),
             }
             manifest["manifest_digest"] = _manifest_digest(manifest)
-            (staging / "snapshot_manifest.json").write_text(
+            _native_filesystem_path(staging / "snapshot_manifest.json").write_text(
                 json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8"
             )
-            generation_root.parent.mkdir(parents=True, exist_ok=True)
+            _native_filesystem_path(generation_root.parent).mkdir(parents=True, exist_ok=True)
             try:
-                os.replace(staging, generation_root)
+                os.replace(native_staging, native_generation_root)
             except OSError:
-                if not generation_root.exists():
+                if not native_generation_root.exists():
                     raise
-                shutil.rmtree(staging, ignore_errors=True)
-        manifest = _read_json(generation_root / "snapshot_manifest.json")
+                shutil.rmtree(native_staging, ignore_errors=True)
+        manifest = _read_json(_native_filesystem_path(generation_root / "snapshot_manifest.json"))
         generation_errors = _validate_generation(generation_root, manifest)
         if generation_errors or str(manifest.get("generation_id") or "") != generation_id or str(manifest.get("manifest_digest") or "") != _manifest_digest(manifest):
             return {"ok": False, "status": "immutable-generation-conflict", "generation_id": generation_id, "errors": generation_errors or ["existing generation content differs"]}
@@ -309,16 +336,18 @@ def stage_organization_snapshot(
             "activated_at": _now(),
         }
         pointer["pointer_digest"] = _pointer_digest(pointer)
-        pointer_path.parent.mkdir(parents=True, exist_ok=True)
+        _native_filesystem_path(pointer_path.parent).mkdir(parents=True, exist_ok=True)
         temporary = pointer_path.with_name(f".{pointer_path.name}.{uuid4().hex}.tmp")
-        temporary.write_text(json.dumps(pointer, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        _native_filesystem_path(temporary).write_text(
+            json.dumps(pointer, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
         latest = _read_json(pointer_path)
         if _pointer_digest(latest) != current_digest and str(latest.get("generation_id") or "") != generation_id:
-            temporary.unlink(missing_ok=True)
+            _native_filesystem_path(temporary).unlink(missing_ok=True)
             return {"ok": False, "status": "pointer-conflict", "generation_id": generation_id, "errors": ["snapshot pointer changed during activation"]}
-        os.replace(temporary, pointer_path)
+        os.replace(_native_filesystem_path(temporary), _native_filesystem_path(pointer_path))
     except Exception as exc:
-        shutil.rmtree(staging, ignore_errors=True)
+        shutil.rmtree(_native_filesystem_path(staging), ignore_errors=True)
         return {"ok": False, "status": "blocked", "organization_id": organization_id, "generation_id": generation_id, "errors": [f"snapshot activation failed: {type(exc).__name__}: {exc}"]}
     return {
         "ok": True,

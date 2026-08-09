@@ -645,10 +645,20 @@ def run_organization_cycle(
             cycle_status = maintenance_status
 
         effective_sync = (maintenance.get("sync") or {}) if isinstance(maintenance, dict) else {}
+        # The native contribution owner returns ``ok`` and a receipt, while
+        # the cycle derives its terminal status through
+        # ``_organization_child_status``.  Do not require a redundant child
+        # ``status`` field here: treating an otherwise successful contribution
+        # as a failure leaves the exact disposable worktree retained after a
+        # completed cycle and makes the rehearsal look unsafe.
+        contribution_ok = bool((contribution or {}).get("ok", True))
+        contribution_terminal = str((contribution or {}).get("status") or "")
+        if not contribution_terminal and maintenance_status == "completed":
+            contribution_terminal = "completed" if contribution_ok else "failed"
         cleanup_success = bool(
             maintenance_status == "completed"
-            and str((contribution or {}).get("status") or "") in {"completed", "not_applicable"}
-            and bool((contribution or {}).get("ok", True))
+            and contribution_terminal in {"completed", "not_applicable"}
+            and contribution_ok
         )
         worktree_cleanup = cleanup_organization_worktree(
             effective_sync.get("worktree"), success=cleanup_success

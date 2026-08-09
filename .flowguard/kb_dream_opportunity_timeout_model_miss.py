@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import replace
 from pathlib import Path
 
+from model_maturation_fixture import build_typed_maturation_report
+
 from flowguard import (
     FALSE_NEGATIVE_CAUSE_SCOPE_OVERCLAIM,
     MODEL_MATURATION_RECEIPT_STATUS_PASS,
@@ -51,36 +53,6 @@ TIMEOUT_TREE_TEST_ID = (
 
 
 def _maturation_report() -> object:
-    coverage_ids = (
-        f"{MISS_ID}:coverage:artifact-bound",
-        f"{MISS_ID}:coverage:timeout-tree",
-    )
-    probe_ids = (
-        f"{MISS_ID}:probe:artifact-bound",
-        f"{MISS_ID}:probe:timeout-tree",
-    )
-    plan = ModelMaturationPlan(
-        plan_id="plan:khaos-local-cycle:dream-ocean-timeout:maturation",
-        task_id=f"task:{MISS_ID}:closure",
-        task_purpose=(
-            "Bound Dream persistence while preserving exact scan identity and give the "
-            "combined local owner enough ordered timeout headroom."
-        ),
-        model_id=OWNER_MODEL_ID,
-        risk_id=MISS_ID,
-        coverage_universe_id=f"{MISS_ID}:coverage-universe:v1",
-        coverage_owner="flowguard-model-miss-review",
-        coverage_source_refs=(
-            f"model:{OWNER_MODEL_ID}",
-            f"ledger:{COMMITMENT_ID}",
-        ),
-        coverage_ids=coverage_ids,
-        required_probe_ids=probe_ids,
-        base_model_fingerprint="base:dream-full-opportunity-artifact-native-timeout-900",
-        candidate_model_fingerprint="candidate:dream-bounded-artifact-native-timeout-2400:v1",
-        evidence_fingerprint=RUNTIME_CLOSURE_ID,
-    )
-    plan = replace(plan, coverage_universe_fingerprint=plan.expected_coverage_fingerprint())
     specs = (
         (
             "signal:dream-opportunity-artifact-boundary",
@@ -95,36 +67,24 @@ def _maturation_report() -> object:
             "The local native and owner budgets are route-specific and remain below aggregate and installer owners.",
         ),
     )
-    signals = tuple(
-        ModelMaturationSignal(
-            signal_id=signal_id,
-            signal_type=signal_type,
-            source_route="model_miss_review",
-            model_id=OWNER_MODEL_ID,
-            risk_id=MISS_ID,
-            evidence_id=evidence_id,
-            description=description,
-            coverage_id=coverage_ids[index],
-            probe_id=probe_ids[index],
-            resolution_class=MODEL_MATURATION_RESOLUTION_MODEL_EDIT,
-            prediction=description,
-            falsifier=f"The same-class probe {probe_ids[index]} fails against the candidate model.",
-            evidence_fingerprint=evidence_id,
-            resolved=True,
-            current=True,
-            receipt_id=f"receipt:{MISS_ID}:{index}",
-            receipt_fingerprint=f"receipt-fingerprint:{MISS_ID}:{index}",
-            receipt_status=MODEL_MATURATION_RECEIPT_STATUS_PASS,
-            receipt_task_id=plan.task_id,
-            receipt_probe_id=probe_ids[index],
-            receipt_candidate_fingerprint=plan.candidate_model_fingerprint,
-            receipt_coverage_fingerprint=plan.coverage_universe_fingerprint,
-            receipt_evidence_fingerprint=evidence_id,
-            receipt_owner_route="model_miss_review",
-        )
-        for index, (signal_id, signal_type, evidence_id, description) in enumerate(specs)
+    return build_typed_maturation_report(
+        plan_id="plan:khaos-local-cycle:dream-ocean-timeout:maturation",
+        task_id=f"task:{MISS_ID}:closure",
+        task_purpose=(
+            "Bound Dream persistence while preserving exact scan identity and give the "
+            "combined local owner enough ordered timeout headroom."
+        ),
+        owner_model_id=OWNER_MODEL_ID,
+        risk_id=MISS_ID,
+        coverage_source_refs=(
+            f"model:{OWNER_MODEL_ID}",
+            f"ledger:{COMMITMENT_ID}",
+        ),
+        candidate_fingerprint="candidate:dream-bounded-artifact-native-timeout-2400:v1",
+        evidence_fingerprint=RUNTIME_CLOSURE_ID,
+        signal_specs=specs,
+        source_file=__file__,
     )
-    return review_model_maturation_loop(replace(plan, signals=signals))
 
 
 def build_report() -> dict[str, object]:
@@ -232,6 +192,7 @@ def build_report() -> dict[str, object]:
             claim_id="claim:khaos-dream-opportunity-timeout-model-miss-closed",
             claim_scope="false_negative_closed",
             same_class_miss_closures=(same_class,),
+            model_maturation_evidence=(maturation.verified_maturation,),
             require_runtime_trace_mapping=False,
             require_artifact_freshness=False,
             require_model_quality_review=False,

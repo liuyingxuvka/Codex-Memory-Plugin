@@ -95,6 +95,38 @@ def _git_branch(repo_path: Path) -> str:
     return result.stdout.strip() if result.returncode == 0 else ""
 
 
+def _worktree_registry(repo_path: Path) -> list[dict[str, str]]:
+    """Return Git's worktree registry as stable path/HEAD records."""
+
+    result = _run_git(["worktree", "list", "--porcelain"], cwd=repo_path)
+    if result.returncode != 0:
+        return []
+    records: list[dict[str, str]] = []
+    current: dict[str, str] = {}
+    for raw in result.stdout.splitlines() + [""]:
+        line = raw.strip()
+        if not line:
+            if current:
+                records.append(current)
+                current = {}
+            continue
+        key, _, value = line.partition(" ")
+        if key == "worktree":
+            current["path"] = value.strip()
+        elif key in {"HEAD", "branch", "detached", "prunable"}:
+            current[key.lower()] = value.strip() or "true"
+    return records
+
+
+def _path_key(value: Path | str) -> str:
+    """Normalize a worktree path for comparisons across Windows path forms."""
+
+    text = str(value or "").replace("\\", "/").rstrip("/")
+    if text.startswith("//?/"):
+        text = text[4:]
+    return text.casefold()
+
+
 def prepare_organization_worktree(
     repo_root: Path,
     source_root: Path,
@@ -254,8 +286,55 @@ def cleanup_organization_worktree(
         return {"attempted": False, "ok": False, "status": "unsafe-cleanup-path", "retained": True}
     if not success:
         return {"attempted": False, "ok": True, "status": "retained-after-failure", "retained": True, "path": str(target)}
+    registry_before = _worktree_registry(configured)
+    target_key = _path_key(target)
+    registered = [item for item in registry_before if _path_key(item.get("path", "")) == target_key]
     if not target.exists():
-        return {"attempted": True, "ok": True, "status": "already-removed", "retained": False, "path": str(target)}
+        if registered:
+            prune_preview = _run_git(["worktree", "prune", "--dry-run", "--verbose"], cwd=configured)
+            preview_lines = [
+                line.strip()
+                for line in (prune_preview.stdout + prune_preview.stderr).splitlines()
+                if line.strip()
+            ]
+            # Prune only when Git identifies exactly our stale registration.
+            if (
+                prune_preview.returncode != 0
+                or len(preview_lines) != 1
+                or len(registered) != 1
+                or "prunable" not in registered[0]
+            ):
+                return {
+                    "attempted": True,
+                    "ok": False,
+                    "status": "stale-registry-ambiguous",
+                    "retained": True,
+                    "path": str(target),
+                    "registry_before": registry_before,
+                    "prune_preview": preview_lines,
+                }
+            pruned = _run_git(["worktree", "prune", "--verbose"], cwd=configured)
+            registry_after = _worktree_registry(configured)
+            still_registered = any(_path_key(item.get("path", "")) == target_key for item in registry_after)
+            return {
+                "attempted": True,
+                "ok": pruned.returncode == 0 and not still_registered,
+                "status": "stale-registration-pruned" if pruned.returncode == 0 and not still_registered else "stale-registration-remains",
+                "retained": still_registered,
+                "path": str(target),
+                "registry_before": registry_before,
+                "registry_after": registry_after,
+                "errors": [] if pruned.returncode == 0 else [pruned.stderr.strip() or pruned.stdout.strip()],
+            }
+        return {
+            "attempted": True,
+            "ok": True,
+            "status": "already-removed-verified",
+            "retained": False,
+            "path": str(target),
+            "registry_before": registry_before,
+            "registry_after": registry_before,
+        }
     status = _run_git(["status", "--porcelain=v1", "--untracked-files=all"], cwd=target)
     if status.returncode != 0 or status.stdout.strip():
         return {
@@ -267,12 +346,16 @@ def cleanup_organization_worktree(
             "dirty_entries": [line for line in status.stdout.splitlines() if line.strip()],
         }
     removed = _run_git(["worktree", "remove", str(target)], cwd=configured)
+    registry_after = _worktree_registry(configured)
+    still_registered = any(_path_key(item.get("path", "")) == target_key for item in registry_after)
     return {
         "attempted": True,
-        "ok": removed.returncode == 0 and not target.exists(),
-        "status": "removed" if removed.returncode == 0 and not target.exists() else "remove-failed",
-        "retained": target.exists(),
+        "ok": removed.returncode == 0 and not target.exists() and not still_registered,
+        "status": "removed" if removed.returncode == 0 and not target.exists() and not still_registered else "remove-failed",
+        "retained": target.exists() or still_registered,
         "path": str(target),
+        "registry_before": registry_before,
+        "registry_after": registry_after,
         "errors": [] if removed.returncode == 0 else [removed.stderr.strip() or removed.stdout.strip()],
     }
 

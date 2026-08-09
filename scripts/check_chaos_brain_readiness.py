@@ -1880,6 +1880,35 @@ def _alignment_from_manifest(manifest: dict[str, Any]) -> dict[str, Any]:
     return alignment.build_report(evidence_manifest=manifest, run_missing=False)
 
 
+def _organization_rehearsal_check(repo_root: Path) -> dict[str, Any]:
+    """Consume the source-only organization rehearsal as a separate release gate."""
+
+    try:
+        from local_kb.org_simulation import verify_rehearsal_receipt
+
+        verification = verify_rehearsal_receipt(repo_root)
+    except Exception as error:  # pragma: no cover - defensive gate boundary
+        verification = {
+            "ok": False,
+            "status": "error",
+            "reason": f"rehearsal verifier failed: {type(error).__name__}: {error}",
+        }
+    return {
+        "schema_version": EVIDENCE_SCHEMA,
+        "receipt_id": "validation:organization_rehearsal:current",
+        "name": "organization_rehearsal",
+        "execution": "consumed",
+        "terminal_status": "passed" if verification.get("ok") is True else "blocked",
+        "timed_out": False,
+        "cleanup_confirmed": verification.get("ok") is True,
+        "exit_code": 0 if verification.get("ok") is True else 1,
+        "ok": verification.get("ok") is True,
+        "proof_artifact_ref": verification.get("path", ""),
+        "reason": verification.get("reason", ""),
+        "verification": verification,
+    }
+
+
 def build_report(
     repo_root: Path,
     codex_home: Path,
@@ -1973,6 +2002,9 @@ def build_report(
         inventory_revision=inventory_revision,
         current_manifest_path=Path(evidence_root).resolve() / "current.json",
     )
+    # Rehearsal is a source-only evidence consumer, not another maintenance
+    # owner.  A missing or stale receipt blocks the aggregate release gate.
+    results["organization_rehearsal"] = _organization_rehearsal_check(repo_root)
 
     leaf_after = _source_snapshot(repo_root)
     component_inventory_after_leaf = _build_component_inventory(repo_root, codex_home)

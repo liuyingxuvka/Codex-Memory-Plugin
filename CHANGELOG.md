@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.8.3 - 2026-08-08
+
+- Add explicit organization card, candidate, duplicate-hash, merge/split, Skill safety/version, apply, post-apply, and GitHub-readiness checkpoints with typed no-change decisions.
+- Repair organization maintenance against dirty Windows source mirrors by using disposable isolated worktrees, extended-length snapshot I/O, exact stale-registration cleanup, and contribution terminal-status derivation.
+- Add a source-only AI-behavior rehearsal with immutable identity-bound receipts and make aggregate release readiness consume the rehearsal without granting it wrapper, push, or remote-mutation authority.
+- Harden aggregate evidence reuse so a manifest-level `reused` projection can safely consume an immutable native `executed` receipt only when its compacted source digest verifies.
+- Refresh the repository-managed SkillGuard contracts and FlowGuard authority/adoption evidence for the Luna/max two-automation installation surface.
+
 ## v0.8.2 - 2026-08-08
 
 - Pin both scheduled KB automations to explicit `gpt-5.6-luna` with `max` reasoning and expose runtime evidence in receipts.

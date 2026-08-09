@@ -2146,6 +2146,7 @@ def _org_maintenance_evidence(
     card_decision_checkpoint = _mapping(cleanup.get("card_decision_checkpoint"))
     merge_split = _mapping(cleanup.get("merge_split_checkpoint"))
     skill_safety = _mapping(cleanup.get("skill_safety_checkpoint"))
+    skill_bundle_version = _mapping(cleanup.get("skill_bundle_version_checkpoint"))
     exact_apply = _mapping(cleanup.get("exact_selected_apply"))
     merge_readiness = _mapping(cleanup.get("github_merge_readiness"))
     proposal_counts = _mapping(cleanup.get("proposal_counts"))
@@ -2175,6 +2176,15 @@ def _org_maintenance_evidence(
     split_ids = [str(item) for item in _list(merge_split.get("split_decision_ids"))]
     skill_decision_ids = [str(item) for item in _list(skill_safety.get("decision_ids"))]
     skill_blocking_ids = [str(item) for item in _list(skill_safety.get("blocking_decision_ids"))]
+    latest_versions = _mapping(skill_bundle_version.get("latest_approved_by_bundle"))
+    latest_versions_valid = all(
+        isinstance(item, Mapping)
+        and str(item.get("status") or "") == "approved"
+        and str(item.get("content_hash") or "").startswith("sha256:")
+        and bool(str(item.get("version_time") or "").strip())
+        and bool(str(item.get("original_author") or "").strip())
+        for item in latest_versions.values()
+    )
     github_repo = _is_github_repo_url(_mapping(payload.get("source")).get("repo_url"))
     branch_push = _mapping(branch.get("push"))
     branch_pr = _mapping(branch_push.get("pull_request"))
@@ -2315,12 +2325,21 @@ def _org_maintenance_evidence(
         obligation_id(skill_id, "skill-safety-version"): _evidence(
             skill_safety.get("complete") is True
             and skill_safety.get("passed") is True
+            and skill_bundle_version.get("complete") is True
+            and skill_bundle_version.get("passed") is True
+            and latest_versions_valid
+            and not _list(skill_bundle_version.get("forked_versions"))
+            and _nonnegative_int(skill_bundle_version.get("registry_error_count")) == 0
             and proposal_counts_valid
             and isinstance(skill_safety.get("decision_ids"), list)
             and len(skill_decision_ids) == len(set(skill_decision_ids)) == expected_skill_count
             and len(skill_blocking_ids) == expected_skill_blockers == 0,
-            "The native report records a passed Skill registry, hash, author, fork, and version checkpoint.",
+            "The native report directly records passed Skill safety and same-bundle version checkpoints, including hash-pinned version-time selection and fork rejection.",
             "report.cleanup.skill_safety_checkpoint",
+            "report.cleanup.skill_bundle_version_checkpoint",
+            "report.cleanup.skill_bundle_version_checkpoint.latest_approved_by_bundle",
+            "report.cleanup.skill_bundle_version_checkpoint.forked_versions",
+            "report.cleanup.skill_bundle_version_checkpoint.registry_error_count",
         ),
         obligation_id(skill_id, "exact-selected-apply"): _evidence(
             len(selected_ids) == len(set(selected_ids))
@@ -3239,6 +3258,21 @@ def build_fixture_payload(
                         "passed": True,
                         "decision_ids": ["fixture-skill-version"],
                         "blocking_decision_ids": [],
+                    },
+                    "skill_bundle_version_checkpoint": {
+                        "complete": True,
+                        "passed": True,
+                        "version_decision_ids": ["fixture-skill-version"],
+                        "latest_approved_by_bundle": {
+                            "fixture-bundle": {
+                                "status": "approved",
+                                "content_hash": "sha256:fixture-bundle",
+                                "version_time": "2026-08-08T00:00:00Z",
+                                "original_author": "fixture-author",
+                            }
+                        },
+                        "forked_versions": [],
+                        "registry_error_count": 0,
                     },
                     "exact_selected_apply": {
                         "complete": True,
