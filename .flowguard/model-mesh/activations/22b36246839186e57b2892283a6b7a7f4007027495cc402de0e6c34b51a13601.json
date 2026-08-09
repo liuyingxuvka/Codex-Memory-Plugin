@@ -1,0 +1,12 @@
+{
+  "candidate_snapshot_fingerprint": "sha256:c5a81ef218387767b6c9623b4155da80daf34114834de596bf71a11263bf89e8",
+  "expected_head_fingerprint": "sha256:802579bc689d0f26e1da4ff8ef8d0a4c7b44a21b343625ccd613abf10af33d45",
+  "fingerprint": "sha256:22b36246839186e57b2892283a6b7a7f4007027495cc402de0e6c34b51a13601",
+  "next_generation": 20,
+  "previous_snapshot_fingerprint": "sha256:25f153691abbb6d1b38c373a02dfe95bdddb6545872e696353d1353e7c2696ea",
+  "receipt_id": "receipt:model-revision-activate:khaos-maintenance-terminality-v0-8-4-maxpath-20260809",
+  "revision_set_fingerprint": "sha256:7f3cf51d29e41cded2c370c5aaa95169720267b8b8b51f0d0de31dd4194292f5",
+  "schema": "flowguard.model_activation_receipt.v1",
+  "subject_revision": "source-inventory:7c19c6bb28c1fb6d9d5804b86c7228cb3ac83727013e457488c4044bb443ac8e",
+  "system_id": "flowguard"
+}
