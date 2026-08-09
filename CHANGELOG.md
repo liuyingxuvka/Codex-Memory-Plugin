@@ -5,6 +5,7 @@
 - Make the two scheduled KB owners interruption-safe: an outer timeout now records the exact owner manifest, Windows Job Object cleanup evidence, and a recoverable global-writer lease instead of leaving the next organization run blocked.
 - Keep Sleep publication pointer-last and reader-fenced, reserve time for finalization, and bind the final active-index receipt to the published watermark so a successful cycle cannot be rejected because its index evidence is nested.
 - Compact large native and cycle terminal receipts into immutable SHA-256 sidecars while validating the bounded envelope, sidecar path, byte count, and content digest; tampering remains fail-closed.
+- Make the native sidecar writer recreate its run directory at the final projection boundary, closing the real Sleep acceptance race observed after the first large receipt was produced.
 - Add the FlowGuard project-authority gate to CI and refresh the current model revision evidence for the repaired maintenance topology.
 - Verify the installed `gpt-5.6-luna` / `max` automation pair and complete one source-consistent Sleep→Dream run followed immediately by one Organization maintenance run with all wrapper obligations passing.
 
