@@ -7,6 +7,7 @@
 - Add a source-only AI-behavior rehearsal with immutable identity-bound receipts and make aggregate release readiness consume the rehearsal without granting it wrapper, push, or remote-mutation authority.
 - Harden aggregate evidence reuse so a manifest-level `reused` projection can safely consume an immutable native `executed` receipt only when its compacted source digest verifies.
 - Refresh the repository-managed SkillGuard contracts and FlowGuard authority/adoption evidence for the Luna/max two-automation installation surface.
+- Pin CI's FlowGuard dependency to the public current `5d20c33` commit so model-maturation coverage APIs used by the release are reproducible on clean runners.
 
 ## v0.8.2 - 2026-08-08
 
