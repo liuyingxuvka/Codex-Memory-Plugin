@@ -15,6 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SKILLGUARD_COMMIT: b20feaf0718cb9a37f9a2d0e3aaeb8e7601cadce
+      FLOWGUARD_COMMIT: fc0b3f760124592d9eef521a11bc6faa050a1ceb
       CODEX_KB_AUTOMATION_MODEL: ci-current-model
       CODEX_KB_AUTOMATION_REASONING_EFFORT: xhigh
 
@@ -41,6 +42,17 @@ jobs:
           test -f "$RUNNER_TEMP/skillguard/.agents/skills/skillguard/scripts/skillguard_compile.py"
           npm install --global @fission-ai/openspec@1.6.0
           echo "KHAOS_BRAIN_SKILLGUARD_VALIDATION_ROOT=$RUNNER_TEMP/skillguard/.agents/skills/skillguard" >> "$GITHUB_ENV"
+
+      - name: Install FlowGuard consumer skills
+        run: |
+          git init "$RUNNER_TEMP/flowguard"
+          git -C "$RUNNER_TEMP/flowguard" remote add origin https://github.com/liuyingxuvka/FlowGuard.git
+          git -C "$RUNNER_TEMP/flowguard" fetch --depth 1 origin "$FLOWGUARD_COMMIT"
+          git -C "$RUNNER_TEMP/flowguard" checkout --detach FETCH_HEAD
+          python "$RUNNER_TEMP/flowguard/scripts/install_flowguard_skills.py" install \
+            --source "$RUNNER_TEMP/flowguard" \
+            --codex-home "$HOME/.codex" \
+            --json
 
       - name: Seed explicit automation provider metadata
         run: |

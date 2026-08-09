@@ -1,0 +1,12 @@
+{
+  "candidate_snapshot_fingerprint": "sha256:2a65ee96bb463fb60d9859c9c19ae464ef61794fb0d57a67a0bbc438546608b1",
+  "expected_head_fingerprint": "sha256:264a4aa1d981670c954db782500daac7cd6ef33aed9534fe28768d6bc397ae2f",
+  "fingerprint": "sha256:e60c937ce0750825db747871a127cd37e136da35192eb430a13087b71d920ed5",
+  "next_generation": 21,
+  "previous_snapshot_fingerprint": "sha256:c5a81ef218387767b6c9623b4155da80daf34114834de596bf71a11263bf89e8",
+  "receipt_id": "activation:khaos-maintenance-terminality-v0-8-4-eol-portable-20260810",
+  "revision_set_fingerprint": "sha256:323d98a5fcfdd82358ccff86912788ff3d385c38f74dd42401fcddd9738f9152",
+  "schema": "flowguard.model_activation_receipt.v1",
+  "subject_revision": "source-inventory:405ae5772bc750d037920c96787c05a348bf95d33771b47da788eb0cc230d87c",
+  "system_id": "flowguard"
+}

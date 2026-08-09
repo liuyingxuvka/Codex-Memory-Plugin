@@ -1,0 +1,514 @@
+{
+  "added_ids": [],
+  "affected_closure_fingerprint": "sha256:6b3957414c825f4e83a2c6e6f492bde9b17ba2d531e2c237754e496a974fe1bb",
+  "affected_closure_ids": [
+    "coverage:universe",
+    "model_instance:model:khaos_brain_logicguard_system",
+    "model_relation:relation:model-realizes-purpose:khaos_brain_logicguard_system",
+    "model_relation:relation:system-contains:khaos_brain_logicguard_system",
+    "parent_closure:purpose:khaos_brain_logicguard_system",
+    "parent_closure:system:flowguard:model-regression-manifest",
+    "system_property:subject_revision"
+  ],
+  "affected_edge_ids": [
+    "model_relation:relation:model-realizes-purpose:khaos_brain_logicguard_system",
+    "model_relation:relation:system-contains:khaos_brain_logicguard_system"
+  ],
+  "affected_owner_bindings": [
+    {
+      "affected_id": "coverage:universe",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_instance:model:khaos_brain_logicguard_system",
+      "owner_route": "model_test_alignment"
+    },
+    {
+      "affected_id": "model_relation:relation:model-realizes-purpose:khaos_brain_logicguard_system",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "model_relation:relation:system-contains:khaos_brain_logicguard_system",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "parent_closure:purpose:khaos_brain_logicguard_system",
+      "owner_route": "model_test_alignment"
+    },
+    {
+      "affected_id": "parent_closure:system:flowguard:model-regression-manifest",
+      "owner_route": "model_mesh_maintenance"
+    },
+    {
+      "affected_id": "system_property:subject_revision",
+      "owner_route": "model_mesh_maintenance"
+    }
+  ],
+  "base_snapshot_fingerprint": "sha256:c5a81ef218387767b6c9623b4155da80daf34114834de596bf71a11263bf89e8",
+  "candidate_snapshot_fingerprint": "sha256:2a65ee96bb463fb60d9859c9c19ae464ef61794fb0d57a67a0bbc438546608b1",
+  "changed_commitment_ids": [],
+  "changed_contract_ids": [],
+  "changed_coverage_ids": [
+    "coverage:universe"
+  ],
+  "changed_field_ids": [],
+  "changed_gap_ids": [],
+  "changed_owner_artifact_ids": [],
+  "changed_relation_ids": [
+    "relation:model-realizes-purpose:khaos_brain_logicguard_system",
+    "relation:system-contains:khaos_brain_logicguard_system"
+  ],
+  "changed_root_ids": [],
+  "changed_side_effect_ids": [],
+  "changed_source_surface_ids": [],
+  "changed_system_property_ids": [
+    "system_property:subject_revision"
+  ],
+  "changed_test_ids": [],
+  "completed_evidence_refs": [
+    {
+      "affected_closure_fingerprint": "sha256:6b3957414c825f4e83a2c6e6f492bde9b17ba2d531e2c237754e496a974fe1bb",
+      "candidate_snapshot_fingerprint": "sha256:2a65ee96bb463fb60d9859c9c19ae464ef61794fb0d57a67a0bbc438546608b1",
+      "covered_affected_ids": [
+        "coverage:universe",
+        "model_relation:relation:model-realizes-purpose:khaos_brain_logicguard_system",
+        "model_relation:relation:system-contains:khaos_brain_logicguard_system",
+        "parent_closure:system:flowguard:model-regression-manifest",
+        "system_property:subject_revision"
+      ],
+      "current": true,
+      "eligible": true,
+      "environment_fingerprint": "sha256:0cd5decd91d4f0aecde21c176b6c7ff760368d2574380333363724948a989304",
+      "obligation_ids": [
+        "coverage:universe",
+        "model_relation:relation:model-realizes-purpose:khaos_brain_logicguard_system",
+        "model_relation:relation:system-contains:khaos_brain_logicguard_system",
+        "parent_closure:system:flowguard:model-regression-manifest",
+        "system_property:subject_revision"
+      ],
+      "owner_route": "model_mesh_maintenance",
+      "receipt_fingerprint": "sha256:18eed80494eb5bf4be909b9ed9c87cd5ee1513216475c4f47cfffefd9e4ce3a4",
+      "receipt_id": "receipt:validation-owner:model_mesh_maintenance:aec1f1f7e5679a0af778728abc41ce31",
+      "schema": "flowguard.model_revision_evidence.v2",
+      "status": "pass",
+      "subject_fingerprint": "sha256:2a65ee96bb463fb60d9859c9c19ae464ef61794fb0d57a67a0bbc438546608b1",
+      "toolchain_fingerprint": "sha256:f9ac2feff8cbf9f4a1578da4b976366772d24e955e659124accee60829be5e81"
+    },
+    {
+      "affected_closure_fingerprint": "sha256:6b3957414c825f4e83a2c6e6f492bde9b17ba2d531e2c237754e496a974fe1bb",
+      "candidate_snapshot_fingerprint": "sha256:2a65ee96bb463fb60d9859c9c19ae464ef61794fb0d57a67a0bbc438546608b1",
+      "covered_affected_ids": [
+        "model_instance:model:khaos_brain_logicguard_system",
+        "parent_closure:purpose:khaos_brain_logicguard_system"
+      ],
+      "current": true,
+      "eligible": true,
+      "environment_fingerprint": "sha256:0cd5decd91d4f0aecde21c176b6c7ff760368d2574380333363724948a989304",
+      "obligation_ids": [
+        "model_instance:model:khaos_brain_logicguard_system",
+        "parent_closure:purpose:khaos_brain_logicguard_system"
+      ],
+      "owner_route": "model_test_alignment",
+      "receipt_fingerprint": "sha256:7dd9be113dc1d33e7597a0b46455ecf3e5dd71c4d8751086d9d404531d692898",
+      "receipt_id": "receipt:validation-owner:model_test_alignment:b60ac172a58e1d426d995199f7c1e4db",
+      "schema": "flowguard.model_revision_evidence.v2",
+      "status": "pass",
+      "subject_fingerprint": "sha256:2a65ee96bb463fb60d9859c9c19ae464ef61794fb0d57a67a0bbc438546608b1",
+      "toolchain_fingerprint": "sha256:ec346785baf27990bf08ae39b3f6f0326cb1f740e95e8fa0875861be88adacb2"
+    }
+  ],
+  "current_effective_intent_view": {
+    "active_contributions": [
+      {
+        "conflicts_with_contribution_ids": [],
+        "contribution_id": "intent:behavior_commitment_ledger:current",
+        "decision_state": "accepted",
+        "declared_consumer_ids": [],
+        "desired_terminal_state_ids": [],
+        "effective_revision": "revision:khaos-logicguard-native-organization-remote-gate-20260801",
+        "fingerprint": "sha256:c5115620229b145059c0c93019acc26dd2a706a1b9f553bceb842727b0bad130",
+        "lifecycle_state": "active",
+        "logical_model_id": "model:behavior_commitment_ledger",
+        "native_owner_id": "",
+        "rationale": "Accept the current canonical design contribution for behavior_commitment_ledger; the checked-in model and its purpose closure are the sole owner source.",
+        "schema": "flowguard.model_intent_contribution.v1",
+        "source_fingerprint": "sha256:4c6a244e5f60b5b200884c5ad51a7d7d6899768a6e5df9ef016757a0b4cfe8f8",
+        "source_kind": "design",
+        "source_ref": ".flowguard/behavior_commitment_ledger/model.py",
+        "subject_lane": "normative_target",
+        "subject_role": "design",
+        "supersedes_contribution_ids": [],
+        "target_invariant_ids": [],
+        "target_obligation_ids": [
+          "model-obligation:behavior_commitment_ledger"
+        ],
+        "target_output_ids": [],
+        "target_relation_ids": [
+          "relation:model-realizes-purpose:behavior_commitment_ledger"
+        ],
+        "target_state_ids": [],
+        "target_transition_ids": [],
+        "unresolved_owner_id": "",
+        "work_context_fingerprint": "",
+        "work_context_id": ""
+      },
+      {
+        "conflicts_with_contribution_ids": [],
+        "contribution_id": "intent:khaos_brain_logicguard_system:current",
+        "decision_state": "accepted",
+        "declared_consumer_ids": [],
+        "desired_terminal_state_ids": [],
+        "effective_revision": "revision:khaos-logicguard-native-organization-remote-gate-20260801",
+        "fingerprint": "sha256:bb4423f63f586926e342dd7905998d53c34504e65a7c4a828c72e7d57759437f",
+        "lifecycle_state": "active",
+        "logical_model_id": "model:khaos_brain_logicguard_system",
+        "native_owner_id": "",
+        "rationale": "Accept the current canonical design contribution for khaos_brain_logicguard_system; the checked-in model and its purpose closure are the sole owner source.",
+        "schema": "flowguard.model_intent_contribution.v1",
+        "source_fingerprint": "sha256:bdca28e101410aac30699f2f878937fa9a68645b0415182f3fbd22de5bf93873",
+        "source_kind": "design",
+        "source_ref": ".flowguard/khaos_brain_logicguard_system/model.py",
+        "subject_lane": "normative_target",
+        "subject_role": "design",
+        "supersedes_contribution_ids": [],
+        "target_invariant_ids": [],
+        "target_obligation_ids": [
+          "model-obligation:khaos_brain_logicguard_system"
+        ],
+        "target_output_ids": [],
+        "target_relation_ids": [
+          "relation:model-realizes-purpose:khaos_brain_logicguard_system"
+        ],
+        "target_state_ids": [],
+        "target_transition_ids": [],
+        "unresolved_owner_id": "",
+        "work_context_fingerprint": "",
+        "work_context_id": ""
+      }
+    ],
+    "base_effective_intent_view_fingerprint": "sha256:20a8b35e5558420bee64846c55352f3c3c54d0070107a8b2ffc8848b8dcdf027",
+    "bootstrap_receipt": null,
+    "candidate_snapshot_fingerprint": "sha256:2a65ee96bb463fb60d9859c9c19ae464ef61794fb0d57a67a0bbc438546608b1",
+    "fingerprint": "sha256:ced463342b2b3631ea2d5c881046484ff3b1e734613b62ddbf6ba24a174c377e",
+    "model_owner_ids": [
+      "model-obligation:behavior_commitment_ledger",
+      "model-obligation:khaos_brain_logicguard_system"
+    ],
+    "owner_bindings": [
+      {
+        "contribution_ids": [
+          "intent:behavior_commitment_ledger:current"
+        ],
+        "fingerprint": "sha256:a62fed67f9a41b36e972f40b3ea9c6837614d54bf3d884be9bab129bd4b2f670",
+        "logical_model_id": "behavior_commitment_ledger",
+        "model_owner_id": "model-obligation:behavior_commitment_ledger",
+        "realization_relation_fingerprint": "sha256:738e634401eaf668bddeaeb6ff8feb4544f6420fa0d72b1b155a44c4bfcedf3c",
+        "realization_relation_id": "relation:model-realizes-purpose:behavior_commitment_ledger",
+        "schema": "flowguard.effective_intent_owner_binding.v1"
+      },
+      {
+        "contribution_ids": [
+          "intent:khaos_brain_logicguard_system:current"
+        ],
+        "fingerprint": "sha256:3015959a3d39898a1c95c56e988799bf2b44cddffbd3530c74d2c025594de2af",
+        "logical_model_id": "khaos_brain_logicguard_system",
+        "model_owner_id": "model-obligation:khaos_brain_logicguard_system",
+        "realization_relation_fingerprint": "sha256:2b750572c4ad98791bb540d96c38d419280b595da25f9b0077ed53986267dc67",
+        "realization_relation_id": "relation:model-realizes-purpose:khaos_brain_logicguard_system",
+        "schema": "flowguard.effective_intent_owner_binding.v1"
+      }
+    ],
+    "schema": "flowguard.current_effective_intent_view.v1",
+    "subject_lane": "observed_implementation",
+    "system_id": "flowguard",
+    "transitions": [
+      {
+        "action": "retain",
+        "fingerprint": "sha256:2779609c5bf50b003291402697018040337ae9743ae8ac8de9c01567e3674cb0",
+        "prior_contribution_fingerprint": "sha256:c5115620229b145059c0c93019acc26dd2a706a1b9f553bceb842727b0bad130",
+        "prior_contribution_id": "intent:behavior_commitment_ledger:current",
+        "reason": "The exact current design remains active while this authority projection is upgraded to current evidence.",
+        "replacement_contribution_ids": [],
+        "schema": "flowguard.effective_intent_transition.v1"
+      },
+      {
+        "action": "retain",
+        "fingerprint": "sha256:a980675ccec4c87101b73473c6fe51cfac78dce553c4f23bf064a72c0cabab0c",
+        "prior_contribution_fingerprint": "sha256:bb4423f63f586926e342dd7905998d53c34504e65a7c4a828c72e7d57759437f",
+        "prior_contribution_id": "intent:khaos_brain_logicguard_system:current",
+        "reason": "The exact current design remains active while this authority projection is upgraded to current evidence.",
+        "replacement_contribution_ids": [],
+        "schema": "flowguard.effective_intent_transition.v1"
+      }
+    ],
+    "verified_source_identities": [
+      {
+        "authority_kind": "project_file",
+        "contribution_id": "intent:behavior_commitment_ledger:current",
+        "fingerprint": "sha256:f0898baaa41ccb26e6c8a2452b0fe746801374d6bd9f0b573af65597fee53c5f",
+        "native_owner_id": "",
+        "resolved_project_ref": ".flowguard/behavior_commitment_ledger/model.py",
+        "schema": "flowguard.model_intent_source_identity.v1",
+        "source_fingerprint": "sha256:4c6a244e5f60b5b200884c5ad51a7d7d6899768a6e5df9ef016757a0b4cfe8f8",
+        "source_ref": ".flowguard/behavior_commitment_ledger/model.py",
+        "work_context_artifact_id": "",
+        "work_context_fingerprint": "",
+        "work_context_id": ""
+      },
+      {
+        "authority_kind": "project_file",
+        "contribution_id": "intent:khaos_brain_logicguard_system:current",
+        "fingerprint": "sha256:4914d3477ff4536dc875b06c486b9af5d7257e9c8ef7f42d4239aacc04953edd",
+        "native_owner_id": "",
+        "resolved_project_ref": ".flowguard/khaos_brain_logicguard_system/model.py",
+        "schema": "flowguard.model_intent_source_identity.v1",
+        "source_fingerprint": "sha256:bdca28e101410aac30699f2f878937fa9a68645b0415182f3fbd22de5bf93873",
+        "source_ref": ".flowguard/khaos_brain_logicguard_system/model.py",
+        "work_context_artifact_id": "",
+        "work_context_fingerprint": "",
+        "work_context_id": ""
+      }
+    ]
+  },
+  "decision_reason": "Refresh the current observed model authority after making text-template source identities portable across Windows and Linux checkout line endings.",
+  "expected_head_fingerprint": "sha256:264a4aa1d981670c954db782500daac7cd6ef33aed9534fe28768d6bc397ae2f",
+  "fingerprint": "sha256:323d98a5fcfdd82358ccff86912788ff3d385c38f74dd42401fcddd9738f9152",
+  "fingerprint_changed_ids": [
+    "coverage:universe",
+    "model_instance:model:khaos_brain_logicguard_system",
+    "model_relation:relation:model-realizes-purpose:khaos_brain_logicguard_system",
+    "model_relation:relation:system-contains:khaos_brain_logicguard_system"
+  ],
+  "implementation_bundle_fingerprint": "",
+  "intent_conflict_ids": [],
+  "intent_contribution_inventory_fingerprint": "sha256:0019c742273f74601efc61b5a643123b74c5d8a7a263b92f064a33d07d537c20",
+  "intent_contributions": [],
+  "intent_dispositions": [],
+  "intent_unresolved_ids": [],
+  "members": [
+    {
+      "base_instance_fingerprint": "sha256:c6c00e6bb222525926adb4d7541dd507d520dc121673dee13bd8102c969ef5c7",
+      "candidate_instance_fingerprint": "sha256:58d42ff8763e990ace075bb992cd6efe604058b12ccb6d900341ada2cd9f5983",
+      "changed_element_ids": [
+        "model_instance:model:khaos_brain_logicguard_system"
+      ],
+      "member_id": "khaos_brain_logicguard_system",
+      "operation": "replace",
+      "schema": "flowguard.model_revision_member.v1"
+    }
+  ],
+  "no_declared_intent_evidence_fingerprints": [
+    {
+      "fingerprint": "sha256:c4ee6e970641557f4b31a2e8766f3d2bade4a2013bc0974ad21ebd5f1993a02d",
+      "role": "native_owner_evidence"
+    },
+    {
+      "fingerprint": "sha256:554782046443eee2e3a4f17b5326a13537208c7af7f2ec12c72e31b5bbd66203",
+      "role": "parent"
+    },
+    {
+      "fingerprint": "sha256:feeb5d3b8557aaed9fdd1d4a71a0d6fdceea6835e2df354804b404fcf5171e72",
+      "role": "path_quality_material"
+    }
+  ],
+  "no_declared_intent_rationale": "The source-only line-ending portability repair preserves the existing declared product intent and refreshes the observed model authority with exact current native-owner and path-quality evidence.",
+  "no_declared_intent_rationale_id": "no-intent:khaos-maintenance-terminality-v0-8-4-eol-portable-20260810",
+  "originating_activation_receipt_fingerprint": "",
+  "originating_revision_set_fingerprint": "",
+  "path_quality_result_set_fingerprint": "sha256:09f4fa163d9ac33486b71fe65c90b14972574928234874125377592cbbd905bd",
+  "path_quality_results": [
+    {
+      "candidate_ids": [],
+      "candidate_set_exhausted": false,
+      "candidate_set_fingerprint": "",
+      "comparison_boundary_id": "",
+      "conclusion": "single_clear_path",
+      "cost_detail_evidence_fingerprint": "sha256:6fe25acf398eb4e226b7a101a9a4a31e2822f6ebfcb01ea8a514d90a2cf0ed9d",
+      "cost_dimensions": [
+        "branches",
+        "payload_bytes",
+        "states",
+        "steps",
+        "transitions",
+        "validations"
+      ],
+      "cost_measurements": {
+        "branches": 0.0,
+        "payload_bytes": 21960.0,
+        "states": 6.0,
+        "steps": 5.0,
+        "transitions": 5.0,
+        "validations": 21.0
+      },
+      "current": true,
+      "currentness_id": "sha256:2a65ee96bb463fb60d9859c9c19ae464ef61794fb0d57a67a0bbc438546608b1",
+      "detail_evidence_fingerprint": "sha256:218d4bebe4891a9612874f7efc44289877fcafb5436987e1853ce77e77cc6759",
+      "finding_ids": [],
+      "fingerprint": "sha256:5031890d5497cca4a3b2eab61a1be9dd6e30784b5d19715fa590500abf8eb943",
+      "mode": "lightweight",
+      "necessity_witness_set_fingerprint": "sha256:1f43d6afdff10130c49d51ed3d29857d0ab4fe3d7249ac6e04d6e26e765d3862",
+      "optimization_depth": "lightweight",
+      "producer_id": "flowguard-self-path-quality",
+      "result_id": "path-quality:khaos_brain_logicguard_system:853ce77e77cc6759",
+      "rewrite_rule_ids": [],
+      "rewrite_set_exhausted": false,
+      "rewrite_set_fingerprint": "",
+      "schema_version": "flowguard.model-path-quality.v2",
+      "selected_candidate_id": "",
+      "selected_candidate_lane": "",
+      "subject_fingerprint": "sha256:597ee01e6216f2a7b89e450edec4591b19467dafbeaa930b436ef7a330cd26db",
+      "trigger_evidence_fingerprint": "",
+      "trigger_ids": [],
+      "unresolved_ids": []
+    },
+    {
+      "candidate_ids": [],
+      "candidate_set_exhausted": false,
+      "candidate_set_fingerprint": "",
+      "comparison_boundary_id": "",
+      "conclusion": "single_clear_path",
+      "cost_detail_evidence_fingerprint": "sha256:d4e48d4142181ac763e7e5ab4e1dc2291f5b3b3a2c8f72b0c7bc982a2d37c0c3",
+      "cost_dimensions": [
+        "branches",
+        "payload_bytes",
+        "states",
+        "steps",
+        "transitions",
+        "validations"
+      ],
+      "cost_measurements": {
+        "branches": 0.0,
+        "payload_bytes": 15783.0,
+        "states": 7.0,
+        "steps": 6.0,
+        "transitions": 6.0,
+        "validations": 1.0
+      },
+      "current": true,
+      "currentness_id": "sha256:2a65ee96bb463fb60d9859c9c19ae464ef61794fb0d57a67a0bbc438546608b1",
+      "detail_evidence_fingerprint": "sha256:af92912ddb61c891fd28aa7dd295b6ded85d082907cca83a274e4fbf649e9dee",
+      "finding_ids": [],
+      "fingerprint": "sha256:bd5903fa81a6d387fca5e86838d740e3c21b66b5c02a61c01fb0f272b1d6e915",
+      "mode": "lightweight",
+      "necessity_witness_set_fingerprint": "sha256:d7d423d679fdc8fab600684fe77da544d3b16a66b54c68dfbcbd598c70ea45e8",
+      "optimization_depth": "lightweight",
+      "producer_id": "flowguard-self-path-quality",
+      "result_id": "path-quality:behavior_commitment_ledger:274e4fbf649e9dee",
+      "rewrite_rule_ids": [],
+      "rewrite_set_exhausted": false,
+      "rewrite_set_fingerprint": "",
+      "schema_version": "flowguard.model-path-quality.v2",
+      "selected_candidate_id": "",
+      "selected_candidate_lane": "",
+      "subject_fingerprint": "sha256:5a2643098467f5a510b37c534820ac7cc4f0ad8a4559063931124f806b7ba65d",
+      "trigger_evidence_fingerprint": "",
+      "trigger_ids": [],
+      "unresolved_ids": []
+    }
+  ],
+  "path_quality_subjects": [
+    {
+      "boundary_id": "model-boundary:behavior_commitment_ledger",
+      "code_fingerprint": "sha256:4c6a244e5f60b5b200884c5ad51a7d7d6899768a6e5df9ef016757a0b4cfe8f8",
+      "currentness_id": "sha256:2a65ee96bb463fb60d9859c9c19ae464ef61794fb0d57a67a0bbc438546608b1",
+      "dependency_fingerprint": "sha256:eb37af7d0b6497b3b280aede46910b0687b62828267b92e4e49ddef51e3a7569",
+      "evidence_fingerprint": "sha256:0f6f7e146e051b00eee390dc02d3fbef5fdff859acb9e4d9fc17ec29e0c732e0",
+      "fingerprint": "sha256:5a2643098467f5a510b37c534820ac7cc4f0ad8a4559063931124f806b7ba65d",
+      "intent_fingerprint": "sha256:c1c47fba12076742c23a51d1abb55b5bcc4318ea2cd75e955cdc931e7fb991a8",
+      "model_fingerprint": "sha256:f989a638dd4a4705cb6f28509f4099930fe5274c144b2f8fc75d772e6625480a",
+      "model_id": "behavior_commitment_ledger",
+      "normalized_facts_fingerprint": "sha256:a961316a033fd0de49d0b3f1e71079bf24dd4e17029a66f2fe66a8419a2cb799",
+      "obligation_fingerprint": "sha256:7160e8330cec9802569887216d4e1389ebae8170ab62a03e63cf4016ceb7b0d2",
+      "oracle_fingerprint": "sha256:b291501bb8121bbcba76e75be94bc4da87aebea89839a3b572d9df56888630d6",
+      "provider_fingerprint": "sha256:4ebfb1f6e90b2a22c695252a922f2fa030ea0d1c36ad287d5fa9a666ac02c1b5",
+      "purpose_fingerprint": "sha256:c9054b6b342224850c5dc001367779f3b5e550e1018023489404396ddba627f2",
+      "retained_element_inventory_fingerprint": "sha256:6ca11fa777cc63a882f3fdc28c04e1181dc738749ab7783b2cd87ec71190c470",
+      "schema_version": "flowguard.model-path-quality.v2",
+      "test_fingerprint": "sha256:6c1bf2a1d2518875089d25b5f0ab10041abd18731069ed7e70e187e2ffa9e235"
+    },
+    {
+      "boundary_id": "model-boundary:khaos_brain_logicguard_system",
+      "code_fingerprint": "sha256:bdca28e101410aac30699f2f878937fa9a68645b0415182f3fbd22de5bf93873",
+      "currentness_id": "sha256:2a65ee96bb463fb60d9859c9c19ae464ef61794fb0d57a67a0bbc438546608b1",
+      "dependency_fingerprint": "sha256:a77e29e9ed8bd9698d7ad681d2325da6a0d580fbb16d4c30f15b92d3f91a2855",
+      "evidence_fingerprint": "sha256:1890918d0ecb6ea2a512d66e8080f75999f46e98930b87a3737996a1943f4c7c",
+      "fingerprint": "sha256:597ee01e6216f2a7b89e450edec4591b19467dafbeaa930b436ef7a330cd26db",
+      "intent_fingerprint": "sha256:2f33c88b405b80d1fc69b2ac528ab7f2b109fe7e1b47ae52da7b9fc45f9e6d04",
+      "model_fingerprint": "sha256:58d42ff8763e990ace075bb992cd6efe604058b12ccb6d900341ada2cd9f5983",
+      "model_id": "khaos_brain_logicguard_system",
+      "normalized_facts_fingerprint": "sha256:b55a2485c8d49924ac83e23d2c579cdee3fc2921f9de0f2dc797e37d8d1b01b0",
+      "obligation_fingerprint": "sha256:ded0d476028c49cafb4eb87baeeec8db614c3209dcce7b849de44048a6f80f55",
+      "oracle_fingerprint": "sha256:81081ef7f8e070f89ce1fdb7308bd0b5b518605b410e254f7394a56b6a4bed37",
+      "provider_fingerprint": "sha256:e05d8a3cec7055372b8762fafd7b37c1d0df97272f42832362a1aa141f7b114d",
+      "purpose_fingerprint": "sha256:25d838e4beb5cd2bb4629201747a7d90ca2d7dd424cc8bff22888e5a36141214",
+      "retained_element_inventory_fingerprint": "sha256:756b1cc82af34a9b42265d0f7e94a2fa20c5136f51dda13313f901eb797f6992",
+      "schema_version": "flowguard.model-path-quality.v2",
+      "test_fingerprint": "sha256:0911e90e4dfed8eb638d3a0af61a15e59fef2f47fd77892b1a856126f431f49f"
+    }
+  ],
+  "prediction_replay_refs": [],
+  "removal_dispositions": [],
+  "removed_ids": [],
+  "required_evidence_refs": [
+    {
+      "affected_closure_fingerprint": "sha256:6b3957414c825f4e83a2c6e6f492bde9b17ba2d531e2c237754e496a974fe1bb",
+      "candidate_snapshot_fingerprint": "sha256:2a65ee96bb463fb60d9859c9c19ae464ef61794fb0d57a67a0bbc438546608b1",
+      "covered_affected_ids": [
+        "coverage:universe",
+        "model_relation:relation:model-realizes-purpose:khaos_brain_logicguard_system",
+        "model_relation:relation:system-contains:khaos_brain_logicguard_system",
+        "parent_closure:system:flowguard:model-regression-manifest",
+        "system_property:subject_revision"
+      ],
+      "current": true,
+      "eligible": true,
+      "environment_fingerprint": "sha256:0cd5decd91d4f0aecde21c176b6c7ff760368d2574380333363724948a989304",
+      "obligation_ids": [
+        "coverage:universe",
+        "model_relation:relation:model-realizes-purpose:khaos_brain_logicguard_system",
+        "model_relation:relation:system-contains:khaos_brain_logicguard_system",
+        "parent_closure:system:flowguard:model-regression-manifest",
+        "system_property:subject_revision"
+      ],
+      "owner_route": "model_mesh_maintenance",
+      "receipt_fingerprint": "sha256:18eed80494eb5bf4be909b9ed9c87cd5ee1513216475c4f47cfffefd9e4ce3a4",
+      "receipt_id": "receipt:validation-owner:model_mesh_maintenance:aec1f1f7e5679a0af778728abc41ce31",
+      "schema": "flowguard.model_revision_evidence.v2",
+      "status": "required",
+      "subject_fingerprint": "sha256:2a65ee96bb463fb60d9859c9c19ae464ef61794fb0d57a67a0bbc438546608b1",
+      "toolchain_fingerprint": "sha256:f9ac2feff8cbf9f4a1578da4b976366772d24e955e659124accee60829be5e81"
+    },
+    {
+      "affected_closure_fingerprint": "sha256:6b3957414c825f4e83a2c6e6f492bde9b17ba2d531e2c237754e496a974fe1bb",
+      "candidate_snapshot_fingerprint": "sha256:2a65ee96bb463fb60d9859c9c19ae464ef61794fb0d57a67a0bbc438546608b1",
+      "covered_affected_ids": [
+        "model_instance:model:khaos_brain_logicguard_system",
+        "parent_closure:purpose:khaos_brain_logicguard_system"
+      ],
+      "current": true,
+      "eligible": true,
+      "environment_fingerprint": "sha256:0cd5decd91d4f0aecde21c176b6c7ff760368d2574380333363724948a989304",
+      "obligation_ids": [
+        "model_instance:model:khaos_brain_logicguard_system",
+        "parent_closure:purpose:khaos_brain_logicguard_system"
+      ],
+      "owner_route": "model_test_alignment",
+      "receipt_fingerprint": "sha256:7dd9be113dc1d33e7597a0b46455ecf3e5dd71c4d8751086d9d404531d692898",
+      "receipt_id": "receipt:validation-owner:model_test_alignment:b60ac172a58e1d426d995199f7c1e4db",
+      "schema": "flowguard.model_revision_evidence.v2",
+      "status": "required",
+      "subject_fingerprint": "sha256:2a65ee96bb463fb60d9859c9c19ae464ef61794fb0d57a67a0bbc438546608b1",
+      "toolchain_fingerprint": "sha256:ec346785baf27990bf08ae39b3f6f0326cb1f740e95e8fa0875861be88adacb2"
+    }
+  ],
+  "required_path_quality_model_ids": [
+    "behavior_commitment_ledger",
+    "khaos_brain_logicguard_system"
+  ],
+  "revision_set_id": "revision:khaos-maintenance-terminality-v0-8-4-eol-portable-20260810",
+  "rollback_contract_fingerprint": "",
+  "schema": "flowguard.model_revision_set.v5",
+  "snapshot_diff_fingerprint": "sha256:2297064618734ed12ed563ba37a864f30afea8525c6af36b0a3aee5b0a8f4819",
+  "status": "accepted",
+  "task_id": "task:khaos-maintenance-terminality-v0-8-4-eol-portable-20260810"
+}

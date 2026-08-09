@@ -6,6 +6,7 @@
 - Keep Sleep publication pointer-last and reader-fenced, reserve time for finalization, and bind the final active-index receipt to the published watermark so a successful cycle cannot be rejected because its index evidence is nested.
 - Compact large native and cycle terminal receipts into immutable SHA-256 sidecars while validating the bounded envelope, sidecar path, byte count, and content digest; tampering remains fail-closed.
 - Bound digest sidecar filenames below Windows MAX_PATH after the source-consistent Sleep rehearsal exposed a 270-character native-payload path; the full digest remains in the envelope and validation stays fail-closed.
+- Make model-source fingerprints portable across Windows/Linux text checkouts and install the exact pinned FlowGuard consumer projection before the CI authority gate.
 - Add the FlowGuard project-authority gate to CI and refresh the current model revision evidence for the repaired maintenance topology.
 - Verify the installed `gpt-5.6-luna` / `max` automation pair and complete one source-consistent Sleep→Dream run followed immediately by one Organization maintenance run with all wrapper obligations passing.
 
