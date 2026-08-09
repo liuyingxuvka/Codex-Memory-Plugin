@@ -18,6 +18,7 @@ from local_kb.lifecycle import (
 from local_kb.logicguard_models import (
     AUTHORITY_GENERATION_WRITERS,
     ExactBindingError,
+    assert_no_current_publication,
     load_authority_generation,
     validate_authority_generation_payload,
 )
@@ -354,6 +355,7 @@ def _deny_issues(deny: Mapping[str, Any], artifact: Mapping[str, Any], artifact_
 
 
 def _load_snapshot(repo_root: Path) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], list[str]]:
+    assert_no_current_publication(repo_root)
     pointer = _read_json_object(active_index_path(repo_root))
     issues = _pointer_issues(pointer)
     artifact: dict[str, Any] = {}
@@ -646,6 +648,7 @@ def rebuild_active_index(
     reason: str = "manual",
     authority_generation: Mapping[str, Any] | None = None,
     publisher_id: str,
+    publish_pointer: bool = True,
 ) -> dict[str, Any]:
     if publisher_id not in ACTIVE_INDEX_PUBLISHERS:
         raise PermissionError(f"Unauthorized active-index publisher: {publisher_id or '<missing>'}")
@@ -735,16 +738,13 @@ def rebuild_active_index(
     )
     from local_kb.lifecycle import _lifecycle_lock
 
-    with _lifecycle_lock(repo_root):
-        current = _read_json_object(active_index_path(repo_root))
-        if str(current.get("pointer_digest") or "") != captured_pointer_digest:
-            raise RuntimeError("Active-index current pointer changed during rebuild")
-        _atomic_write(active_index_path(repo_root), pointer)
-        active_index_authority_path(repo_root).unlink(missing_ok=True)
-        active_index_invalidation_path(repo_root).unlink(missing_ok=True)
-        # A marker bound to the prior pointer is no longer current. Removing it
-        # is cleanup, not a fallback or authority transition.
-        active_index_corruption_path(repo_root).unlink(missing_ok=True)
+    if publish_pointer:
+        activate_staged_active_index_pointer(
+            repo_root,
+            {"pointer_payload": pointer},
+            expected_pointer_digest=captured_pointer_digest,
+            publisher_id=publisher_id,
+        )
     current_generation = None
     try:
         current_generation = load_authority_generation(repo_root)
@@ -771,6 +771,68 @@ def rebuild_active_index(
         "excluded_status_counts": artifact["excluded_status_counts"],
         "build_duration_ms": artifact["build_duration_ms"],
         "fast_validation_duration_ms": fast_validation.get("duration_ms"),
+        "publisher_id": publisher_id,
+        "published": bool(publish_pointer),
+        "previous_pointer_digest": captured_pointer_digest,
+        # The immutable candidate pointer is consumed by the one transaction
+        # owner after its durable publication fence is installed.
+        "pointer_payload": pointer,
+    }
+
+
+def activate_staged_active_index_pointer(
+    repo_root: Path,
+    staged: Mapping[str, Any],
+    *,
+    expected_pointer_digest: str,
+    publisher_id: str,
+) -> dict[str, Any]:
+    """Activate one already-validated immutable index pointer with CAS.
+
+    This is deliberately separate from ``rebuild_active_index`` so Sleep can
+    build every immutable artifact before the publication fence and switch the
+    current pointers only inside one fenced, rollbackable transaction.
+    """
+
+    if publisher_id not in ACTIVE_INDEX_PUBLISHERS:
+        raise PermissionError(f"Unauthorized active-index publisher: {publisher_id or '<missing>'}")
+    pointer = staged.get("pointer_payload") if isinstance(staged, Mapping) else None
+    if not isinstance(pointer, Mapping):
+        raise ValueError("Staged active-index publication has no pointer payload")
+    pointer = dict(pointer)
+    issues = _pointer_issues(pointer)
+    if issues:
+        raise ValueError("Staged active-index pointer is invalid: " + "; ".join(issues))
+    artifact_path = _resolve_managed_path(
+        repo_root, str(pointer.get("artifact_path") or ""), parent=ACTIVE_INDEX_GENERATION_DIR
+    )
+    deny_path = _resolve_managed_path(
+        repo_root, str(pointer.get("deny_path") or ""), parent=ACTIVE_INDEX_DENY_DIR
+    )
+    artifact = _read_json_object(artifact_path)
+    deny = _read_json_object(deny_path)
+    artifact_issues = _artifact_issues(artifact)
+    if artifact_issues:
+        raise ValueError("Staged active-index artifact is invalid: " + "; ".join(artifact_issues))
+    deny_issues = _deny_issues(deny, artifact, str(pointer.get("artifact_path") or ""))
+    if deny_issues:
+        raise ValueError("Staged active-index deny projection is invalid: " + "; ".join(deny_issues))
+    from local_kb.lifecycle import _lifecycle_lock
+
+    with _lifecycle_lock(repo_root):
+        current = _read_json_object(active_index_path(repo_root))
+        if str(current.get("pointer_digest") or "") != str(expected_pointer_digest or ""):
+            raise RuntimeError("Active-index current pointer changed before staged activation")
+        _atomic_write(active_index_path(repo_root), pointer)
+        active_index_authority_path(repo_root).unlink(missing_ok=True)
+        active_index_invalidation_path(repo_root).unlink(missing_ok=True)
+        active_index_corruption_path(repo_root).unlink(missing_ok=True)
+    return {
+        "ok": True,
+        "pointer_digest": str(pointer.get("pointer_digest") or ""),
+        "artifact_digest": str(pointer.get("artifact_digest") or ""),
+        "deny_digest": str(pointer.get("deny_digest") or ""),
+        "generation": int(pointer.get("generation") or 0),
         "publisher_id": publisher_id,
     }
 

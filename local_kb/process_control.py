@@ -10,6 +10,108 @@ from typing import Any, Mapping, Sequence
 from local_kb.maintenance_lanes import process_owner_is_alive
 
 
+def _attach_windows_kill_on_close_job(process: subprocess.Popen[Any]) -> tuple[Any, dict[str, Any]]:
+    """Attach an owner process to a Windows Job Object.
+
+    ``taskkill`` is still used for an explicit timeout, but the job object is
+    the important outer-owner boundary: if this supervising Python process is
+    terminated externally, Windows closes the handle and kills the child tree
+    instead of leaving a maintenance writer behind.  Non-Windows hosts report
+    the capability as not applicable.
+    """
+
+    if os.name != "nt":
+        return None, {"status": "not_applicable", "kill_on_close": False}
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000
+        JobObjectExtendedLimitInformation = 9
+        PROCESS_SET_QUOTA = 0x0100
+        PROCESS_TERMINATE = 0x0001
+
+        class JOBOBJECT_BASIC_LIMIT_INFORMATION(ctypes.Structure):
+            _fields_ = [
+                ("PerProcessUserTimeLimit", ctypes.c_longlong),
+                ("PerJobUserTimeLimit", ctypes.c_longlong),
+                ("LimitFlags", wintypes.DWORD),
+                ("MinimumWorkingSetSize", ctypes.c_size_t),
+                ("MaximumWorkingSetSize", ctypes.c_size_t),
+                ("ActiveProcessLimit", wintypes.DWORD),
+                ("Affinity", ctypes.c_size_t),
+                ("PriorityClass", wintypes.DWORD),
+                ("SchedulingClass", wintypes.DWORD),
+            ]
+
+        class IO_COUNTERS(ctypes.Structure):
+            _fields_ = [("values", ctypes.c_ulonglong * 6)]
+
+        class JOBOBJECT_EXTENDED_LIMIT_INFORMATION(ctypes.Structure):
+            _fields_ = [
+                ("BasicLimitInformation", JOBOBJECT_BASIC_LIMIT_INFORMATION),
+                ("IoInfo", IO_COUNTERS),
+                ("ProcessMemoryLimit", ctypes.c_size_t),
+                ("JobMemoryLimit", ctypes.c_size_t),
+                ("PeakProcessMemoryUsed", ctypes.c_size_t),
+                ("PeakJobMemoryUsed", ctypes.c_size_t),
+            ]
+
+        kernel32 = ctypes.windll.kernel32  # type: ignore[attr-defined]
+        kernel32.CreateJobObjectW.restype = wintypes.HANDLE
+        kernel32.SetInformationJobObject.restype = wintypes.BOOL
+        kernel32.AssignProcessToJobObject.restype = wintypes.BOOL
+        kernel32.CloseHandle.restype = wintypes.BOOL
+        handle = kernel32.CreateJobObjectW(None, None)
+        if not handle:
+            raise ctypes.WinError()
+        info = JOBOBJECT_EXTENDED_LIMIT_INFORMATION()
+        info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+        if not kernel32.SetInformationJobObject(
+            handle,
+            JobObjectExtendedLimitInformation,
+            ctypes.byref(info),
+            ctypes.sizeof(info),
+        ):
+            error = ctypes.WinError()
+            kernel32.CloseHandle(handle)
+            raise error
+        # AssignProcessToJobObject accepts a process handle.  Popen's private
+        # handle is the exact process created by this owner and is stable for
+        # the lifetime of the Popen object.
+        process_handle = getattr(process, "_handle", None)
+        if not process_handle or not kernel32.AssignProcessToJobObject(
+            handle, wintypes.HANDLE(process_handle)
+        ):
+            error = ctypes.WinError()
+            kernel32.CloseHandle(handle)
+            raise error
+        return handle, {
+            "status": "attached",
+            "kill_on_close": True,
+            "assigned_pid": int(process.pid),
+            "closed": False,
+        }
+    except (AttributeError, OSError, TypeError, ValueError) as exc:
+        return None, {
+            "status": "unavailable",
+            "kill_on_close": False,
+            "reason": f"{type(exc).__name__}:{exc}",
+        }
+
+
+def _close_windows_job(handle: Any, info: dict[str, Any]) -> None:
+    if handle is None or os.name != "nt":
+        return
+    try:
+        import ctypes
+
+        ctypes.windll.kernel32.CloseHandle(handle)  # type: ignore[attr-defined]
+        info["closed"] = True
+    except (AttributeError, OSError):
+        info["closed"] = False
+
+
 def _windows_process_table() -> dict[int, int]:
     try:
         import ctypes
@@ -196,6 +298,7 @@ def run_with_timeout_cleanup(
     errors: str | None = None,
     timeout: float | None = None,
     check: bool = False,
+    started_callback: Any = None,
 ) -> subprocess.CompletedProcess[Any]:
     """Run one owner and prove its captured process tree is gone on timeout."""
 
@@ -215,6 +318,12 @@ def run_with_timeout_cleanup(
     else:
         popen_options["start_new_session"] = True
     process = subprocess.Popen(list(command), **popen_options)
+    job_handle, job_info = _attach_windows_kill_on_close_job(process)
+    job_info["root_pid"] = int(process.pid)
+    job_info["captured_process_ids"] = process_tree_pids(process.pid)
+    job_info["captured_process_count"] = len(job_info["captured_process_ids"])
+    if callable(started_callback):
+        started_callback(dict(job_info))
     try:
         stdout, stderr = process.communicate(timeout=timeout)
     except subprocess.TimeoutExpired:
@@ -246,6 +355,7 @@ def run_with_timeout_cleanup(
             "root_reaped": process.returncode is not None,
             "cleanup_confirmed": not remaining,
             "termination_errors": termination_errors,
+            "job_object_supervision": job_info,
         }
         exc = subprocess.TimeoutExpired(
             list(command),
@@ -255,12 +365,15 @@ def run_with_timeout_cleanup(
         )
         setattr(exc, "cleanup_receipt", cleanup_receipt)
         raise exc
+    finally:
+        _close_windows_job(job_handle, job_info)
     completed = subprocess.CompletedProcess(
         args=list(command),
         returncode=int(process.returncode or 0),
         stdout=stdout,
         stderr=stderr,
     )
+    completed.job_object_supervision = job_info
     if check and completed.returncode:
         raise subprocess.CalledProcessError(
             completed.returncode,

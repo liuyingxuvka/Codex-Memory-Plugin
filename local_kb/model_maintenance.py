@@ -7,7 +7,11 @@ import shutil
 from typing import Any, Iterable, Mapping, Sequence
 from uuid import uuid4
 
-from local_kb.active_index import rebuild_active_index, validate_active_index
+from local_kb.active_index import (
+    activate_staged_active_index_pointer,
+    rebuild_active_index,
+    validate_active_index,
+)
 from local_kb.common import utc_now_iso
 from local_kb.logicguard_models import (
     AUTHORITY_SCOPES,
@@ -17,15 +21,18 @@ from local_kb.logicguard_models import (
     LogicGuardBinding,
     authority_generation_pointer_path,
     authority_root,
+    begin_current_publication,
     build_authority_generation_payload,
     canonical_digest,
     commit_card_model,
     commit_scope_mesh,
+    clear_current_publication,
     load_authority_generation,
     mesh_id_for_scope,
     open_mesh_store,
     open_model_store,
     publish_authority_generation,
+    current_publication_marker_path,
     read_exact_mesh,
     recover_authority_scopes,
 )
@@ -95,6 +102,7 @@ def _snapshot_active_authority(repo_root: Path, operation_id: str) -> dict[str, 
         root / "kb" / "candidates",
         root / "kb" / "indexes",
         authority_root(root),
+        current_publication_marker_path(root),
     )
     rows: list[dict[str, Any]] = []
     for index, source in enumerate(sources):
@@ -176,6 +184,7 @@ def recover_interrupted_model_generations(repo_root: Path) -> dict[str, Any]:
         )
         if current_pair == previous_pair:
             _cleanup_snapshot(root, snapshot)
+            clear_current_publication(root, operation_id=operation_id)
             recovered.append({"operation_id": operation_id, "status": "stale-snapshot-cleaned"})
             continue
         pair_is_complete = bool(
@@ -188,6 +197,7 @@ def recover_interrupted_model_generations(repo_root: Path) -> dict[str, Any]:
         )
         if pair_is_complete:
             _cleanup_snapshot(root, snapshot)
+            clear_current_publication(root, operation_id=operation_id)
             recovered.append({"operation_id": operation_id, "status": "committed-pair-cleaned"})
             continue
         try:
@@ -209,6 +219,7 @@ def recover_interrupted_model_generations(repo_root: Path) -> dict[str, Any]:
                 recovery,
             )
             _cleanup_snapshot(root, snapshot)
+            clear_current_publication(root, operation_id=operation_id)
             recovered.append({"operation_id": operation_id, "status": "interrupted-recovered", "receipt": recovery})
         except Exception as exc:
             issues.append(f"{operation_id}: {type(exc).__name__}: {exc}")
@@ -944,38 +955,87 @@ def publish_sleep_model_generation(
             actor=actor,
         )
 
-        for path in normalized_deletes:
-            target = root / path
-            if target.exists():
-                target.unlink()
-        write_card_projections_atomic(
+        previous_index_pointer = _read_json_file(root / "kb" / "indexes" / "active.json")
+        publication_marker = begin_current_publication(
             root,
-            [(root / row["path"], row["projection"]) for row in projected_rows],
+            {
+                "operation_id": operation_id,
+                "phase": "projection-and-pointer-activation",
+                "previous_authority_generation_id": str(
+                    generation_before.get("generation_id") or ""
+                ),
+                "previous_authority_generation_digest": str(
+                    generation_before.get("pointer_digest") or ""
+                ),
+                "previous_index_pointer_digest": str(
+                    previous_index_pointer.get("pointer_digest") or ""
+                ),
+                "candidate_authority_generation_id": generation_id,
+            },
         )
-        published = publish_authority_generation(root, generation, writer=actor)
-        index_receipt = {}
-        if refresh_index_on_commit:
+        try:
+            for path in normalized_deletes:
+                target = root / path
+                if target.exists():
+                    target.unlink()
+            write_card_projections_atomic(
+                root,
+                [(root / row["path"], row["projection"]) for row in projected_rows],
+            )
+            # Build the immutable index even when the caller defers expensive
+            # validation.  A current authority pointer without a matching
+            # index is never exposed; the index pointer is activated first and
+            # the LogicGuard authority pointer remains the final switch.
             index_receipt = rebuild_active_index(
                 root,
                 reason=reason,
                 authority_generation=generation,
                 publisher_id=actor,
+                publish_pointer=False,
             )
-        index_validation = (
-            validate_active_index(root)
-            if validate_index_on_commit
-            else {
-                "ok": True,
-                "deferred": True,
-                "reason": "final Sleep index owner has not run yet",
-            }
-        )
-        if not index_validation.get("ok"):
-            raise RuntimeError("Sleep generation index validation failed: " + "; ".join(index_validation.get("issues", [])))
-        validate_card_projections(
-            root,
-            [row["projection"] for row in projected_rows],
-        )
+            activate_staged_active_index_pointer(
+                root,
+                index_receipt,
+                expected_pointer_digest=str(
+                    index_receipt.get("previous_pointer_digest") or ""
+                ),
+                publisher_id=actor,
+            )
+            published = publish_authority_generation(root, generation, writer=actor)
+            clear_current_publication(root, operation_id=operation_id)
+            publication_marker = {**publication_marker, "status": "committed"}
+            index_validation = (
+                validate_active_index(root)
+                if validate_index_on_commit
+                else {
+                    "ok": True,
+                    "deferred": True,
+                    "reason": "final Sleep index owner has not run yet",
+                }
+            )
+            if not index_validation.get("ok"):
+                raise RuntimeError("Sleep generation index validation failed: " + "; ".join(index_validation.get("issues", [])))
+            validate_card_projections(
+                root,
+                [row["projection"] for row in projected_rows],
+            )
+        except Exception:
+            # The outer rollback restores the complete pre-publication tree;
+            # keeping the marker until rollback finishes makes a crash fail
+            # closed and lets the next owner recover from the durable snapshot.
+            try:
+                begin_current_publication(
+                    root,
+                    {
+                        "operation_id": operation_id,
+                        "phase": "rollback-after-activation-failure",
+                    },
+                )
+            except Exception:
+                # If the original marker is still present it already fences
+                # readers; the outer rollback will remove it from the snapshot.
+                pass
+            raise
 
         receipt = {
             "schema_version": MODEL_GENERATION_RECEIPT_SCHEMA,

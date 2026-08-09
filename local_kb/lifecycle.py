@@ -34,6 +34,11 @@ FOREIGN_CALIBRATION_PROJECTION_SCHEMA = (
 )
 SLEEP_STATE_FILENAME = "sleep_state.json"
 SLEEP_RECEIPT_DIRNAME = "sleep-receipts"
+# Reserve a small, explicit tail of every cooperative Sleep budget for the
+# immutable publication and terminal receipt.  The native hard timeout still
+# owns the final safety boundary; this reserve only decides whether Sleep may
+# start a new publication attempt.
+SLEEP_FINALIZATION_RESERVE_SECONDS = 90.0
 RETRIEVAL_RECEIPT_FILENAME = "retrieval_receipts.jsonl"
 RETRIEVAL_INTERACTION_FILENAME = "retrieval_interactions.jsonl"
 OUTCOME_RECEIPT_FILENAME = "outcome_receipts.jsonl"
@@ -2079,6 +2084,16 @@ def _run_incremental_sleep_locked(
         attempt_processed += 1
 
     checkpoint = current_batch["checkpoint"]
+    finalization_now: float | None = None
+    if selected_ids and not soft_stopped and soft_deadline_monotonic is not None:
+        finalization_now = time.monotonic()
+    finalization_budget_exhausted = bool(
+        finalization_now is not None
+        and soft_deadline_monotonic is not None
+        and (finalization_now + SLEEP_FINALIZATION_RESERVE_SECONDS)
+        >= soft_deadline_monotonic
+    )
+    soft_stop_before_publication = bool(soft_stopped or finalization_budget_exhausted)
     receipt_path = sleep_receipt_dir(repo_root) / f"{clean_run_id}.json"
 
     def batch_fields() -> dict[str, Any]:
@@ -2124,7 +2139,12 @@ def _run_incremental_sleep_locked(
             "attempt_processed_observations": attempt_processed,
         }
 
-    if not checkpoint.get("settled") or soft_stopped:
+    if not checkpoint.get("settled") or soft_stop_before_publication:
+        progress_reason = (
+            "sleep-finalization-reserve-exhausted"
+            if finalization_budget_exhausted and not soft_stopped
+            else "sleep-progress-saved"
+        )
         receipt = {
             "schema_version": SLEEP_POLICY_VERSION,
             "receipt_id": "sleep-receipt:"
@@ -2143,7 +2163,18 @@ def _run_incremental_sleep_locked(
             **batch_fields(),
             "final_run_state": "progress_saved",
             "retryable": True,
-            "reason": "sleep-progress-saved",
+            "reason": progress_reason,
+            "publication_checkpoint": {
+                "status": "not_started",
+                "reason": progress_reason,
+                "remaining_seconds": (
+                    max(0.0, soft_deadline_monotonic - finalization_now)
+                    if soft_deadline_monotonic is not None
+                    and finalization_now is not None
+                    else None
+                ),
+                "finalization_reserve_seconds": SLEEP_FINALIZATION_RESERVE_SECONDS,
+            },
             "model_generation": _sleep_not_run("batch has pending frozen items"),
             "raw_candidate_repair": {
                 "schema_version": "khaos-brain.sleep-raw-candidate-repair.v1",
@@ -2365,16 +2396,31 @@ def _run_incremental_sleep_locked(
 
     if not blockers:
         index_affecting_review = int(lifecycle_review.get("decision_count") or 0) > 0
-        if model_generation.get("status") == "committed":
+        if model_generation.get("status") == "committed" and not index_affecting_review:
+            # Model publication now stages and activates the matching index in
+            # the same fenced transaction.  This owner performs the one final
+            # full validation without rebuilding the immutable artifact a
+            # second time.
+            existing_index_receipt = model_generation.get("index_receipt", {})
+            if not isinstance(existing_index_receipt, Mapping):
+                existing_index_receipt = {}
+            current_validation = validate_active_index(repo_root)
+            index_refresh = {
+                "ok": bool(current_validation.get("ok")),
+                "status": "published_current_authority",
+                "index_receipt": dict(existing_index_receipt),
+                "index_validation": current_validation,
+            }
+        elif model_generation.get("status") == "committed":
             rebuilt = rebuild_active_index(
                 repo_root,
-                reason=f"sleep:{clean_run_id}:final-index-owner",
+                reason=f"sleep:{clean_run_id}:post-lifecycle-review-index-owner",
                 publisher_id="local_kb.lifecycle.run_incremental_sleep",
             )
             rebuilt_validation = validate_active_index(repo_root)
             index_refresh = {
                 "ok": bool(rebuilt.get("ok") and rebuilt_validation.get("ok")),
-                "status": "published_current_authority",
+                "status": "rebuilt_current_authority",
                 "index_receipt": rebuilt,
                 "index_validation": rebuilt_validation,
             }

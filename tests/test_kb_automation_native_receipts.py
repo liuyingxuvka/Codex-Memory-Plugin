@@ -29,7 +29,11 @@ from local_kb.automation_runtime import (
 )
 from tests.current_runtime_helpers import activate_current_kb_runtime
 from local_kb.lifecycle import run_incremental_sleep
-from scripts.run_kb_automation import native_command, run_automation
+from scripts.run_kb_automation import (
+    _reconcile_abandoned_owner_manifests,
+    native_command,
+    run_automation,
+)
 
 
 def _sleep_batch_digest(value: object) -> str:
@@ -405,6 +409,8 @@ def test_sleep_wrapper_uses_cycle_budget_and_declares_the_complete_timeout_tree(
             codex_home=root / ".codex",
         )
         receipt = json.loads(Path(result["native_receipt_path"]).read_text(encoding="utf-8"))
+        manifest_path = Path(result["owner_manifest_path"])
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
     assert owner.call_args.kwargs["timeout"] == SLEEP_CYCLE_NATIVE_TIMEOUT_SECONDS
     assert receipt["native_payload"]["_owner_timeout_policy"] == {
@@ -417,6 +423,55 @@ def test_sleep_wrapper_uses_cycle_budget_and_declares_the_complete_timeout_tree(
         "cleanup_confirmed": True,
         "remaining_process_count": 0,
     }
+    assert manifest["schema_version"] == "khaos-brain.automation-owner-manifest.v1"
+    assert manifest["status"] == "completed"
+    assert manifest["run_id"] == result["run_id"]
+
+
+def test_organization_start_reconciles_abandoned_sleep_owner_manifest() -> None:
+    with tempfile.TemporaryDirectory() as tmp, patch(
+        "scripts.run_kb_automation.process_owner_is_alive",
+        side_effect=lambda pid: False,
+    ), patch(
+        "scripts.run_kb_automation.recover_global_write_lease_after_cleanup",
+        return_value={"ok": True, "recovered": True},
+    ):
+        repo_root = Path(tmp)
+        manifest_path = (
+            repo_root
+            / ".local"
+            / "automation-runs"
+            / "kb-sleep-maintenance"
+            / "abandoned-sleep"
+            / "owner-manifest.json"
+        )
+        manifest_path.parent.mkdir(parents=True)
+        manifest_path.write_text(
+            json.dumps(
+                {
+                    "schema_version": "khaos-brain.automation-owner-manifest.v1",
+                    "status": "running",
+                    "run_id": "native-kb-sleep-maintenance-abandoned",
+                    "skill_id": "kb-sleep-maintenance",
+                    "wrapper_pid": 123,
+                    "job_object_supervision": {
+                        "status": "attached",
+                        "captured_process_ids": [456],
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        outcomes = _reconcile_abandoned_owner_manifests(
+            "kb-organization-maintenance",
+            repo_root=repo_root,
+        )
+
+    assert len(outcomes) == 1
+    assert outcomes[0]["source_skill_id"] == "kb-sleep-maintenance"
+    assert outcomes[0]["requested_skill_id"] == "kb-organization-maintenance"
+    assert outcomes[0]["status"] == "abandoned-recovered"
 
 
 def test_sleep_hard_timeout_records_local_dream_as_not_run() -> None:

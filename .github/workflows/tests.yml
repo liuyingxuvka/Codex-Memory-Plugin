@@ -63,6 +63,9 @@ jobs:
       - name: Install Codex KB integration
         run: python scripts/install_codex_kb.py --json
 
+      - name: Run FlowGuard project authority gate
+        run: python -m flowguard project-audit --root . --json
+
       - name: Run unit tests
         run: python -m pytest -q
 

@@ -20,6 +20,8 @@ MIN_RESEARCHGUARD_VERSION = "0.1.1"
 LOGICGUARD_AUTHORITY_SCHEMA = "khaos-brain.logicguard-authority.v1"
 AUTHORITY_GENERATION_POINTER_SCHEMA = "khaos-brain.logicguard-authority-generation.v1"
 LOGICGUARD_AUTHORITY_ROOT = Path(".local") / "khaos-brain" / "logicguard-authority"
+CURRENT_PUBLICATION_MARKER_SCHEMA = "khaos-brain.current-publication.v1"
+CURRENT_PUBLICATION_MARKER_PATH = Path(".local") / "kbtx" / "current-publication.json"
 AUTHORITY_SCOPES = ("public", "private", "candidates")
 ROOT_CLAIM_NODE_ID = "claim-root"
 ROOT_ARGUMENT_BLOCK_ID = "card-argument"
@@ -400,6 +402,12 @@ def authority_generation_pointer_path(repo_root: Path) -> Path:
     return authority_root(repo_root) / "current-generation.json"
 
 
+def current_publication_marker_path(repo_root: Path) -> Path:
+    """Return the durable fail-closed marker for a pointer publication."""
+
+    return Path(repo_root) / CURRENT_PUBLICATION_MARKER_PATH
+
+
 def authority_generation_manifest_path(repo_root: Path, generation_id: str) -> Path:
     safe_id = re.sub(r"[^A-Za-z0-9._-]+", "-", str(generation_id)).strip("-")
     if not safe_id:
@@ -526,6 +534,7 @@ def validate_authority_generation_payload(payload: Mapping[str, Any]) -> dict[st
 
 
 def load_authority_generation(repo_root: Path) -> dict[str, Any]:
+    assert_no_current_publication(repo_root)
     path = authority_generation_pointer_path(repo_root)
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
@@ -696,6 +705,78 @@ def _canonical_json(value: Any) -> str:
 
 def canonical_digest(value: Any) -> str:
     return hashlib.sha256(_canonical_json(value).encode("utf-8")).hexdigest()
+
+
+def read_current_publication_marker(repo_root: Path) -> dict[str, Any] | None:
+    """Read and validate the marker that fences readers during publication.
+
+    A malformed marker is an integrity failure, not an absent marker.  This
+    keeps a torn or hand-edited transaction from being mistaken for a safe
+    current snapshot.
+    """
+
+    path = current_publication_marker_path(repo_root)
+    if not path.exists():
+        return None
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ExactBindingError(f"Current publication marker is unreadable: {exc}") from exc
+    if not isinstance(value, Mapping):
+        raise ExactBindingError("Current publication marker is not an object")
+    marker = dict(value)
+    if marker.get("schema_version") != CURRENT_PUBLICATION_MARKER_SCHEMA:
+        raise ExactBindingError("Current publication marker schema is missing or unsupported")
+    if marker.get("status") != "active":
+        raise ExactBindingError("Current publication marker is not active")
+    if not str(marker.get("operation_id") or ""):
+        raise ExactBindingError("Current publication marker has no operation id")
+    unsigned = {key: item for key, item in marker.items() if key != "marker_digest"}
+    expected = "sha256:" + canonical_digest(unsigned)
+    if str(marker.get("marker_digest") or "") != expected:
+        raise ExactBindingError("Current publication marker digest mismatch")
+    return marker
+
+
+def assert_no_current_publication(repo_root: Path) -> None:
+    marker = read_current_publication_marker(repo_root)
+    if marker is not None:
+        raise ExactBindingError(
+            "Current model publication is in progress; serving reads are fenced: "
+            + str(marker.get("operation_id") or "")
+        )
+
+
+def begin_current_publication(repo_root: Path, payload: Mapping[str, Any]) -> dict[str, Any]:
+    """Install one durable publication fence before mutable projections change."""
+
+    path = current_publication_marker_path(repo_root)
+    if read_current_publication_marker(repo_root) is not None:
+        raise ExactBindingError("Another model publication is already active")
+    normalized = {
+        "schema_version": CURRENT_PUBLICATION_MARKER_SCHEMA,
+        "status": "active",
+        **json_safe(dict(payload)),
+    }
+    if not str(normalized.get("operation_id") or ""):
+        raise ValueError("A publication marker requires an operation id")
+    normalized["started_at"] = str(normalized.get("started_at") or utc_now_iso())
+    normalized["marker_digest"] = "sha256:" + canonical_digest(
+        {key: item for key, item in normalized.items() if key != "marker_digest"}
+    )
+    _atomic_write_json(path, normalized)
+    return normalized
+
+
+def clear_current_publication(repo_root: Path, *, operation_id: str = "") -> None:
+    """Clear the fence only for the owner that installed it."""
+
+    marker = read_current_publication_marker(repo_root)
+    if marker is None:
+        return
+    if operation_id and str(marker.get("operation_id") or "") != str(operation_id):
+        raise ExactBindingError("Current publication marker belongs to another operation")
+    current_publication_marker_path(repo_root).unlink(missing_ok=True)
 
 
 def json_safe(value: Any) -> Any:

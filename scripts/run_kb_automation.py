@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -38,7 +39,8 @@ from local_kb.install import resolve_explicit_automation_runtime  # noqa: E402
 from local_kb.maintenance_lanes import (  # noqa: E402
     recover_global_write_lease_after_cleanup,
 )
-from local_kb.process_control import run_with_timeout_cleanup  # noqa: E402
+from local_kb.process_control import process_tree_pids, run_with_timeout_cleanup  # noqa: E402
+from local_kb.maintenance_lanes import process_owner_is_alive  # noqa: E402
 
 
 SUPPORTED_SKILLS = (
@@ -109,6 +111,114 @@ def _parse_payload(stdout: str) -> dict:
     except json.JSONDecodeError:
         return {}
     return payload if isinstance(payload, dict) else {}
+
+
+OWNER_MANIFEST_SCHEMA = "khaos-brain.automation-owner-manifest.v1"
+
+
+def _write_owner_manifest(path: Path, payload: dict[str, object]) -> dict[str, object]:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{uuid4().hex}.tmp")
+    temporary.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    os.replace(temporary, path)
+    return payload
+
+
+def _read_owner_manifest(path: Path) -> dict[str, object]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return dict(payload) if isinstance(payload, dict) else {}
+
+
+def _reconcile_abandoned_owner_manifests(
+    skill_id: str,
+    *,
+    repo_root: Path,
+) -> list[dict[str, object]]:
+    """Recover only owners with durable job supervision and zero descendants.
+
+    A wrapper can be terminated before it writes a native receipt.  The
+    manifest makes that gap visible.  Automatic lease recovery is intentionally
+    narrower than ordinary lock acquisition: Windows Job Object supervision
+    must have been attached, the recorded wrapper and every captured process
+    must be gone, and the lease run id must match exactly.
+    """
+
+    automation_root = Path(repo_root) / ".local" / "automation-runs"
+    # A failed Sleep owner can leave the shared global writer lease that blocks
+    # the next Organization owner.  Reconciliation therefore scans every
+    # target-owned manifest before the current owner attempts acquisition; it
+    # never adopts a live owner and never loosens the exact run-id/zero-tree
+    # cleanup proof.
+    skill_roots = [skill_id, *(item for item in SUPPORTED_SKILLS if item != skill_id)]
+    outcomes: list[dict[str, object]] = []
+    manifest_paths = [
+        path
+        for candidate_skill in skill_roots
+        for path in (automation_root / candidate_skill).glob("*/owner-manifest.json")
+    ]
+    for manifest_path in sorted(manifest_paths):
+        manifest = _read_owner_manifest(manifest_path)
+        if not manifest or manifest.get("status") != "running":
+            continue
+        run_id = str(manifest.get("run_id") or "")
+        owner_pid = int(manifest.get("wrapper_pid") or 0)
+        supervision = manifest.get("job_object_supervision")
+        supervision = supervision if isinstance(supervision, dict) else {}
+        captured = [
+            int(item)
+            for item in supervision.get("captured_process_ids", [])
+            if str(item).isdigit()
+        ]
+        if not run_id or owner_pid <= 0 or process_owner_is_alive(owner_pid):
+            continue
+        descendant_pids = [pid for pid in captured if process_owner_is_alive(pid)]
+        if supervision.get("status") != "attached" or descendant_pids:
+            outcome = {
+                "run_id": run_id,
+                "source_skill_id": str(manifest.get("skill_id") or ""),
+                "requested_skill_id": skill_id,
+                "status": "abandoned-unverified",
+                "reason": "owner-supervision-or-descendant-cleanup-unverified",
+                "manifest_path": str(manifest_path),
+                "remaining_process_ids": descendant_pids,
+            }
+            manifest.update({"status": "abandoned-unverified", "reconciled_at": _utc_now(), "outcome": outcome})
+            _write_owner_manifest(manifest_path, manifest)
+            outcomes.append(outcome)
+            continue
+        cleanup = {
+            "cleanup_confirmed": True,
+            "remaining_process_count": 0,
+            "remaining_process_ids": [],
+            "captured_process_ids": captured,
+            "captured_process_count": len(captured),
+            "root_pid": owner_pid,
+            "recovery_basis": "windows-job-object-kill-on-close",
+        }
+        recovery = recover_global_write_lease_after_cleanup(
+            repo_root,
+            expected_root_owner_run_id=run_id,
+            cleanup_evidence=cleanup,
+        )
+        outcome = {
+            "run_id": run_id,
+            "source_skill_id": str(manifest.get("skill_id") or ""),
+            "requested_skill_id": skill_id,
+            "status": "abandoned-recovered" if recovery.get("ok") else "abandoned-unverified",
+            "manifest_path": str(manifest_path),
+            "cleanup": cleanup,
+            "global_writer_recovery": recovery,
+        }
+        manifest.update({"status": outcome["status"], "reconciled_at": _utc_now(), "outcome": outcome})
+        _write_owner_manifest(manifest_path, manifest)
+        outcomes.append(outcome)
+    return outcomes
 
 
 def _installed_runtime(
@@ -209,6 +319,24 @@ def run_automation(
     native_timeout = native_timeout_seconds(skill_id)
     owner_timeout = owner_timeout_seconds(skill_id)
     started_at = _utc_now()
+    owner_manifest_path = run_root / "owner-manifest.json"
+    owner_recovery = _reconcile_abandoned_owner_manifests(
+        skill_id,
+        repo_root=repo_root,
+    )
+    owner_manifest: dict[str, object] = {
+        "schema_version": OWNER_MANIFEST_SCHEMA,
+        "status": "running",
+        "run_id": run_id,
+        "skill_id": skill_id,
+        "wrapper_pid": os.getpid(),
+        "command": [str(item) for item in command],
+        "native_timeout_seconds": native_timeout,
+        "owner_timeout_seconds": owner_timeout,
+        "started_at": started_at,
+        "owner_recovery_before_start": owner_recovery,
+    }
+    _write_owner_manifest(owner_manifest_path, owner_manifest)
     cleanup: dict[str, object] = {}
     global_writer_recovery: dict[str, object] = {}
     runtime = _installed_runtime(skill_id, codex_home=codex_home)
@@ -227,6 +355,15 @@ def run_automation(
         stderr = str(runtime.get("reason") or "automation-runtime-selection-invalid")
     else:
         try:
+            def _record_started(supervision: dict[str, object]) -> None:
+                owner_manifest.update(
+                    {
+                        "child_pid": supervision.get("root_pid"),
+                        "job_object_supervision": supervision,
+                    }
+                )
+                _write_owner_manifest(owner_manifest_path, owner_manifest)
+
             completed = run_with_timeout_cleanup(
                 command,
                 cwd=repo_root,
@@ -236,10 +373,21 @@ def run_automation(
                 errors="replace",
                 check=False,
                 timeout=native_timeout,
+                started_callback=_record_started,
             )
             exit_code = completed.returncode
             stdout = completed.stdout
             stderr = completed.stderr
+            owner_manifest.update(
+                {
+                    "status": "completed",
+                    "finished_at": _utc_now(),
+                    "returncode": exit_code,
+                    "job_object_supervision": getattr(
+                        completed, "job_object_supervision", {}
+                    ),
+                }
+            )
         except subprocess.TimeoutExpired as exc:
             exit_code = 124
             stdout = str(exc.stdout or "")
@@ -250,6 +398,26 @@ def run_automation(
                 expected_root_owner_run_id=run_id,
                 cleanup_evidence=cleanup,
             )
+            owner_manifest.update(
+                {
+                    "status": "timed-out",
+                    "finished_at": _utc_now(),
+                    "returncode": 124,
+                    "timeout_cleanup": cleanup,
+                    "global_writer_recovery": global_writer_recovery,
+                }
+            )
+        finally:
+            _write_owner_manifest(owner_manifest_path, owner_manifest)
+    if owner_manifest.get("status") == "running":
+        owner_manifest.update(
+            {
+                "status": "failed-before-native-start",
+                "finished_at": _utc_now(),
+                "returncode": exit_code,
+            }
+        )
+        _write_owner_manifest(owner_manifest_path, owner_manifest)
     payload = _parse_payload(stdout)
     payload.setdefault("runtime", runtime)
     if skill_id == "kb-sleep-maintenance" and exit_code == 124:
@@ -322,6 +490,8 @@ def run_automation(
         "native_stderr_tail": stderr[-3000:],
         "timeout_cleanup": cleanup,
         "global_writer_recovery": global_writer_recovery,
+        "owner_recovery_before_start": owner_recovery,
+        "owner_manifest_path": str(owner_manifest_path),
         "issues": [
             *list(receipt.get("evaluation_issues", [])),
             *list(validation.get("issues", [])),

@@ -79,6 +79,34 @@ def test_soft_stop_preserves_generation_and_resumes_only_pending_frozen_items() 
         assert completed["output_watermark"] == 2
 
 
+def test_soft_deadline_after_last_item_defers_publication_with_checkpoint() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        repo_root = Path(tmp)
+        activate_current_kb_runtime(repo_root)
+        _record_history_only_observation(repo_root, "last item before publication reserve")
+        pointer_before = json.loads(
+            active_index_path(repo_root).read_text(encoding="utf-8")
+        )
+        with patch(
+            "local_kb.lifecycle.time",
+            SimpleNamespace(monotonic=Mock(side_effect=[100.0, 100.0, 101.0])),
+        ), patch(
+            "local_kb.model_maintenance.publish_sleep_model_generation",
+            side_effect=AssertionError("publication must wait for the next cycle"),
+        ):
+            progress = run_incremental_sleep(
+                repo_root,
+                run_id="sleep-finalization-reserve",
+                soft_deadline_seconds=0.05,
+            )
+
+        assert progress["final_run_state"] == "progress_saved"
+        assert progress["batch_checkpoint"]["pending_count"] == 0
+        assert progress["reason"] == "sleep-finalization-reserve-exhausted"
+        assert progress["publication_checkpoint"]["status"] == "not_started"
+        assert json.loads(active_index_path(repo_root).read_text(encoding="utf-8")) == pointer_before
+
+
 def test_later_arrival_does_not_expand_an_open_frozen_batch() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         repo_root = Path(tmp)

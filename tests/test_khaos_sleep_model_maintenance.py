@@ -15,8 +15,12 @@ from local_kb import model_maintenance
 from local_kb.active_index import load_active_index, rebuild_active_index
 from local_kb.logicguard_models import (
     GroundedModelRelation,
+    begin_current_publication,
     build_authority_generation_payload,
     canonical_digest,
+    clear_current_publication,
+    current_publication_marker_path,
+    ExactBindingError,
     load_authority_generation,
     mesh_store_root,
     publish_authority_generation,
@@ -263,7 +267,7 @@ class KhaosSleepModelMaintenanceTests(unittest.TestCase):
             self.assertTrue(deferred["ok"], deferred)
             self.assertTrue(deferred["index_validation"]["deferred"])
 
-    def test_committed_generation_keeps_prior_active_index_until_final_owner(self) -> None:
+    def test_committed_generation_switches_authority_and_index_as_one_fenced_pair(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             baseline = publish_sleep_model_generation(root, reason="test:baseline")
@@ -281,19 +285,13 @@ class KhaosSleepModelMaintenanceTests(unittest.TestCase):
             self.assertTrue(staged["ok"], staged)
             self.assertEqual(staged["status"], "committed")
             self.assertTrue(staged["receipt"]["index_validation"]["deferred"])
-            self.assertEqual(
-                load_active_index(root)["content_digest"],
-                active_before["content_digest"],
-            )
-
-            rebuild_active_index(
-                root,
-                reason="test:final-pointer-owner",
-                publisher_id="local_kb.lifecycle.run_incremental_sleep",
-            )
             self.assertNotEqual(
                 load_active_index(root)["content_digest"],
                 active_before["content_digest"],
+            )
+            self.assertEqual(
+                load_authority_generation(root)["generation_id"],
+                load_active_index(root)["authority_generation_id"],
             )
 
     def test_empty_library_publishes_a_valid_zero_model_generation(self) -> None:
@@ -420,6 +418,33 @@ class KhaosSleepModelMaintenanceTests(unittest.TestCase):
             self.assertTrue(failed["rollback"]["ok"])
             self.assertEqual(load_authority_generation(root), pointer_before)
             self.assertEqual(load_yaml_file(root / "kb" / "public" / "left.yaml"), projection_before)
+
+    def test_publication_fence_blocks_readers_and_recovery_clears_stale_marker(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            baseline = publish_sleep_model_generation(
+                root,
+                reason="test:fence-baseline",
+                card_upserts={"kb/public/left.yaml": card("left")},
+            )
+            self.assertTrue(baseline["ok"], baseline)
+            operation_id = "sleep-generation-fenced-test"
+            snapshot = model_maintenance._snapshot_active_authority(root, operation_id)
+            begin_current_publication(
+                root,
+                {
+                    "operation_id": operation_id,
+                    "phase": "test-crash-before-pointer",
+                    "candidate_authority_generation_id": "generation-never-activated",
+                },
+            )
+            self.assertTrue(current_publication_marker_path(root).is_file())
+            with self.assertRaises(ExactBindingError):
+                load_authority_generation(root)
+            recovered = recover_interrupted_model_generations(root)
+            self.assertTrue(recovered["ok"], recovered)
+            self.assertFalse(current_publication_marker_path(root).exists())
+            self.assertEqual(load_authority_generation(root), snapshot["authority_pointer"])
 
 
 if __name__ == "__main__":
